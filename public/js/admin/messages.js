@@ -1,4 +1,4 @@
-import { $, esc, adminApi, toast, errorBlock, emptyCard } from './core.js';
+import { $, esc, parseUtcDate, adminApi, toast, errorBlock, emptyCard } from './core.js';
 
 let messages = [];
 let shopName = '';
@@ -17,7 +17,7 @@ export async function load(state) {
 function render() {
   $('#messages-list').innerHTML = messages.length
     ? `<div class="messages">${messages.map((m) => {
-      const when = new Date(m.created_at.replace(' ', 'T') + 'Z')
+      const when = parseUtcDate(m.created_at)
         .toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
       const subject = encodeURIComponent(`Re: your message to ${shopName}`);
       return `

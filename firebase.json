@@ -6,6 +6,12 @@
       "cleanUrls": true,
       "trailingSlash": false,
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "headers": [
+        {
+          "source": "**/*.@(html|js|css|json|webmanifest)",
+          "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+        }
+      ],
       "rewrites": [
         {
           "source": "/track/**",
@@ -19,6 +25,12 @@
       "cleanUrls": true,
       "trailingSlash": false,
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "headers": [
+        {
+          "source": "**/*.@(html|js|css|json|webmanifest)",
+          "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+        }
+      ],
       "rewrites": [
         {
           "source": "/track/**",
@@ -32,6 +44,12 @@
       "cleanUrls": true,
       "trailingSlash": false,
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "headers": [
+        {
+          "source": "**/*.@(html|js|css|json|webmanifest)",
+          "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+        }
+      ],
       "rewrites": [
         {
           "source": "**",

@@ -3,7 +3,12 @@
 
 import { serverlessApi } from '/js/serverless-api.js';
 
+let useServerlessFallback = false;
+
 export async function api(path, { method = 'GET', body, form } = {}) {
+  if (useServerlessFallback) {
+    return serverlessApi(path, { method, body, form });
+  }
   const options = { method, headers: {} };
   if (form) {
     options.body = form;
@@ -15,10 +20,12 @@ export async function api(path, { method = 'GET', body, form } = {}) {
   try {
     res = await fetch(path, options);
   } catch {
+    useServerlessFallback = true;
     return serverlessApi(path, { method, body, form });
   }
   const contentType = res.headers.get('content-type') || '';
   if (!contentType.includes('application/json')) {
+    useServerlessFallback = true;
     return serverlessApi(path, { method, body, form });
   }
   const data = await res.json().catch(() => ({}));
@@ -32,6 +39,13 @@ export async function api(path, { method = 'GET', body, form } = {}) {
 
 const ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 export const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ESCAPES[c]);
+
+export function mediaSrc(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  if (raw.startsWith('/') || /^https?:\/\//i.test(raw)) return raw;
+  return `/uploads/${raw}`;
+}
 
 let currency = 'USD';
 export function money(cents) {
@@ -201,6 +215,9 @@ const I18N = {
     home_recent: 'Recent creations',
     home_view_gallery: 'View the gallery',
     home_visit: 'Visit us',
+    reels_kicker: 'Live from Instagram',
+    reels_title: '@savory.chocolate Reels',
+    reels_follow: 'Follow on Instagram',
   },
   ar: {
     nav_home: 'استوديو الكيك',
@@ -248,6 +265,9 @@ const I18N = {
     home_recent: 'أحدث إبداعاتنا',
     home_view_gallery: 'شاهد المعرض',
     home_visit: 'تفضّل بزيارتنا',
+    reels_kicker: 'مباشرة من إنستغرام',
+    reels_title: 'فيديوهات @savory.chocolate',
+    reels_follow: 'تابعنا على إنستغرام',
   },
 };
 
@@ -374,6 +394,14 @@ document.getElementById('onboard-lang-btn')?.addEventListener('click', toggleLan
 
 // ---------- Page chrome ----------
 
+// Lock viewport scale: prevent pinch-zoom and double-tap zoom on iOS & Android
+document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
+document.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
+document.addEventListener('gestureend', (e) => e.preventDefault(), { passive: false });
+document.addEventListener('touchmove', (e) => {
+  if (e.touches && e.touches.length > 1) e.preventDefault();
+}, { passive: false });
+
 const header = document.getElementById('site-header');
 if (header) {
   const onScroll = () => header.classList.toggle('scrolled', window.scrollY > 12);
@@ -382,17 +410,35 @@ if (header) {
 }
 
 const toggle = document.getElementById('nav-toggle');
-if (toggle) {
+const siteNav = document.getElementById('site-nav');
+if (toggle && siteNav) {
+  const closeBtn = document.getElementById('drawer-close');
   const setOpen = (open) => {
+    const wasOpen = document.body.classList.contains('nav-open');
+    document.documentElement.classList.toggle('nav-open', open);
     document.body.classList.toggle('nav-open', open);
     toggle.setAttribute('aria-expanded', String(open));
     toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    if (open && !wasOpen && closeBtn) {
+      requestAnimationFrame(() => closeBtn.focus({ preventScroll: true }));
+    } else if (!open && wasOpen && siteNav.contains(document.activeElement)) {
+      toggle.focus({ preventScroll: true });
+    }
   };
   toggle.addEventListener('click', () => setOpen(!document.body.classList.contains('nav-open')));
-  document.getElementById('site-nav')?.addEventListener('click', (e) => { if (e.target.closest('a')) setOpen(false); });
-  document.getElementById('drawer-close')?.addEventListener('click', () => setOpen(false));
+  siteNav.addEventListener('click', (e) => { if (e.target.closest('a')) setOpen(false); });
+  closeBtn?.addEventListener('click', () => setOpen(false));
   document.getElementById('nav-scrim')?.addEventListener('click', () => setOpen(false));
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
+}
+
+// Highlight matching static page link across multi-page routes when not controlled by the Menu SPA.
+if (siteNav && !document.getElementById('view-onboarding')) {
+  const path = location.pathname.replace(/\/+$/, '') || '/';
+  const slug = path === '/' ? 'home' : path.slice(1).split('/')[0];
+  siteNav.querySelectorAll('[data-page]').forEach((link) => {
+    if (link.dataset.page === slug) link.setAttribute('aria-current', 'page');
+  });
 }
 
 // Cards with .spotlight glow where the cursor is.
@@ -538,6 +584,8 @@ export function openWhatsApp(url) {
 // Progressive Web App (PWA) Service Worker Registration
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+      .then((reg) => reg.update().catch(() => {}))
+      .catch(() => {});
   });
 }

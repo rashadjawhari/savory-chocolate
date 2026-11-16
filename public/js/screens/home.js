@@ -1,7 +1,8 @@
-import { api, esc, money, storage, reveal, loadSettings } from '/js/common.js';
+import { api, esc, mediaSrc, money, storage, reveal, loadSettings } from '/js/common.js';
 import { createCakeStage, renderCakeSnapshot, releaseSnapshots } from '/js/cake3d.js';
 import { SIGNATURE_DESIGNS } from '/js/designs.js';
 import { illustrationFor } from '/js/illustrations.js';
+import { mountReelsStrip } from '/js/social-reels.js';
 
 // The home page leads with photos. The first three gallery photos (in the admin's Gallery order)
 // fill the hero and the two "ways to order" tiles. Until there are photos, the hero shows the live
@@ -17,7 +18,8 @@ const HERO_CAKE = {
 };
 
 const MENU_URL = document.querySelector('#ways a.at-tile:last-child')?.getAttribute('href') || '/menu';
-const photo = (g, { eager = false } = {}) => `<img src="/uploads/${esc(g.image)}" alt="${esc(g.caption || '')}"${eager ? '' : ' loading="lazy"'}>`;
+const menuProductHref = (id) => `${MENU_URL.replace(/\/$/, '')}/#product/${id}`;
+const photo = (g, { eager = false } = {}) => `<img src="${esc(mediaSrc(g.image))}" alt="${esc(g.caption || '')}"${eager ? '' : ' loading="lazy"'}>`;
 
 // loadSettings also sets the shop's currency for money().
 const [, gallery, menu, reviews] = await Promise.all([
@@ -62,15 +64,14 @@ for (const item of ranked) {
 }
 if (picks.length) {
   document.getElementById('loved-grid').innerHTML = picks.map((item) => `
-    <a class="at-product" href="${esc(MENU_URL)}" data-reveal>
-      <div class="at-media at-media-dark at-product-media">${item.image
-        ? `<img src="/uploads/${esc(item.image)}" alt="" loading="lazy">`
-        : `<div class="at-art">${illustrationFor(item)}</div>`}</div>
+    <a class="at-product" href="${esc(menuProductHref(item.id))}" data-reveal>
       <div class="at-product-row">
         <h3>${esc(item.name)}</h3>
         <span class="at-price">${money(item.price_cents)}</span>
       </div>
-      ${item.description ? `<p>${esc(item.description)}</p>` : ''}
+      <div class="at-media at-media-dark at-product-media">${item.image
+        ? `<img src="${esc(mediaSrc(item.image))}" alt="${esc(item.name)}" decoding="async">`
+        : `<div class="at-art">${illustrationFor(item)}</div>`}</div>
     </a>`).join('');
   document.getElementById('loved').hidden = false;
 }
@@ -157,5 +158,10 @@ if (recent.length) {
     <a href="/gallery" data-reveal>${photo(g)}</a>`).join('');
   document.getElementById('gallery-section').hidden = false;
 }
+
+mountReelsStrip(document.getElementById('reels-grid'), {
+  menuItems: menu,
+  menuBaseUrl: MENU_URL,
+});
 
 reveal();

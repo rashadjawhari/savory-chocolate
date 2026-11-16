@@ -13,25 +13,25 @@
          SCREEN 0: CINEMATIC ONBOARDING LANDING SCREEN (#welcome / /)
          ================================================================ -->
     <section class="onboarding-stage" id="view-onboarding" aria-label="Welcome to SAVORY">
-      <div class="onboarding-bg" id="onboarding-bg" aria-hidden="true">
-        <div class="onboarding-slide is-active">
-          <img src="/img/onboarding-box.jpg" alt="" decoding="async">
+      <div class="onboarding-viewport" aria-hidden="true">
+        <div class="onboarding-bg" id="onboarding-bg">
+          <div class="onboarding-slide is-active" data-initial-video>
+            <video autoplay muted loop playsinline preload="auto" poster="/img/social/reel-dubai-crepe.jpg" src="/img/social/reel-dubai-crepe.mp4"></video>
+          </div>
         </div>
       </div>
       <div class="onboarding-scrim" aria-hidden="true"></div>
 
+      <button type="button" class="onboarding-nav-btn onboarding-nav-prev" id="onboard-prev" aria-label="Previous video">←</button>
+      <button type="button" class="onboarding-nav-btn onboarding-nav-next" id="onboard-next" aria-label="Next video">→</button>
+
       <div class="onboarding-topbar container">
-        <div class="onboard-location-pill">
-          <span class="onboard-status-dot" aria-hidden="true"></span>
-          <span>Aramoun &amp; Aley</span>
-        </div>
         <div class="onboard-util-actions">
           <a class="onboard-util-btn onboard-cart-pill" href="#cart" id="onboard-cart-btn" hidden>
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
             <span data-i18n="nav_cart">Cart</span>
             <span class="onboard-cart-badge" id="onboard-cart-count">0</span>
           </a>
-          <a class="onboard-util-btn" href="/track?site=menu" data-i18n="nav_track">Track Order</a>
           <button type="button" class="onboard-util-btn" id="onboard-lang-btn" aria-label="Switch language / تغيير اللغة">عربي</button>
         </div>
       </div>
@@ -39,9 +39,7 @@
       <div class="onboarding-center container">
         <div class="onboarding-logo-lockup" dir="ltr" aria-label="{{shop_name}} Chocolate">
           {{> brand-logo}}
-          <span class="brand-chocolate-sub">CHOCOLATE</span>
         </div>
-        <p class="onboarding-slogan" id="onboarding-slogan">{{slogan}}</p>
         <div class="onboarding-cta-row">
           <a class="btn onboarding-order-btn" href="#menu" id="order-now-btn">
             <span data-i18n="cta_order_now">Order Now</span>
@@ -52,12 +50,8 @@
 
       <div class="onboarding-foot container">
         <div class="onboarding-slide-meta">
-          <span class="onboarding-caption" id="onboarding-caption"></span>
           <div class="onboarding-dots" id="onboarding-dots" aria-label="Background slides"></div>
         </div>
-        <a class="onboard-cake-link" href="{{cakes_site_url}}" target="_blank" rel="noopener">
-          <span>3D Custom Cake Studio ↗</span>
-        </a>
       </div>
     </section>
 
@@ -84,36 +78,38 @@
              SCREEN 1: INSIDE MENU HOME (Slider Up Top + Categories Below)
              ============================================================ -->
         <div class="menu-view" id="view-menu">
-          <!-- Featured Items & Admin Offers Slider -->
-          <section class="featured-slider-section" id="featured-slider" hidden>
-            <div class="slider-header-bar">
-              <div>
-                <span class="eyebrow left" style="margin-bottom:2px;">Chef's Selection &amp; Offers</span>
-                <h2 class="slider-section-title" data-i18n="featured_title">Featured &amp; Offers</h2>
+          <!-- Featured Items & Admin Offers Slider (Editorial Split Layout) -->
+          <section class="featured-slider-section" id="featured-slider" hidden aria-label="Featured Offers">
+            <div class="slider-editorial-layout">
+              <div class="slider-editorial-info">
+                <h2 class="slider-editorial-title" id="slider-editorial-title" data-i18n="featured_title">Featured</h2>
+                <p class="slider-editorial-sub" id="slider-editorial-sub">Discover our signature handcrafted chocolates, warm crepes, and seasonal specials.</p>
               </div>
-              <div class="slider-controls-group">
-                <button type="button" class="slider-nav-btn" id="slider-prev" aria-label="Previous offer">‹</button>
-                <button type="button" class="slider-nav-btn" id="slider-next" aria-label="Next offer">›</button>
+              <div class="slider-editorial-stage">
+                <div class="slider-top-nav">
+                  <button type="button" class="slider-nav-btn" id="slider-prev" aria-label="Previous offer">←</button>
+                  <div class="slider-dots" id="slider-dots" role="tablist" aria-label="Featured slides"></div>
+                  <button type="button" class="slider-nav-btn" id="slider-next" aria-label="Next offer">→</button>
+                </div>
+                <div class="slider-viewport" id="slider-viewport">
+                  <div class="slider-track" id="slider-track"></div>
+                </div>
               </div>
             </div>
-            <div class="slider-viewport" id="slider-viewport">
-              <div class="slider-track" id="slider-track"></div>
-            </div>
-            <div class="slider-dots" id="slider-dots" role="tablist" aria-label="Featured slides"></div>
           </section>
 
           <!-- Search & Quick Filter Toolbar -->
           <div class="menu-toolbar" id="menu-toolbar">
             <div class="menu-search-wrap">
               <svg class="menu-search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input type="search" id="menu-search" placeholder="Search chocolates, kunafa, crepes, flurry, shakes…" aria-label="Search menu items" autocomplete="off">
+              <input type="search" id="menu-search" placeholder="Search menu…" aria-label="Search menu items" autocomplete="off">
               <button type="button" class="menu-search-clear" id="menu-search-clear" hidden aria-label="Clear search">✕</button>
             </div>
             <div class="menu-filter-pills" id="menu-filter-pills" role="group" aria-label="Quick dietary and flavor filters">
-              <button type="button" class="menu-filter-pill active" data-qfilter="all">All Creations</button>
-              <button type="button" class="menu-filter-pill" data-qfilter="popular">★ Chef's Picks</button>
-              <button type="button" class="menu-filter-pill" data-qfilter="pistachio">Pistachio &amp; Kunafa</button>
-              <button type="button" class="menu-filter-pill" data-qfilter="dark">Belgian Dark</button>
+              <button type="button" class="menu-filter-pill active" data-qfilter="all">All</button>
+              <button type="button" class="menu-filter-pill" data-qfilter="popular">Popular</button>
+              <button type="button" class="menu-filter-pill" data-qfilter="pistachio">Pistachio</button>
+              <button type="button" class="menu-filter-pill" data-qfilter="dark">Dark Chocolate</button>
               <button type="button" class="menu-filter-pill" data-qfilter="under10">Under $10</button>
             </div>
           </div>
@@ -122,10 +118,9 @@
           <div id="view-search" hidden>
             <div class="search-results-head">
               <div>
-                <span class="eyebrow left">Menu Search</span>
-                <h2 id="search-title" style="font-size:1.9rem;margin:0;">Showing results</h2>
+                <h2 id="search-title" style="font-size:1.5rem;margin:0;">Showing results</h2>
               </div>
-              <button type="button" class="btn btn-outline btn-sm" id="clear-search-btn">← Back to Categories</button>
+              <button type="button" class="btn btn-outline btn-sm" id="clear-search-btn">← Categories</button>
             </div>
             <div class="menu-rows-list" id="search-rows-list"></div>
           </div>
@@ -133,37 +128,29 @@
           <!-- Categories Selection Grid -->
           <section id="categories-section">
             <div class="folders-intro">
-              <span class="eyebrow left">Atelier Collections</span>
-              <h2 class="folders-heading" data-i18n="categories_heading">Choose a Category</h2>
-              <p class="muted small">Tap any category below to browse handcrafted items and customize your order.</p>
+              <h2 class="folders-heading" data-i18n="categories_heading">Categories</h2>
             </div>
             <div class="menu-folders-grid" id="folders-grid"></div>
           </section>
 
           <!-- Bespoke Gift Box Studio Banner -->
-          <section class="card spotlight box-banner luxury-box-banner" id="box-banner">
+          <section class="card spotlight box-banner luxury-box-banner" id="box-banner" hidden>
             <div class="box-banner-copy">
-              <span class="eyebrow left">Signature Gifting</span>
               <h2>Build Your Own <em class="gold-text">SAVORY</em> Chocolate Box</h2>
-              <p class="muted">Curate a 9, 16, or 25-piece luxury gift box filled with handmade pralines, pistachio kunafa truffles, and dark ganaches, tied with a satin ribbon.</p>
               <button type="button" class="btn btn-gold btn-lg" id="open-box-builder">
                 <span>Curate a Gift Box</span>
                 <span class="arrow" aria-hidden="true">→</span>
               </button>
             </div>
-            <div class="box-banner-art" aria-hidden="true">
-              <div class="mini-box-grid">
-                <span style="background:#4C2007"></span>
-                <span style="background:#96bc61"></span>
-                <span style="background:#c67d2d"></span>
-                <span style="background:#d9b066"></span>
-                <span style="background:#8c1832"></span>
-                <span style="background:#6e4226"></span>
-                <span style="background:#f3dfba"></span>
-                <span style="background:#4b220e"></span>
-                <span style="background:#4C2007"></span>
-              </div>
+          </section>
+
+          <!-- Instagram Reels Showcase -->
+          <section class="menu-reels-section" id="menu-reels-section" aria-labelledby="menu-reels-title">
+            <div class="slider-header-bar">
+              <h2 class="slider-section-title" id="menu-reels-title" data-i18n="reels_title">@savory.chocolate Reels</h2>
+              {{#instagram}}<a class="btn btn-outline btn-sm" href="{{instagram}}" target="_blank" rel="noopener">@{{instagram_handle}} ↗</a>{{/instagram}}
             </div>
+            <div class="reels-grid" id="menu-reels-grid"></div>
           </section>
         </div>
 
@@ -177,14 +164,14 @@
                 <span>← All Categories</span>
               </button>
               <h1 id="cat-banner-title" class="cat-title-heading"></h1>
-              <p class="muted" id="cat-banner-desc"></p>
+              <p class="muted" id="cat-banner-desc" hidden></p>
             </div>
             <div class="cat-banner-icon-wrap" id="cat-banner-icon" aria-hidden="true"></div>
           </div>
 
           <nav class="cat-pills-nav" id="cat-pills-nav" aria-label="Switch category"></nav>
 
-          <div class="cat-products-meta">
+          <div class="cat-products-meta" hidden>
             <span class="cat-products-count" id="cat-products-count"></span>
           </div>
 
@@ -196,13 +183,13 @@
              ============================================================ -->
         <div class="menu-view" id="view-product" hidden>
           <div class="product-page-back-bar">
-            <button type="button" class="btn btn-outline btn-sm" id="prod-back-btn">
-              <span>← Back to <strong id="prod-back-cat-name">Category</strong></span>
+            <button type="button" class="btn btn-outline btn-sm product-back-link" id="prod-back-btn">
+              <span aria-hidden="true">←</span>
+              <span id="prod-back-cat-name">Category</span>
             </button>
-            <div class="product-page-badge" id="prod-header-badge">✦ SAVORY Signature</div>
           </div>
 
-          <div class="product-page-card card" id="product-page-card"></div>
+          <div class="product-page-card" id="product-page-card"></div>
         </div>
 
         <!-- ============================================================

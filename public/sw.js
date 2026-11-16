@@ -41,16 +41,22 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Pages and the preview data: network first, so a new deploy shows up on the next visit.
-  if (event.request.mode === 'navigate' || url.pathname === '/seed.json') {
+  // Pages, code bundles, and preview data: network-first so updates take effect on first load.
+  const isAppShell = event.request.mode === 'navigate'
+    || url.pathname === '/seed.json'
+    || url.pathname === '/manifest.webmanifest'
+    || url.pathname.startsWith('/js/')
+    || url.pathname.startsWith('/css/');
+
+  if (isAppShell) {
     event.respondWith(
-      fetch(event.request).then((networkResponse) => {
+      fetch(event.request, { cache: 'no-store' }).then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
         }
         return networkResponse;
-      }).catch(() => caches.match(event.request).then((cached) => cached || caches.match('/'))),
+      }).catch(() => caches.match(event.request, { ignoreSearch: true }).then((cached) => cached || (event.request.mode === 'navigate' ? caches.match('/') : undefined))),
     );
     return;
   }

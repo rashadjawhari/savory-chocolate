@@ -14,9 +14,9 @@ const PUBLIC_DIR = path.join(ROOT, 'public');
 const THREE_DIR = path.join(ROOT, 'node_modules', 'three');
 
 const URLS = {
-  cakesSiteUrl: process.env.CAKES_SITE_URL || 'https://savory-lb-cakes.web.app',
-  menuSiteUrl: process.env.MENU_SITE_URL || 'https://savory-lb-menu.web.app',
-  adminSiteUrl: process.env.ADMIN_SITE_URL || 'https://savory-lb-admin.web.app',
+  cakesSiteUrl: process.env.CAKES_SITE_URL || 'https://savory-962f3-cakes.web.app',
+  menuSiteUrl: process.env.MENU_SITE_URL || 'https://savory-962f3-menu.web.app',
+  adminSiteUrl: process.env.ADMIN_SITE_URL || 'https://savory-962f3-admin.web.app',
 };
 
 const BUILD_ID = Date.now().toString(36);
@@ -73,16 +73,37 @@ function prepareSiteDir(targetName) {
   const stamped = sw.replace(/const CACHE_NAME = '[^']*';/, `const CACHE_NAME = 'savory-pwa-${BUILD_ID}';`);
   if (stamped === sw) throw new Error('Could not find CACHE_NAME in public/sw.js.');
   fs.writeFileSync(swPath, stamped);
+
+  // Stamp JS module imports inside dist/*/js with ?v=BUILD_ID so browsers and old SW caches always fetch fresh modules
+  const stampJsDir = (jsDir) => {
+    for (const entry of fs.readdirSync(jsDir, { withFileTypes: true })) {
+      const full = path.join(jsDir, entry.name);
+      if (entry.isDirectory()) stampJsDir(full);
+      else if (entry.name.endsWith('.js')) {
+        const src = fs.readFileSync(full, 'utf8');
+        const updated = src.replace(/(from\s+['"]\/js\/[^'"]+\.js)(['"])/g, `$1?v=${BUILD_ID}$2`);
+        if (updated !== src) fs.writeFileSync(full, updated);
+      }
+    }
+  };
+  stampJsDir(path.join(dir, 'js'));
+
   return dir;
+}
+
+function stampHtml(html) {
+  return html
+    .replace(/href="(\/css\/[^"]+\.css)"/g, `href="$1?v=${BUILD_ID}"`)
+    .replace(/src="(\/js\/[^"]+\.js)"/g, `src="$1?v=${BUILD_ID}"`);
 }
 
 // 1. Build Cake Studio site (dist/cakes)
 {
   const dir = prepareSiteDir('cakes');
   const opts = { siteMode: 'cakes', ...URLS };
-  fs.writeFileSync(path.join(dir, 'index.html'), renderPage('home', opts));
+  fs.writeFileSync(path.join(dir, 'index.html'), stampHtml(renderPage('home', opts)));
   for (const page of ['cakes', 'gallery', 'about', 'faq', 'contact', 'track', '404']) {
-    fs.writeFileSync(path.join(dir, `${page}.html`), renderPage(page, opts));
+    fs.writeFileSync(path.join(dir, `${page}.html`), stampHtml(renderPage(page, opts)));
   }
   fs.writeFileSync(path.join(dir, 'manifest.webmanifest'), JSON.stringify({
     name: 'SAVORY · 3D Custom Cake Studio',
@@ -101,9 +122,9 @@ function prepareSiteDir(targetName) {
 {
   const dir = prepareSiteDir('menu');
   const opts = { siteMode: 'menu', ...URLS };
-  fs.writeFileSync(path.join(dir, 'index.html'), renderPage('menu', opts));
+  fs.writeFileSync(path.join(dir, 'index.html'), stampHtml(renderPage('menu', opts)));
   for (const page of ['about', 'faq', 'contact', 'track', '404']) {
-    fs.writeFileSync(path.join(dir, `${page}.html`), renderPage(page, opts));
+    fs.writeFileSync(path.join(dir, `${page}.html`), stampHtml(renderPage(page, opts)));
   }
   fs.writeFileSync(path.join(dir, 'manifest.webmanifest'), JSON.stringify({
     name: 'SAVORY · Chocolatier & Cafe',
@@ -122,7 +143,7 @@ function prepareSiteDir(targetName) {
 {
   const dir = prepareSiteDir('admin');
   const opts = { siteMode: 'admin', ...URLS };
-  const adminHtml = renderPage('admin', opts);
+  const adminHtml = stampHtml(renderPage('admin', opts));
   fs.writeFileSync(path.join(dir, 'index.html'), adminHtml);
   fs.writeFileSync(path.join(dir, '404.html'), adminHtml);
   fs.writeFileSync(path.join(dir, 'manifest.webmanifest'), JSON.stringify({

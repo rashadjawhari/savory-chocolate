@@ -1,4 +1,4 @@
-import { api, esc, reveal } from '/js/common.js';
+import { api, esc, mediaSrc, reveal } from '/js/common.js';
 import { SIGNATURE_DESIGNS } from '/js/designs.js';
 import { renderCakeSnapshot, releaseSnapshots } from '/js/cake3d.js';
 
@@ -56,7 +56,7 @@ await renderLookbook();
 if (photos.length) {
   gridPhotos.innerHTML = photos.map((p, i) => `
     <figure tabindex="0" data-index="${i}" data-reveal style="--delay: ${(i % 3) * 0.08}s">
-      <img src="/uploads/${esc(p.image)}" alt="${esc(p.caption || 'Cake from our kitchen')}" loading="lazy">
+      <img src="${esc(mediaSrc(p.image))}" alt="${esc(p.caption || 'Cake from our kitchen')}" loading="lazy">
       ${p.caption ? `<figcaption>${esc(p.caption)}</figcaption>` : ''}
     </figure>`).join('');
   reveal(gridPhotos);
@@ -83,7 +83,7 @@ function rebuildLightboxList() {
     cta: `/cakes?design=${encodeURIComponent(d.id)}`,
   }));
   const photoItems = photos.map((p) => ({
-    src: `/uploads/${p.image}`,
+    src: mediaSrc(p.image),
     caption: p.caption || 'Fresh from the SAVORY kitchen',
     cta: '/cakes',
   }));

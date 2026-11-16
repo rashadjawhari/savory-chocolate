@@ -1,15 +1,18 @@
-import { $, esc, money, mediaSrc, adminApi, toast, formError, busy, errorBlock, emptyCard } from './core.js';
+import { $, esc, money, mediaSrc, adminApi, toast, formError, busy, bindImageInputs, errorBlock, emptyCard } from './core.js';
 
 let offers = [];
 let slides = [];
 let menuItems = [];
 
 const PRESET_SLIDES = [
+  { label: 'Dubai Crepe Reel (IG · MP4)', value: '/img/social/reel-dubai-crepe.mp4' },
+  { label: 'London Cake Reel (IG · MP4)', value: '/img/social/reel-london-cake.mp4' },
+  { label: 'Cinnamon Rolls Reel (IG · MP4)', value: '/img/social/reel-cinnamon-rolls.mp4' },
+  { label: 'Kunafa Cookie Reel (IG · MP4)', value: '/img/social/reel-kunafa-cookie.mp4' },
+  { label: 'Chocolate Pancakes Reel (IG · MP4)', value: '/img/social/reel-pancakes.mp4' },
+  { label: 'Strawberry Crepe Reel (IG · MP4)', value: '/img/social/reel-strawberry-crepe.mp4' },
   { label: 'Atelier Video Reel (MP4)', value: '/img/onboarding-reel.mp4' },
-  { label: 'Luxury Truffle Box Photo', value: '/img/onboarding-box.jpg' },
-  { label: 'Pistachio Kunafa Bar Photo', value: '/img/onboarding-kunafa.jpg' },
-  { label: 'Belgian Chocolate Crepe Photo', value: '/img/onboarding-crepe.jpg' },
-  { label: 'Savory Flurry Photo', value: '/img/onboarding-flurry.jpg' },
+  { label: 'Luxury Chocolate Gift Box Photo', value: '/img/social/gift-eid-box.jpg' },
 ];
 
 export async function load() {
@@ -171,9 +174,10 @@ function populateTargetOptions(type, selectedValue = '') {
   targetValueWrap.hidden = false;
   let opts = [];
   if (type === 'product') {
-    opts = menuItems
-      .filter((m) => m.available)
-      .map((m) => ({ value: String(m.id), label: `${m.name} (${m.category})` }));
+    opts = menuItems.map((m) => ({
+      value: String(m.id),
+      label: `${m.name} (${m.category})${m.available ? '' : ' [Hidden]'}`,
+    }));
   } else if (type === 'category') {
     const cats = [...new Set(menuItems.map((m) => m.category).filter(Boolean))];
     opts = cats.map((c) => ({ value: c, label: c }));
@@ -183,6 +187,9 @@ function populateTargetOptions(type, selectedValue = '') {
       { value: '16', label: '16-Piece Luxury Box ($30)' },
       { value: '25', label: '25-Piece Grand Box ($45)' },
     ];
+  }
+  if (selectedValue && !opts.some((o) => o.value === String(selectedValue))) {
+    opts.unshift({ value: String(selectedValue), label: `Current (${selectedValue})` });
   }
   targetValueSelect.innerHTML = opts
     .map((o) => `<option value="${esc(o.value)}">${esc(o.label)}</option>`)
@@ -223,16 +230,12 @@ function openOfferModal(offer = null) {
   offerDialog.showModal();
 }
 
-$('#of-image')?.addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  const urlVal = $('#of-image-url').value.trim();
-  setOfferPreview(file ? URL.createObjectURL(file) : urlVal ? mediaSrc(urlVal) : editingOffer?.image ? mediaSrc(editingOffer.image) : null);
-});
-
-$('#of-image-url')?.addEventListener('input', (e) => {
-  if ($('#of-image').files[0]) return;
-  const val = e.target.value.trim();
-  setOfferPreview(val ? mediaSrc(val) : editingOffer?.image ? mediaSrc(editingOffer.image) : null);
+bindImageInputs({
+  fileInput: $('#of-image'),
+  urlInput: $('#of-image-url'),
+  removeBox: $('#of-remove'),
+  getFallback: () => (editingOffer?.image ? mediaSrc(editingOffer.image) : null),
+  onPreview: setOfferPreview,
 });
 
 offerForm?.addEventListener('submit', async (e) => {

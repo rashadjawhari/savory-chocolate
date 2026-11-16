@@ -99,6 +99,9 @@ const MIGRATIONS = [
   migrateToVersion5,
   migrateToVersion6,
   migrateToVersion7,
+  migrateToVersion8,
+  migrateToVersion9,
+  migrateToVersion10,
 ];
 const LATEST = MIGRATIONS.length;
 
@@ -119,6 +122,293 @@ function backup(fromVersion) {
     db.exec(`VACUUM INTO '${target.replace(/'/g, "''")}'`);
     console.log(`Backed up the database to ${target} before upgrading it.`);
   }
+}
+
+// Version 8: infuse authentic media & products extracted from @savory.chocolate Instagram and Facebook.
+function migrateToVersion8() {
+  db.prepare(`
+    INSERT INTO settings (key, value) VALUES ('email', 'info@savory-chocolate.com')
+    ON CONFLICT(key) DO UPDATE SET value = CASE WHEN trim(value) = '' THEN 'info@savory-chocolate.com' ELSE value END
+  `).run();
+
+  db.prepare("UPDATE branches SET address = 'Khoury Center, Aley, Mount Lebanon' WHERE name = 'Aley' AND address = 'Aley, Mount Lebanon'").run();
+  db.prepare("UPDATE branches SET address = 'Main Road, Aramoun, Aley, Mount Lebanon' WHERE name = 'Aramoun' AND address = 'Aramoun, Aley, Mount Lebanon'").run();
+
+  const itemExists = db.prepare('SELECT id FROM menu_items WHERE name = ?');
+  const insertSocialItem = db.prepare(`
+    INSERT INTO menu_items (name, description, category, price_cents, compare_price_cents, featured, offer_badge, image, options, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const socialItems = [
+    [
+      'Dubai Kunafa Chocolate Crepe',
+      'Hand-rolled warm crepe filled with crispy roasted kataifi pastry and Lebanese pistachio cream, drenched in Belgian milk, dark and white chocolate ribbons.',
+      'Crepes & Waffles',
+      950,
+      1100,
+      1,
+      'VIRAL HIT · #1 REEL',
+      '/img/social/reel-dubai-crepe.jpg',
+      JSON.stringify([
+        { name: 'Drizzle Style', type: 'single', required: true, choices: [{ name: 'Triple Chocolate & Pistachio', price_cents: 0 }, { name: 'Dark 70% & Pistachio', price_cents: 50 }] },
+        { name: 'Extras', type: 'multi', required: false, choices: [{ name: 'Extra pistachio kunafa crunch', price_cents: 200 }, { name: 'Fresh strawberries', price_cents: 150 }] },
+      ]),
+      1,
+    ],
+    [
+      'London Layered Chocolate Cake',
+      'Signature multi-layered rich dark cocoa sponge stacked with silky chocolate mousse cream and poured warm Belgian ganache.',
+      'Signature Gateaux & Bakes',
+      850,
+      0,
+      1,
+      'TOP REEL',
+      '/img/social/reel-london-cake.jpg',
+      JSON.stringify([
+        { name: 'Portion', type: 'single', required: true, choices: [{ name: 'Generous Individual Slice', price_cents: 0 }, { name: 'Sharing Loaf (Serves 6–8)', price_cents: 1950 }] },
+      ]),
+      2,
+    ],
+    [
+      'Warm Frosted Cinnamon Rolls',
+      'Fresh, fluffy baked cinnamon swirl rolls warm from the Aley & Aramoun ovens with silky vanilla cream icing and salted caramel or Lotus drizzle.',
+      'Bakes',
+      550,
+      0,
+      1,
+      'NEW LAUNCH',
+      '/img/social/reel-cinnamon-rolls.jpg',
+      JSON.stringify([
+        { name: 'Glaze', type: 'single', required: true, choices: [{ name: 'Classic Cream & Caramel', price_cents: 0 }, { name: 'Lotus Biscoff Drizzle', price_cents: 100 }, { name: 'Belgian Chocolate Pour', price_cents: 100 }] },
+        { name: 'Pack Size', type: 'single', required: true, choices: [{ name: 'Single Warm Roll', price_cents: 0 }, { name: 'Box of 4 Warm Rolls', price_cents: 1400 }] },
+      ]),
+      3,
+    ],
+    [
+      'Pistachio Kunafa Stuffed Cookie',
+      'Thick soft-baked dark chocolate cookie stuffed with crunchy green pistachio kunafa cream and served with a dipping chocolate pot.',
+      'Bakes',
+      500,
+      0,
+      1,
+      'CHEF SPECIAL',
+      '/img/social/reel-kunafa-cookie.jpg',
+      JSON.stringify([
+        { name: 'Finish', type: 'single', required: false, choices: [{ name: 'Milk Chocolate & Pistachio Drip', price_cents: 0 }, { name: 'Double Dipping Chocolate Pot', price_cents: 150 }] },
+      ]),
+      4,
+    ],
+    [
+      'Dubai Pistachio Kunafa Éclair',
+      'Crisp golden choux pastry sliced open and generously filled with roasted kataifi pistachio cream and milk chocolate drizzle.',
+      'Signature Gateaux & Bakes',
+      550,
+      0,
+      0,
+      '',
+      '/img/social/ig-kunafa-eclair.jpg',
+      '[]',
+      5,
+    ],
+    [
+      'Kinder & Triple Chocolate Pancakes',
+      'Stack of fluffy golden buttermilk pancakes glazed in striped milk and white Belgian chocolate and crowned with Kinder Bueno.',
+      'Crepes & Waffles',
+      850,
+      0,
+      0,
+      '',
+      '/img/social/reel-pancakes.jpg',
+      JSON.stringify([
+        { name: 'Add-ons', type: 'multi', required: false, choices: [{ name: 'Fresh strawberries', price_cents: 150 }, { name: 'Vanilla gelato scoop', price_cents: 200 }] },
+      ]),
+      6,
+    ],
+    [
+      'Strawberry & Banana Belgian Crepe',
+      'Warm golden crepe topped with sliced strawberries, banana rounds, Chantilly cream rosettes, and rich melted Belgian chocolate.',
+      'Crepes & Waffles',
+      850,
+      0,
+      0,
+      '',
+      '/img/social/reel-strawberry-crepe.jpg',
+      '[]',
+      7,
+    ],
+    [
+      'Assorted Truffle & Cream Cups (4-Pack)',
+      'Chilled takeaway profiterole and truffle dessert verrines in Pistachio Cream, Lotus Biscoff, Dark Chocolate Hazelnut, and Tiramisu.',
+      'Chocolates & Bark',
+      1100,
+      0,
+      0,
+      '',
+      '/img/social/menu-dessert-cups.jpg',
+      '[]',
+      8,
+    ],
+    [
+      'Pistachio Crispy Waffle Stick',
+      'Golden crisp Belgian waffle baked on a stick, coated in vibrant pistachio cream and festive crunch toppings.',
+      'Crepes & Waffles',
+      650,
+      0,
+      0,
+      '',
+      '/img/social/menu-pistachio-waffle.jpg',
+      '[]',
+      9,
+    ],
+    [
+      'Eid & Celebration Foil Chocolate Box',
+      'Assortment of gold, silver and cocoa foil-wrapped Belgian praline squares presented in a ribbon-ready SAVORY Chocolate keepsake box.',
+      'Chocolates & Bark',
+      2400,
+      0,
+      0,
+      '',
+      '/img/social/gift-eid-box.jpg',
+      JSON.stringify([
+        { name: 'Assortment', type: 'single', required: true, choices: [{ name: 'Mixed Milk, Dark & Hazelnut Pralines', price_cents: 0 }, { name: 'Dark & Roasted Nut Reserve', price_cents: 300 }] },
+      ]),
+      10,
+    ],
+  ];
+
+  for (const row of socialItems) {
+    if (!itemExists.get(row[0])) insertSocialItem.run(...row);
+  }
+
+  // Upgrade existing menu item photos with real extracted SAVORY social media photography.
+  const setPhoto = db.prepare("UPDATE menu_items SET image = ? WHERE name = ? AND (image IS NULL OR image = '' OR image IN ('/img/onboarding-crepe.jpg', '/img/onboarding-flurry.jpg'))");
+  setPhoto.run('/img/social/reel-london-cake.jpg', 'Molten Chocolate Lava Crown');
+  setPhoto.run('/img/social/cake-heart-chocolate.jpg', 'Mirror-Glaze Orange & Dark Torte');
+  setPhoto.run('/img/social/ig-savory-box.jpg', 'Loaded Roasted Almond & Pistachio Bark');
+  setPhoto.run('/img/social/reel-strawberry-crepe.jpg', 'Triple Belgian Chocolate Crepe');
+  setPhoto.run('/img/social/reel-dubai-crepe.jpg', 'Pistachio & Kunafa Crunch Crepe');
+  setPhoto.run('/img/social/menu-icecream-cup.jpg', 'Savory Oreo & Brownie Flurry');
+  setPhoto.run('/img/social/menu-dessert-cups.jpg', 'Ferrero & Hazelnut Thick Shake');
+  setPhoto.run('/img/social/ig-kunafa-eclair.jpg', 'Belgian Chocolate Éclair');
+  setPhoto.run('/img/social/ig-savory-box.jpg', 'Smoked & Roasted Mixed Nuts');
+  setPhoto.run('/img/social/reel-london-cake.jpg', 'Chocolate fudge slice');
+  setPhoto.run('/img/social/cake-floral-pink.jpg', 'Carrot cake slice');
+  setPhoto.run('/img/social/ig-kunafa-cookie-drip.jpg', 'Brownie');
+  setPhoto.run('/img/social/reel-kunafa-cookie.jpg', 'Chocolate chip cookie');
+  setPhoto.run('/img/social/reel-sunday-boutique.jpg', 'Hot chocolate');
+
+  // Upgrade default onboarding slides to real @savory.chocolate Instagram Reels.
+  const hasOnlySeedSlides = db.prepare("SELECT COUNT(*) AS n FROM onboarding_slides WHERE media_url NOT LIKE '/img/onboarding-%'").get().n === 0;
+  if (hasOnlySeedSlides) {
+    db.prepare('DELETE FROM onboarding_slides').run();
+    const addSlide = db.prepare('INSERT INTO onboarding_slides (media_type, media_url, caption, available, sort_order) VALUES (?, ?, ?, 1, ?)');
+    addSlide.run('video', '/img/social/reel-dubai-crepe.mp4', 'Dubai Chocolate Crepe · @savory.chocolate', 0);
+    addSlide.run('video', '/img/social/reel-london-cake.mp4', 'London Layered Chocolate Cake · Aley & Aramoun', 1);
+    addSlide.run('video', '/img/social/reel-cinnamon-rolls.mp4', 'Warm Frosted Cinnamon Rolls · New Launch', 2);
+    addSlide.run('video', '/img/social/reel-kunafa-cookie.mp4', 'Pistachio Kunafa Stuffed Cookies', 3);
+    addSlide.run('video', '/img/social/reel-strawberry-crepe.mp4', 'Strawberry & Banana Belgian Crepe', 4);
+  }
+
+  // Refresh default offers slider to showcase real social hits and link directly to their products.
+  const hasOnlySeedOffers = db.prepare("SELECT COUNT(*) AS n FROM offers WHERE image NOT LIKE '/img/onboarding-%'").get().n === 0;
+  if (hasOnlySeedOffers) {
+    db.prepare('DELETE FROM offers').run();
+    const dubaiCrepe = itemExists.get('Dubai Kunafa Chocolate Crepe');
+    const londonCake = itemExists.get('London Layered Chocolate Cake');
+    const cinnamonRolls = itemExists.get('Warm Frosted Cinnamon Rolls');
+    const addOffer = db.prepare(`
+      INSERT INTO offers (title, subtitle, badge, image, cta_text, target_type, target_value, available, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
+    `);
+    addOffer.run(
+      'Dubai Kunafa Chocolate Crepe',
+      'Our #1 trending Instagram Reel creation — crisp pistachio kunafa wrapped in warm crepe and triple Belgian chocolate.',
+      'VIRAL HIT · #1 REEL',
+      '/img/social/reel-dubai-crepe.jpg',
+      'Order Crepe',
+      dubaiCrepe ? 'product' : 'category',
+      dubaiCrepe ? String(dubaiCrepe.id) : 'Crepes & Waffles',
+      0,
+    );
+    addOffer.run(
+      'London Layered Chocolate Cake',
+      'Because one layer of Belgian chocolate is never enough — velvety sponge, mousse and warm ganache pour.',
+      'CHEF SIGNATURE',
+      '/img/social/reel-london-cake.jpg',
+      'Order London Cake',
+      londonCake ? 'product' : 'category',
+      londonCake ? String(londonCake.id) : 'Signature Gateaux & Bakes',
+      1,
+    );
+    addOffer.run(
+      'Warm Frosted Cinnamon Rolls',
+      'Now baked fresh daily across both Aley and Aramoun branches — glazed warm with cream icing and caramel.',
+      'NEW LAUNCH',
+      '/img/social/reel-cinnamon-rolls.jpg',
+      'Order Cinnamon Rolls',
+      cinnamonRolls ? 'product' : 'category',
+      cinnamonRolls ? String(cinnamonRolls.id) : 'Bakes',
+      2,
+    );
+    addOffer.run(
+      'SAVORY Gift Boxes & Foil Assortments',
+      'Curate 9, 16, or 25 artisan chocolates with a hand-tied satin ribbon for Eid, visits and celebrations.',
+      'LUXURY GIFTING',
+      '/img/social/gift-eid-box.jpg',
+      'Curate a Box',
+      'box',
+      '16',
+      3,
+    );
+  }
+
+  // Populate Gallery with SAVORY's real custom cakes & storefront creations if empty.
+  if (db.prepare('SELECT COUNT(*) AS n FROM gallery_images').get().n === 0) {
+    const addGallery = db.prepare('INSERT INTO gallery_images (image, caption, sort_order) VALUES (?, ?, ?)');
+    [
+      ['/img/social/cake-heart-chocolate.jpg', 'Hand-glazed dark chocolate heart cake with gold piping', 0],
+      ['/img/social/cake-floral-pink.jpg', 'Artisan blush buttercream ruffle celebration cake', 1],
+      ['/img/social/gift-eid-box.jpg', 'Signature foil-wrapped Belgian chocolates in a SAVORY gift box', 2],
+      ['/img/social/cake-strawberry-hearts.jpg', 'Fresh strawberry & Chantilly celebration cake', 3],
+      ['/img/social/cake-valentine-ribbons.jpg', 'Satin-ribbon heart celebration cake', 4],
+      ['/img/social/cake-red-velvet-heart.jpg', 'Three-layer Red Velvet heart cake with cream cheese frosting', 5],
+      ['/img/social/cake-unicorn-tiers.jpg', 'Four-tier pastel unicorn celebration cake', 6],
+      ['/img/social/cake-butterfly-lavender.jpg', 'Lavender & blush buttercream rosette celebration cake', 7],
+      ['/img/social/menu-dessert-cups.jpg', 'Assorted profiterole & truffle cups: Pistachio, Lotus & Tiramisu', 8],
+      ['/img/social/menu-donuts-platter.jpg', 'Pastel glazed artisan celebration donuts', 9],
+      ['/img/social/menu-pistachio-waffle.jpg', 'Pistachio cream crisp waffle stick', 10],
+      ['/img/social/shop-aley-boutique.jpg', 'Inside the SAVORY Chocolate boutique in Aley', 11],
+    ].forEach(([img, cap, order]) => addGallery.run(img, cap, order));
+  }
+}
+
+// Version 9: refine photo-to-caption match in gallery and mixed nuts packaging photo.
+function migrateToVersion9() {
+  db.prepare(`
+    UPDATE gallery_images
+    SET caption = 'Lavender & blush buttercream rosette celebration cake'
+    WHERE image = '/img/social/cake-butterfly-lavender.jpg'
+      AND caption = 'Lavender rosette & butterfly floral cake'
+  `).run();
+
+  db.prepare(`
+    UPDATE menu_items
+    SET image = '/img/social/ig-savory-box.jpg'
+    WHERE name = 'Smoked & Roasted Mixed Nuts'
+      AND image = '/img/social/gift-eid-box.jpg'
+  `).run();
+}
+
+// Version 10: keep onboarding background stage 100% looping video reels.
+function migrateToVersion10() {
+  db.prepare(`
+    UPDATE onboarding_slides
+    SET media_type = 'video',
+        media_url = '/img/social/reel-strawberry-crepe.mp4',
+        caption = 'Strawberry & Banana Belgian Crepe'
+    WHERE media_url = '/img/social/gift-eid-box.jpg'
+  `).run();
 }
 
 // Version 7: featured item flags on menu_items, admin-managed offers slider, and onboarding background media slides.
@@ -554,7 +844,7 @@ export const DEFAULT_SETTINGS = {
   about_story: 'SAVORY is a chocolate and sweets maker in Aramoun, in the Aley district of Mount Lebanon.\n\nWe make chocolates, ice cream, éclairs and cakes, from classic gateaux to custom designs. Tell us your idea, or leave the design to our chef.\n\nFor weddings, baby showers and every kind of celebration we prepare wrapped chocolate favors, and during Ramadan and Eid you\'ll find Arabic sweets alongside our chocolates.\n\nCome and visit us in Aramoun, or send us a message on WhatsApp.',
   phone: '05 411 405',
   whatsapp: '+961 79 167 464',
-  email: '',
+  email: 'info@savory-chocolate.com',
   address: 'Aramoun, Aley\nMount Lebanon, Lebanon',
   maps_link: 'https://maps.google.com/?cid=4880834083851702817',
   hours: 'Call or WhatsApp us for today\'s opening hours.',

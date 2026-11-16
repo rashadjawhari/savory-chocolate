@@ -1,5 +1,5 @@
-import { $, esc, money, isoDate, friendlyTime, adminApi, toast, errorBlock, emptyCard } from './core.js';
-import { playKitchenChime, toggleSound } from '/js/audio.js';
+import { $, esc, money, isoDate, friendlyTime, parseUtcDate, adminApi, toast, errorBlock, emptyCard } from './core.js';
+import { playKitchenChime, toggleSound, isSoundEnabled, setSoundEnabled } from '/js/audio.js';
 
 const FILTERS = [
   ['active', 'Active'], ['new', 'New'], ['confirmed', 'Confirmed'], ['baking', 'In kitchen'], ['ready', 'Ready'],
@@ -20,11 +20,14 @@ const DETAIL_LABELS = {
 };
 
 let filter = 'active';
+let prevFilter = filter;
 let branchFilter = '';
 let orderSearch = '';
 let branchesLoaded = false;
 let currentOrders = [];
 let knownOrderIds = null;
+
+setSoundEnabled(isSoundEnabled());
 
 // Fills the branch filter once (only shown when there's more than one branch).
 async function loadBranchFilter() {
@@ -50,14 +53,16 @@ export async function load() {
   }
   const { counts } = data;
   const incoming = data.orders || [];
-  if (knownOrderIds !== null) {
+  const watchingLive = filter === 'active' || filter === 'new';
+  if (watchingLive && prevFilter === filter && knownOrderIds !== null) {
     const hasBrandNew = incoming.some((o) => !knownOrderIds.has(o.id) && (o.status === 'new' || o.status === 'confirmed'));
     if (hasBrandNew) {
       playKitchenChime();
       toast('🔔 New order arrived in the kitchen queue!');
     }
   }
-  knownOrderIds = new Set(incoming.map((o) => o.id));
+  prevFilter = filter;
+  knownOrderIds = watchingLive ? new Set(incoming.map((o) => o.id)) : null;
 
   let orders = branchFilter ? data.orders.filter((o) => o.branch === branchFilter) : data.orders;
   if (orderSearch) {
@@ -256,8 +261,8 @@ function orderCard(o) {
     </article>`;
 }
 
-function timeAgo(sqliteUtc) {
-  const then = new Date(sqliteUtc.replace(' ', 'T') + 'Z');
+function timeAgo(utcStamp) {
+  const then = parseUtcDate(utcStamp);
   const mins = Math.round((Date.now() - then) / 60000);
   if (mins < 1) return 'just now';
   if (mins < 60) return `${mins} min ago`;

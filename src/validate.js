@@ -118,7 +118,7 @@ export function whatsappNumber(value, label = 'WhatsApp number') {
 export function mediaPathOrUrl(value, label = 'Media link') {
   const s = text(value, label, { max: 500 });
   if (!s) return '';
-  if (/^\/img\/[a-zA-Z0-9._-]+$/.test(s)) return s;
+  if (/^\/img\/(?:[a-zA-Z0-9._-]+\/)*[a-zA-Z0-9._-]+$/.test(s) && !s.includes('..')) return s;
   if (/^[a-f0-9]+\.(jpg|png|webp|gif|heic|mp4|webm|mov)$/.test(s)) return s;
   if (/^https:\/\/[^\s"'<>]+$/.test(s)) return s;
   throw bad(`${label} must be an https:// link or preset /img/ path.`);

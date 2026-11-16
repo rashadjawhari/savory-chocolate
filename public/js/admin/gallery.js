@@ -1,4 +1,4 @@
-import { $, esc, adminApi, toast, busy, errorBlock, emptyCard } from './core.js';
+import { $, esc, mediaSrc, adminApi, toast, busy, errorBlock, emptyCard } from './core.js';
 
 let photos = [];
 
@@ -16,7 +16,7 @@ function render() {
   $('#gallery-list').innerHTML = photos.length
     ? `<div class="photo-grid">${photos.map((p) => `
         <div class="card photo">
-          <img src="/uploads/${esc(p.image)}" alt="${esc(p.caption)}" loading="lazy">
+          <img src="${esc(mediaSrc(p.image))}" alt="${esc(p.caption)}" loading="lazy">
           <div class="photo-body">
             <input type="text" value="${esc(p.caption)}" maxlength="200" placeholder="Add a caption" data-caption="${p.id}" aria-label="Caption">
             <button type="button" class="icon-btn" data-delete="${p.id}" aria-label="Delete photo" title="Delete photo">✕</button>

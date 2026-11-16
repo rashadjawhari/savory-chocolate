@@ -93,6 +93,17 @@
       <div class="at-strip" id="gallery-strip"></div>
     </section>
 
+    <section class="at-section at-wrap at-rule" id="reels-section" aria-labelledby="reels-title">
+      <div class="at-section-head">
+        <div>
+          <p class="at-kicker" data-i18n="reels_kicker">Live from Instagram</p>
+          <h2 class="at-h2" id="reels-title" data-i18n="reels_title">@savory.chocolate Reels</h2>
+        </div>
+        {{#instagram}}<a class="at-link" href="{{instagram}}" target="_blank" rel="noopener" data-i18n="reels_follow">Follow @{{instagram_handle}}</a>{{/instagram}}
+      </div>
+      <div class="reels-grid" id="reels-grid"></div>
+    </section>
+
     <section class="at-visit" id="visit" aria-labelledby="visit-title">
       <div class="at-wrap at-visit-inner">
         <div class="at-visit-intro">

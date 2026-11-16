@@ -33,7 +33,11 @@ export function setSoundEnabled(enabled) {
       btn.setAttribute('aria-pressed', String(enabled));
       btn.classList.toggle('muted', !enabled);
       const label = btn.querySelector('.sound-label');
-      if (label) label.textContent = enabled ? 'Sound On' : 'Sound Off';
+      if (label) {
+        label.textContent = enabled
+          ? (btn.dataset.soundOn || 'Sound On')
+          : (btn.dataset.soundOff || 'Sound Off');
+      }
     });
   } catch {}
 }

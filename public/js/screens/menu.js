@@ -1,10 +1,11 @@
 import {
-  api, esc, money, storage, isoDate, loadSettings, setupFulfillment, deliveryFee, reveal,
+  api, esc, mediaSrc, money, storage, isoDate, loadSettings, setupFulfillment, deliveryFee, reveal,
   setupBranches, orderConfirmation, openWhatsApp, applyLanguage,
 } from '/js/common.js';
 import { illustrationFor } from '/js/illustrations.js';
 import { confetti } from '/js/confetti.js';
 import { playClick, playPop, playCelebration } from '/js/audio.js';
+import { mountReelsStrip } from '/js/social-reels.js';
 
 const CART_KEY = 'sc_cart_v2';
 
@@ -58,13 +59,6 @@ const CATEGORY_META = {
 
 const DEFAULT_CATEGORY_ICON = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
 
-function mediaSrc(value) {
-  const raw = String(value ?? '').trim();
-  if (!raw) return '';
-  if (raw.startsWith('/') || /^https?:\/\//i.test(raw)) return raw;
-  return `/uploads/${raw}`;
-}
-
 function isVideoSlide(slide) {
   return slide?.media_type === 'video' || /\.(mp4|webm|mov)(\?.*)?$/i.test(String(slide?.media_url || ''));
 }
@@ -98,6 +92,8 @@ const sliderDots = document.getElementById('slider-dots');
 
 const categoriesSection = document.getElementById('categories-section');
 const boxBanner = document.getElementById('box-banner');
+const menuReelsSection = document.getElementById('menu-reels-section');
+const menuReelsGrid = document.getElementById('menu-reels-grid');
 
 const breadcrumb = document.getElementById('menu-breadcrumb');
 const bcSepCat = document.getElementById('bc-sep-cat');
@@ -140,12 +136,51 @@ const form = document.getElementById('checkout-form');
 const submitBtn = document.getElementById('submit-btn');
 const errorBox = document.getElementById('form-error');
 
+let dataLoaded = false;
+let userLeftOnboardingEarly = false;
+let onboardIdx = 0;
+let onboardTimer = null;
+let onboardSlideEls = [];
+let onboardDotEls = [];
+let currentCategory = null;
+let currentProduct = null;
+let currentProductPicks = [];
+let currentProductQty = 1;
+
+function pauseOnboardingMedia() {
+  clearTimeout(onboardTimer);
+  onboardTimer = null;
+  onboardSlideEls.forEach((el) => el.querySelector('video')?.pause());
+  onboardingBg?.querySelectorAll('video').forEach((v) => v.pause());
+}
+
+function navigateToMenuHome() {
+  if (window.location.hash !== '#menu') {
+    window.location.hash = '#menu';
+  }
+  if (dataLoaded) {
+    showMenuHomeView();
+  } else {
+    userLeftOnboardingEarly = true;
+    enterStorefrontShell({ isCart: false, showVisit: true });
+    if (foldersGrid) {
+      foldersGrid.innerHTML = '<div class="menu-loading"><span class="spinner" aria-hidden="true"></span> Loading menu…</div>';
+    }
+  }
+}
+
+document.getElementById('order-now-btn')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  navigateToMenuHome();
+});
+
 // Avoid onboarding flash on direct deep-link navigation (e.g. /#menu, /#category/..., /#cart).
 const initialHash = window.location.hash.trim();
 if (initialHash && initialHash !== '#welcome') {
   document.body.classList.remove('is-onboarding');
   if (viewOnboarding) viewOnboarding.hidden = true;
   if (storefrontShell) storefrontShell.hidden = false;
+  pauseOnboardingMedia();
   if (initialHash === '#cart') {
     document.body.classList.add('is-cart-page');
     [viewMenu, viewCategory, viewProduct, viewCart].forEach((el) => {
@@ -253,32 +288,80 @@ if (onboardingSlogan) {
 
 const activeOnboardingSlides = onboardingSlides.length
   ? onboardingSlides
-  : [{ media_type: 'image', media_url: '/img/onboarding-box.jpg', caption: 'Handcrafted in Aramoun & Aley' }];
+  : [{ media_type: 'video', media_url: '/img/social/reel-dubai-crepe.mp4', caption: 'Dubai Chocolate Crepe · @savory.chocolate' }];
 
-let onboardIdx = 0;
-let onboardTimer = null;
-let onboardSlideEls = [];
-let onboardDotEls = [];
+function posterForVideo(srcUrl) {
+  return /\/img\/social\/reel-[^/?#]+\.(mp4|webm|mov)(\?.*)?$/i.test(srcUrl)
+    ? srcUrl.replace(/\.(mp4|webm|mov)(\?.*)?$/i, '.jpg')
+    : '/img/social/reel-dubai-crepe.jpg';
+}
+
+function ensureVideoPlaying(vid) {
+  if (!vid) return;
+  vid.muted = true;
+  vid.defaultMuted = true;
+  vid.loop = true;
+  vid.autoplay = true;
+  vid.playsInline = true;
+  const attempt = () => { vid.play().catch(() => {}); };
+  if (vid.readyState >= 2) {
+    attempt();
+  } else {
+    vid.addEventListener('canplay', attempt, { once: true });
+    attempt();
+  }
+}
+
+function buildOnboardingVideo(srcUrl, eager = false) {
+  const video = document.createElement('video');
+  video.muted = true;
+  video.defaultMuted = true;
+  video.loop = true;
+  video.autoplay = true;
+  video.playsInline = true;
+  video.setAttribute('playsinline', '');
+  video.setAttribute('muted', '');
+  video.setAttribute('autoplay', '');
+  video.setAttribute('loop', '');
+  video.preload = eager ? 'auto' : 'metadata';
+  video.poster = posterForVideo(srcUrl);
+  video.src = srcUrl;
+  return video;
+}
 
 function setupOnboardingMedia() {
   if (!onboardingBg) return;
-  onboardingBg.innerHTML = '';
+  const initialWrap = onboardingBg.querySelector('[data-initial-video]');
+  const initialVid = initialWrap?.querySelector('video');
+  const firstSlide = activeOnboardingSlides[0];
+  const firstSrc = mediaSrc(firstSlide?.media_url);
+  const canReuseInitial = Boolean(
+    initialWrap && initialVid && isVideoSlide(firstSlide)
+    && initialVid.getAttribute('src') === firstSrc,
+  );
+
+  if (canReuseInitial) {
+    onboardingBg.querySelectorAll('.onboarding-slide:not([data-initial-video])').forEach((el) => el.remove());
+  } else {
+    onboardingBg.innerHTML = '';
+  }
+
   onboardSlideEls = activeOnboardingSlides.map((slide, i) => {
+    const srcUrl = mediaSrc(slide.media_url);
+    if (i === 0 && canReuseInitial) {
+      initialWrap.className = 'onboarding-slide is-active';
+      initialVid.poster = posterForVideo(srcUrl);
+      ensureVideoPlaying(initialVid);
+      return initialWrap;
+    }
+
     const wrap = document.createElement('div');
     wrap.className = `onboarding-slide${i === 0 ? ' is-active' : ''}`;
     if (isVideoSlide(slide)) {
-      const video = document.createElement('video');
-      video.muted = true;
-      video.defaultMuted = true;
-      video.loop = true;
-      video.playsInline = true;
-      video.setAttribute('playsinline', '');
-      video.setAttribute('muted', '');
-      video.preload = 'metadata';
-      video.src = mediaSrc(slide.media_url);
+      const video = buildOnboardingVideo(srcUrl, i <= 1);
       video.addEventListener('error', () => {
         const fallback = document.createElement('img');
-        fallback.src = '/img/onboarding-box.jpg';
+        fallback.src = posterForVideo(srcUrl);
         fallback.alt = '';
         wrap.innerHTML = '';
         wrap.append(fallback);
@@ -286,7 +369,7 @@ function setupOnboardingMedia() {
       wrap.append(video);
     } else {
       const img = document.createElement('img');
-      img.src = mediaSrc(slide.media_url);
+      img.src = srcUrl;
       img.alt = '';
       img.decoding = 'async';
       wrap.append(img);
@@ -305,21 +388,30 @@ function setupOnboardingMedia() {
   }
 }
 
-function setOnboardingSlide(nextIdx) {
+function setOnboardingSlide(nextIdx, { preservePlaying = false } = {}) {
   if (!onboardSlideEls.length) return;
   onboardIdx = ((nextIdx % onboardSlideEls.length) + onboardSlideEls.length) % onboardSlideEls.length;
+  const upcomingIdx = (onboardIdx + 1) % onboardSlideEls.length;
+
+  if (onboardingBg) {
+    onboardingBg.style.transition = '';
+    onboardingBg.style.transform = `translate3d(-${onboardIdx * 100}%, 0, 0)`;
+  }
 
   onboardSlideEls.forEach((el, i) => {
     const active = i === onboardIdx;
     el.classList.toggle('is-active', active);
     const vid = el.querySelector('video');
-    if (vid) {
-      if (active && document.body.classList.contains('is-onboarding') && !document.hidden) {
+    if (!vid) return;
+    if (i === upcomingIdx && vid.preload !== 'auto') vid.preload = 'auto';
+    if (active && document.body.classList.contains('is-onboarding') && !document.hidden) {
+      vid.preload = 'auto';
+      if (!(preservePlaying && !vid.paused) && vid.readyState >= 1) {
         vid.currentTime = 0;
-        vid.play().catch(() => {});
-      } else {
-        vid.pause();
       }
+      ensureVideoPlaying(vid);
+    } else {
+      vid.pause();
     }
   });
 
@@ -352,22 +444,112 @@ function scheduleOnboardingAdvance() {
   }, delay);
 }
 
-function pauseOnboardingMedia() {
-  clearTimeout(onboardTimer);
-  onboardTimer = null;
-  onboardSlideEls.forEach((el) => el.querySelector('video')?.pause());
-}
-
 function resumeOnboardingMedia() {
   if (!onboardSlideEls.length) return;
-  setOnboardingSlide(onboardIdx);
+  setOnboardingSlide(onboardIdx, { preservePlaying: true });
 }
 
 onboardingDots?.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-onboard-slide]');
   if (!btn) return;
+  e.stopPropagation();
   setOnboardingSlide(Number(btn.dataset.onboardSlide));
 });
+
+document.getElementById('onboard-prev')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  setOnboardingSlide(onboardIdx - 1);
+});
+
+document.getElementById('onboard-next')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  setOnboardingSlide(onboardIdx + 1);
+});
+
+document.addEventListener('keydown', (e) => {
+  if (!document.body.classList.contains('is-onboarding') || onboardSlideEls.length <= 1) return;
+  if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    setOnboardingSlide(onboardIdx - 1);
+  } else if (e.key === 'ArrowRight') {
+    e.preventDefault();
+    setOnboardingSlide(onboardIdx + 1);
+  }
+});
+
+// Touch swipe & pointer drag left/right on onboarding video stage
+let onboardTouchStartX = 0;
+let onboardTouchStartY = 0;
+let onboardTouchDeltaX = 0;
+let onboardTouchActive = false;
+
+const startOnboardingDrag = (clientX, clientY, target) => {
+  if (target?.closest?.('a, button') || onboardSlideEls.length <= 1) return;
+  onboardTouchStartX = clientX;
+  onboardTouchStartY = clientY;
+  onboardTouchDeltaX = 0;
+  onboardTouchActive = true;
+  clearTimeout(onboardTimer);
+};
+
+const moveOnboardingDrag = (clientX, clientY) => {
+  if (!onboardTouchActive || !onboardingBg) return;
+  const dx = clientX - onboardTouchStartX;
+  const dy = clientY - onboardTouchStartY;
+  if (Math.abs(dy) > Math.abs(dx) && Math.abs(onboardTouchDeltaX) < 10) {
+    onboardTouchActive = false;
+    return;
+  }
+  onboardTouchDeltaX = dx;
+  if (Math.abs(dx) > 6) {
+    onboardingBg.style.transition = 'none';
+    onboardingBg.style.transform = `translate3d(calc(-${onboardIdx * 100}% + ${dx}px), 0, 0)`;
+  }
+};
+
+const finishOnboardingSwipe = () => {
+  if (!onboardTouchActive) return;
+  onboardTouchActive = false;
+  const dx = onboardTouchDeltaX;
+  onboardTouchDeltaX = 0;
+  if (onboardingBg) onboardingBg.style.transition = '';
+  if (dx < -32) {
+    setOnboardingSlide(onboardIdx + 1);
+  } else if (dx > 32) {
+    setOnboardingSlide(onboardIdx - 1);
+  } else {
+    setOnboardingSlide(onboardIdx, { preservePlaying: true });
+  }
+};
+
+viewOnboarding?.addEventListener('touchstart', (e) => {
+  const t = e.touches[0];
+  if (t) startOnboardingDrag(t.clientX, t.clientY, e.target);
+}, { passive: true });
+
+viewOnboarding?.addEventListener('touchmove', (e) => {
+  const t = e.touches[0];
+  if (t) moveOnboardingDrag(t.clientX, t.clientY);
+}, { passive: true });
+
+viewOnboarding?.addEventListener('touchend', finishOnboardingSwipe, { passive: true });
+viewOnboarding?.addEventListener('touchcancel', finishOnboardingSwipe, { passive: true });
+
+viewOnboarding?.addEventListener('pointerdown', (e) => {
+  if (e.pointerType === 'touch') return;
+  startOnboardingDrag(e.clientX, e.clientY, e.target);
+});
+
+viewOnboarding?.addEventListener('pointermove', (e) => {
+  if (e.pointerType === 'touch' || !onboardTouchActive) return;
+  moveOnboardingDrag(e.clientX, e.clientY);
+});
+
+viewOnboarding?.addEventListener('pointerup', (e) => {
+  if (e.pointerType === 'touch') return;
+  finishOnboardingSwipe();
+});
+viewOnboarding?.addEventListener('pointercancel', finishOnboardingSwipe);
 
 setupOnboardingMedia();
 
@@ -385,22 +567,15 @@ let sliderHoverPaused = false;
 function buildSliderCard(entry) {
   if (entry.kind === 'offer') {
     const o = entry.data;
-    const badgeText = o.badge || 'LIMITED OFFER';
     const targetProduct = o.target_type === 'product' ? itemsById.get(Number(o.target_value)) : null;
-    const priceSnippet = targetProduct
-      ? `<div class="slider-price-row">
-           ${targetProduct.compare_price_cents > targetProduct.price_cents ? `<del class="slider-compare-price">${money(targetProduct.compare_price_cents)}</del>` : ''}
-           <span class="slider-live-price">${money(targetProduct.price_cents)}</span>
-         </div>`
-      : '';
 
-    let ctaHtml = `<a href="#categories-section" class="btn btn-gold slider-cta-btn">${esc(o.cta_text || 'Explore')} <span class="arrow" aria-hidden="true">→</span></a>`;
+    let actionAttr = 'data-slider-href="#categories-section"';
     if (o.target_type === 'product' && targetProduct) {
-      ctaHtml = `<a href="#product/${targetProduct.id}" class="btn btn-gold slider-cta-btn" data-open-product="${targetProduct.id}">${esc(o.cta_text || 'View Product')} <span class="arrow" aria-hidden="true">→</span></a>`;
+      actionAttr = `data-open-product="${targetProduct.id}"`;
     } else if (o.target_type === 'category' && o.target_value) {
-      ctaHtml = `<a href="#category/${encodeURIComponent(o.target_value)}" class="btn btn-gold slider-cta-btn">${esc(o.cta_text || 'Explore Category')} <span class="arrow" aria-hidden="true">→</span></a>`;
+      actionAttr = `data-slider-href="#category/${encodeURIComponent(o.target_value)}"`;
     } else if (o.target_type === 'box') {
-      ctaHtml = `<button type="button" class="btn btn-gold slider-cta-btn" data-open-offer-box="${esc(o.target_value || '9')}">${esc(o.cta_text || 'Curate a Box')} <span class="arrow" aria-hidden="true">→</span></button>`;
+      actionAttr = `data-open-offer-box="${esc(o.target_value || '9')}"`;
     }
 
     const visualHtml = o.image
@@ -410,20 +585,13 @@ function buildSliderCard(entry) {
         : `<img src="/img/onboarding-box.jpg" alt="${esc(o.title)}" loading="eager">`;
 
     return `
-      <article class="slider-slide">
-        <div class="slider-slide-copy">
-          <div class="slider-badge-row">
-            <span class="slider-badge">${esc(badgeText)}</span>
-          </div>
-          <h3>${esc(o.title)}</h3>
-          ${o.subtitle ? `<p class="slider-slide-desc">${esc(o.subtitle)}</p>` : ''}
-          ${priceSnippet}
-          <div class="slider-actions">
-            ${ctaHtml}
-          </div>
-        </div>
+      <article class="slider-slide" role="button" tabindex="0" ${actionAttr} aria-label="${esc(o.title)}">
         <div class="slider-slide-media">
           ${visualHtml}
+        </div>
+        <div class="slider-slide-copy">
+          <h3>${esc(o.title)}</h3>
+          ${targetProduct ? `<span class="slider-live-price">${money(targetProduct.price_cents)}</span>` : ''}
         </div>
       </article>`;
   }
@@ -431,40 +599,33 @@ function buildSliderCard(entry) {
   const item = entry.data;
   const from = item.options.length && fromPrice(item) !== item.price_cents;
   const displayPrice = from ? fromPrice(item) : item.price_cents;
-  const canQuickAdd = ordersOpen && !item.options.some((g) => g.required);
-  const badgeText = item.offer_badge || "★ Chef's Signature";
 
   return `
-    <article class="slider-slide">
-      <div class="slider-slide-copy">
-        <div class="slider-badge-row">
-          <span class="slider-badge">${esc(badgeText)}</span>
-          <span class="slider-cat-pill">${esc(item.category)}</span>
-        </div>
-        <h3>${esc(item.name)}</h3>
-        ${item.description ? `<p class="slider-slide-desc">${esc(item.description)}</p>` : ''}
-        <div class="slider-price-row">
-          ${item.compare_price_cents > item.price_cents ? `<del class="slider-compare-price">${money(item.compare_price_cents)}</del>` : ''}
-          <span class="slider-live-price">${from ? '<small>from </small>' : ''}${money(displayPrice)}</span>
-        </div>
-        <div class="slider-actions">
-          <a href="#product/${item.id}" class="btn btn-gold slider-cta-btn" data-open-product="${item.id}">
-            <span>View &amp; Customize</span>
-            <span class="arrow" aria-hidden="true">→</span>
-          </a>
-          ${canQuickAdd ? `<button type="button" class="btn slider-quick-btn" data-add-quick="${item.id}">+ Quick Add</button>` : ''}
-        </div>
-      </div>
+    <article class="slider-slide" role="button" tabindex="0" data-open-product="${item.id}" aria-label="${esc(item.name)}">
       <div class="slider-slide-media">
         ${item.image ? `<img src="${esc(mediaSrc(item.image))}" alt="${esc(item.name)}" loading="eager">` : illustrationFor(item)}
       </div>
+      <div class="slider-slide-copy">
+        <h3>${esc(item.name)}</h3>
+        <span class="slider-live-price">${money(displayPrice)}</span>
+      </div>
     </article>`;
+}
+
+function getSliderStepPx() {
+  const firstSlide = sliderTrack?.querySelector('.slider-slide');
+  if (!firstSlide) return 240;
+  const style = window.getComputedStyle(sliderTrack);
+  const gap = parseFloat(style.columnGap || style.gap || '18') || 18;
+  return firstSlide.getBoundingClientRect().width + gap;
 }
 
 function setSliderIndex(idx) {
   if (!sliderSlides.length || !sliderTrack) return;
   sliderIdx = ((idx % sliderSlides.length) + sliderSlides.length) % sliderSlides.length;
-  sliderTrack.style.transform = `translateX(-${sliderIdx * 100}%)`;
+  const stepPx = getSliderStepPx();
+  sliderTrack.style.transition = '';
+  sliderTrack.style.transform = `translate3d(-${sliderIdx * stepPx}px, 0, 0)`;
   sliderDots?.querySelectorAll('.slider-dot').forEach((d, i) => {
     const active = i === sliderIdx;
     d.classList.toggle('is-active', active);
@@ -505,57 +666,103 @@ function initFeaturedSlider() {
   featuredSliderEl.hidden = false;
   sliderTrack.innerHTML = sliderSlides.map(buildSliderCard).join('');
 
-  if (sliderSlides.length > 1) {
-    if (sliderDots) {
-      sliderDots.hidden = false;
-      sliderDots.innerHTML = sliderSlides.map((_, i) => `
-        <button type="button" class="slider-dot${i === 0 ? ' is-active' : ''}" data-slider-dot="${i}" role="tab" aria-selected="${i === 0 ? 'true' : 'false'}" aria-label="Show offer ${i + 1}"></button>
-      `).join('');
-    }
-    const controls = featuredSliderEl.querySelector('.slider-controls-group');
-    if (controls) controls.hidden = false;
-  } else {
-    if (sliderDots) sliderDots.hidden = true;
-    const controls = featuredSliderEl.querySelector('.slider-controls-group');
-    if (controls) controls.hidden = true;
+  const hasMultiple = sliderSlides.length > 1;
+  if (sliderPrev) sliderPrev.hidden = !hasMultiple;
+  if (sliderNext) sliderNext.hidden = !hasMultiple;
+  if (sliderDots) {
+    sliderDots.hidden = !hasMultiple;
+    sliderDots.innerHTML = hasMultiple
+      ? sliderSlides.map((_, i) => `
+          <button type="button" class="slider-dot${i === 0 ? ' is-active' : ''}" data-slider-dot="${i}" role="tab" aria-selected="${i === 0 ? 'true' : 'false'}" aria-label="Slide ${i + 1}">${String(i + 1).padStart(2, '0')}</button>
+        `).join('')
+      : '';
   }
 
   setSliderIndex(0);
 }
 
-sliderPrev?.addEventListener('click', () => {
+sliderPrev?.addEventListener('click', (e) => {
+  e.stopPropagation();
   setSliderIndex(sliderIdx - 1);
   startSliderAutoplay();
 });
-sliderNext?.addEventListener('click', () => {
+sliderNext?.addEventListener('click', (e) => {
+  e.stopPropagation();
   setSliderIndex(sliderIdx + 1);
   startSliderAutoplay();
 });
 sliderDots?.addEventListener('click', (e) => {
   const dot = e.target.closest('[data-slider-dot]');
   if (!dot) return;
+  e.stopPropagation();
   setSliderIndex(Number(dot.dataset.sliderDot));
   startSliderAutoplay();
 });
+
+window.addEventListener('resize', () => {
+  if (sliderSlides.length > 1 && !viewMenu?.hidden) {
+    setSliderIndex(sliderIdx);
+  }
+}, { passive: true });
 
 featuredSliderEl?.addEventListener('mouseenter', () => { sliderHoverPaused = true; stopSliderAutoplay(); });
 featuredSliderEl?.addEventListener('mouseleave', () => { sliderHoverPaused = false; startSliderAutoplay(); });
 featuredSliderEl?.addEventListener('focusin', () => { sliderHoverPaused = true; stopSliderAutoplay(); });
 featuredSliderEl?.addEventListener('focusout', () => { sliderHoverPaused = false; startSliderAutoplay(); });
 
-// Touch swipe support on slider viewport
+// Smooth touch & pointer drag support on slider viewport
 let swipeStartX = 0;
+let swipeStartY = 0;
+let swipeDeltaX = 0;
+let swipeDragging = false;
+
 sliderViewport?.addEventListener('touchstart', (e) => {
-  swipeStartX = e.changedTouches[0]?.clientX || 0;
+  if (sliderSlides.length <= 1) return;
+  const t = e.touches[0];
+  if (!t) return;
+  swipeStartX = t.clientX;
+  swipeStartY = t.clientY;
+  swipeDeltaX = 0;
+  swipeDragging = true;
+  stopSliderAutoplay();
 }, { passive: true });
-sliderViewport?.addEventListener('touchend', (e) => {
-  if (!swipeStartX || sliderSlides.length <= 1) return;
-  const dx = (e.changedTouches[0]?.clientX || 0) - swipeStartX;
-  swipeStartX = 0;
-  if (Math.abs(dx) < 42) return;
-  setSliderIndex(dx < 0 ? sliderIdx + 1 : sliderIdx - 1);
+
+sliderViewport?.addEventListener('touchmove', (e) => {
+  if (!swipeDragging || !sliderTrack) return;
+  const t = e.touches[0];
+  if (!t) return;
+  const dx = t.clientX - swipeStartX;
+  const dy = t.clientY - swipeStartY;
+  if (Math.abs(dy) > Math.abs(dx) && Math.abs(swipeDeltaX) < 10) {
+    swipeDragging = false;
+    return;
+  }
+  swipeDeltaX = dx;
+  if (Math.abs(dx) > 6) {
+    const basePx = sliderIdx * getSliderStepPx();
+    sliderTrack.style.transition = 'none';
+    sliderTrack.style.transform = `translate3d(${-basePx + dx}px, 0, 0)`;
+  }
+}, { passive: true });
+
+const finishSliderSwipe = () => {
+  if (!swipeDragging) return;
+  swipeDragging = false;
+  const dx = swipeDeltaX;
+  swipeDeltaX = 0;
+  if (sliderTrack) sliderTrack.style.transition = '';
+  if (dx < -34) {
+    setSliderIndex(sliderIdx + 1);
+  } else if (dx > 34) {
+    setSliderIndex(sliderIdx - 1);
+  } else {
+    setSliderIndex(sliderIdx);
+  }
   startSliderAutoplay();
-}, { passive: true });
+};
+
+sliderViewport?.addEventListener('touchend', finishSliderSwipe, { passive: true });
+sliderViewport?.addEventListener('touchcancel', finishSliderSwipe, { passive: true });
 
 initFeaturedSlider();
 
@@ -712,8 +919,15 @@ function renderCart() {
 
   // Sync header badge & onboarding utility cart pill
   if (headerCartCount) {
+    const prevCount = Number(headerCartCount.dataset.prevCount || '0');
     headerCartCount.textContent = String(count);
     headerCartCount.hidden = count === 0;
+    if (count > prevCount) {
+      headerCartCount.classList.remove('is-pop');
+      void headerCartCount.offsetWidth;
+      headerCartCount.classList.add('is-pop');
+    }
+    headerCartCount.dataset.prevCount = String(count);
   }
   if (onboardCartBtn && onboardCartCount) {
     onboardCartCount.textContent = String(count);
@@ -814,32 +1028,35 @@ clearCartBtn?.addEventListener('click', () => {
 
 // ---------- Stage & Screen Router Helpers ----------
 
-let currentCategory = null;
-let currentProduct = null;
-let currentProductPicks = [];
-let currentProductQty = 1;
-
 function syncNavHighlight(activeKey) {
-  const menuLink = document.querySelector('#site-nav [data-page="menu"]');
-  const cartLink = document.querySelector('#site-nav [data-nav-cart]');
-  if (menuLink) {
-    if (activeKey === 'menu') menuLink.setAttribute('aria-current', 'page');
-    else menuLink.removeAttribute('aria-current');
-  }
-  if (cartLink) {
-    if (activeKey === 'cart') cartLink.setAttribute('aria-current', 'page');
-    else cartLink.removeAttribute('aria-current');
-  }
+  document.querySelectorAll('#site-nav [data-nav-target]').forEach((link) => {
+    if (link.dataset.navTarget === activeKey) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  });
 }
 
-function enterStorefrontShell({ isCart = false, showVisit = false } = {}) {
+function triggerStageAnimation(el, className = 'is-stage-enter') {
+  if (!el || reducedMotion()) return;
+  el.classList.remove(className);
+  void el.offsetWidth;
+  el.classList.add(className);
+}
+
+function applyCardStagger(container, selector) {
+  if (!container) return;
+  container.querySelectorAll(selector).forEach((card, idx) => {
+    card.style.setProperty('--stagger-i', String(Math.min(idx, 12)));
+  });
+}
+
+function enterStorefrontShell({ isCart = false, showVisit = false, navKey = null } = {}) {
   document.body.classList.remove('is-onboarding');
   document.body.classList.toggle('is-cart-page', isCart);
   if (viewOnboarding) viewOnboarding.hidden = true;
   if (storefrontShell) storefrontShell.hidden = false;
   if (visitSection) visitSection.hidden = !showVisit;
   pauseOnboardingMedia();
-  syncNavHighlight(isCart ? 'cart' : 'menu');
+  syncNavHighlight(navKey || (isCart ? 'cart' : 'menu'));
 }
 
 function enterOnboardingScreen() {
@@ -852,15 +1069,30 @@ function enterOnboardingScreen() {
   window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
-function switchStageView(targetId, { scrollTop = true } = {}) {
+/** Pause any active Instagram Reel videos and reset card playing state when leaving the grid. */
+function pauseGridReels() {
+  if (!menuReelsSection) return;
+  menuReelsSection.querySelectorAll('video').forEach((v) => {
+    try { v.pause(); } catch {}
+  });
+  menuReelsSection.querySelectorAll('.reel-card.is-playing').forEach((card) => {
+    card.classList.remove('is-playing');
+  });
+}
+
+function switchStageView(targetId, { scrollTop = true, animate = true } = {}) {
   [viewMenu, viewCategory, viewProduct, viewCart].forEach((el) => {
-    if (el) el.hidden = el.id !== targetId;
+    if (!el) return;
+    const isTarget = el.id === targetId;
+    el.hidden = !isTarget;
+    if (isTarget && animate) triggerStageAnimation(el);
   });
 
   if (targetId === 'view-menu') {
     startSliderAutoplay();
   } else {
     stopSliderAutoplay();
+    pauseGridReels();
   }
 
   if (scrollTop) {
@@ -871,7 +1103,7 @@ function switchStageView(targetId, { scrollTop = true } = {}) {
 function updateBreadcrumbs(state) {
   if (!breadcrumb) return;
 
-  if (state.view === 'menu' || state.view === 'cart' || state.view === 'onboarding') {
+  if (state.view === 'menu' || state.view === 'cart' || state.view === 'onboarding' || state.view === 'product') {
     breadcrumb.hidden = true;
     return;
   }
@@ -887,15 +1119,6 @@ function updateBreadcrumbs(state) {
     bcSepProd.hidden = true;
     bcProd.hidden = true;
     bcProd.textContent = '';
-  } else if (state.view === 'product') {
-    bcSepCat.hidden = false;
-    bcCat.hidden = false;
-    bcCat.textContent = state.category;
-    bcCat.href = `#category/${encodeURIComponent(state.category)}`;
-    bcCat.classList.remove('bc-current');
-    bcSepProd.hidden = false;
-    bcProd.hidden = false;
-    bcProd.textContent = state.product.name;
   }
 }
 
@@ -910,53 +1133,54 @@ function getCategoryMap() {
   return categories;
 }
 
-function showMenuHomeView({ scrollTarget = null, scrollTop = true } = {}) {
-  enterStorefrontShell({ isCart: false, showVisit: true });
+function pickCategoryImage(catItems, usedImgs) {
+  const uniqueMatch = catItems.find((i) => i.image && !usedImgs.has(i.image));
+  const picked = uniqueMatch?.image || catItems.find((i) => i.image)?.image || '';
+  if (picked) usedImgs.add(picked);
+  return picked;
+}
+
+function showMenuHomeView({ scrollTarget = null, scrollTop = true, navKey = 'menu' } = {}) {
+  enterStorefrontShell({ isCart: false, showVisit: true, navKey });
   setSearchModeUI(false);
 
   if (foldersGrid) {
     const categories = getCategoryMap();
+    const usedImgs = new Set();
     const cardsHtml = [...categories.entries()].map(([catName, catItems]) => {
       const meta = CATEGORY_META[catName] || {
         desc: 'Handcrafted atelier specialties and gourmet recipes.',
         icon: DEFAULT_CATEGORY_ICON,
       };
+      const catImg = pickCategoryImage(catItems, usedImgs);
+      const visualHtml = catImg
+        ? `<img src="${esc(mediaSrc(catImg))}" alt="${esc(catName)}" loading="lazy">`
+        : `<div class="folder-icon">${meta.icon}</div>`;
       return `
         <a class="folder-card" href="#category/${encodeURIComponent(catName)}" data-nav-cat="${esc(catName)}">
-          <div class="folder-card-top">
-            <div class="folder-icon">${meta.icon}</div>
-            <span class="folder-count-badge">${catItems.length} item${catItems.length === 1 ? '' : 's'}</span>
-          </div>
-          <div>
+          <div class="folder-card-head">
             <h3 class="folder-title">${esc(catName)}</h3>
-            <p class="folder-desc">${esc(meta.desc)}</p>
           </div>
-          <div class="folder-action">
-            <span>Explore Category</span>
-            <span class="folder-arrow" aria-hidden="true">→</span>
+          <div class="folder-visual">
+            ${visualHtml}
           </div>
         </a>`;
     }).join('');
 
     const boxCardHtml = `
       <a class="folder-card folder-card-bespoke" href="#gift-box" id="folder-box-builder">
-        <div class="folder-card-top">
-          <div class="folder-icon folder-icon-bespoke">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13"/><path d="M3 12h18"/><path d="M12 8C10.5 5 8 5 8 6.5s2 1.5 4 1.5c2 0 4 0 4-1.5S13.5 5 12 8z"/></svg>
-          </div>
-          <span class="folder-count-badge folder-badge-bespoke">✦ Bespoke Studio</span>
-        </div>
-        <div>
+        <div class="folder-card-head">
           <h3 class="folder-title">Luxury Gift Boxes</h3>
-          <p class="folder-desc">Hand-pick 9, 16, or 25 artisan truffles in an embossed keepsake box with personalized satin ribbon.</p>
         </div>
-        <div class="folder-action">
-          <span>Build Your Box</span>
-          <span class="folder-arrow" aria-hidden="true">→</span>
+        <div class="folder-visual">
+          <div class="folder-icon folder-icon-bespoke">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13"/><path d="M3 12h18"/><path d="M12 8C10.5 5 8 5 8 6.5s2 1.5 4 1.5c2 0 4 0 4-1.5S13.5 5 12 8z"/></svg>
+          </div>
         </div>
       </a>`;
 
     foldersGrid.innerHTML = cardsHtml + boxCardHtml;
+    applyCardStagger(foldersGrid, '.folder-card');
   }
 
   updateBreadcrumbs({ view: 'menu' });
@@ -975,33 +1199,18 @@ function showMenuHomeView({ scrollTarget = null, scrollTop = true } = {}) {
 function renderRowCard(item) {
   const from = item.options.length && fromPrice(item) !== item.price_cents;
   const displayPrice = from ? fromPrice(item) : item.price_cents;
-  const badges = inferMenuBadges(item);
-  const optTag = item.options.length ? '✦ Customizable options' : '✦ Single portion';
-  const showCompare = item.compare_price_cents > item.price_cents;
+  const visualHtml = item.image
+    ? `<img src="${esc(mediaSrc(item.image))}" alt="${esc(item.name)}" loading="lazy">`
+    : `<div class="row-card-icon">${illustrationFor(item)}</div>`;
 
   return `
     <article class="menu-row-card" data-open-product="${item.id}" role="button" tabindex="0" aria-label="View ${esc(item.name)} details">
-      <div class="row-card-left">
-        <div class="row-card-title-row">
-          <h3 class="row-card-title">${esc(item.name)}</h3>
-          ${badges.length ? `<span class="menu-badge ${badges[0].cls}">${esc(badges[0].label)}</span>` : ''}
-        </div>
-        <p class="row-card-desc">${esc(item.description)}</p>
-        <div class="row-card-footer">
-          <span class="row-card-price">
-            ${showCompare ? `<del class="row-compare-price">${money(item.compare_price_cents)}</del>` : ''}
-            ${from ? '<span class="from">from</span>' : ''}${money(displayPrice)}
-          </span>
-          <span class="row-card-opt-tag">${optTag}</span>
-        </div>
+      <div class="row-card-head">
+        <h3 class="row-card-title" dir="auto">${esc(item.name)}</h3>
+        <span class="row-card-price" dir="ltr">${money(displayPrice)}</span>
       </div>
-      <div class="row-card-right">
-        <div class="row-card-thumb">
-          ${item.image ? `<img src="${esc(mediaSrc(item.image))}" alt="${esc(item.name)}" loading="lazy">` : illustrationFor(item)}
-        </div>
-        <button type="button" class="row-card-btn" data-open-product="${item.id}">
-          ${item.options.length ? 'Customize →' : 'Select →'}
-        </button>
+      <div class="row-card-visual">
+        ${visualHtml}
       </div>
     </article>`;
 }
@@ -1045,7 +1254,10 @@ function showCategoryView(catName) {
   }
 
   renderCategoryPills(catName);
-  if (categoryRowsList) categoryRowsList.innerHTML = catItems.map(renderRowCard).join('');
+  if (categoryRowsList) {
+    categoryRowsList.innerHTML = catItems.map(renderRowCard).join('');
+    applyCardStagger(categoryRowsList, '.menu-row-card');
+  }
 
   updateBreadcrumbs({ view: 'category', category: catName });
   switchStageView('view-category');
@@ -1073,24 +1285,18 @@ function showProductView(productId) {
   });
 
   if (prodBackCatName) prodBackCatName.textContent = item.category;
-  if (prodHeaderBadge) {
-    prodHeaderBadge.textContent = item.offer_badge ? `✦ ${item.offer_badge}` : '✦ SAVORY Signature';
-  }
 
-  const badges = inferMenuBadges(item);
   const showCompare = item.compare_price_cents > item.price_cents;
 
   const optionsHtml = item.options.map((g, gi) => {
     const isSingle = g.type === 'single';
-    const note = g.required
-      ? (isSingle ? 'Required · Pick 1' : 'Required · Choose any')
-      : (isSingle ? 'Optional · Pick 1' : 'Optional · Choose any');
+    const note = g.required ? 'Required' : 'Optional';
 
     if (isSingle) {
       return `
         <div class="option-group-box">
           <div class="option-group-title">
-            <span>${esc(g.name)}</span>
+            <span dir="auto">${esc(g.name)}</span>
             <span class="option-group-req">${note}</span>
           </div>
           <div class="variant-bubbles-wrap">
@@ -1099,8 +1305,8 @@ function showProductView(productId) {
                 None
               </button>` : ''}
             ${g.choices.map((c, ci) => `
-              <button type="button" class="variant-bubble-btn ${currentProductPicks[gi].includes(ci) ? 'active' : ''}" data-bubble-group="${gi}" data-bubble-choice="${ci}">
-                ${esc(c.name)} ${c.price_cents ? `(+${money(c.price_cents)})` : ''}
+              <button type="button" class="variant-bubble-btn ${currentProductPicks[gi].includes(ci) ? 'active' : ''}" data-bubble-group="${gi}" data-bubble-choice="${ci}" dir="auto">
+                <span>${esc(c.name)}</span>${c.price_cents ? ` <span dir="ltr">(+${money(c.price_cents)})</span>` : ''}
               </button>`).join('')}
           </div>
         </div>`;
@@ -1109,17 +1315,17 @@ function showProductView(productId) {
     return `
       <div class="option-group-box">
         <div class="option-group-title">
-          <span>${esc(g.name)}</span>
+          <span dir="auto">${esc(g.name)}</span>
           <span class="option-group-req">${note}</span>
         </div>
         <div class="addon-options-list">
           ${g.choices.map((c, ci) => `
             <label class="addon-option-row">
-              <span>
+              <span class="addon-option-left">
                 <input type="checkbox" data-addon-group="${gi}" data-addon-choice="${ci}" ${currentProductPicks[gi].includes(ci) ? 'checked' : ''}>
-                <span>${esc(c.name)}</span>
+                <span class="addon-option-name" dir="auto">${esc(c.name)}</span>
               </span>
-              <span class="addon-option-price">${c.price_cents ? `+${money(c.price_cents)}` : 'Included'}</span>
+              <span class="addon-option-price" dir="ltr">${c.price_cents ? `+${money(c.price_cents)}` : 'Included'}</span>
             </label>`).join('')}
         </div>
       </div>`;
@@ -1128,47 +1334,41 @@ function showProductView(productId) {
   productPageCard.innerHTML = `
     <div class="product-page-grid">
       <div class="product-page-visual">
-        <span class="choco-price-badge">PRICE<br><strong>${money(item.price_cents)}</strong></span>
         ${item.image ? `<img src="${esc(mediaSrc(item.image))}" alt="${esc(item.name)}">` : illustrationFor(item)}
       </div>
 
       <div class="product-page-body">
-        <div class="product-kicker">${esc(item.category)}</div>
-        <h2 class="product-page-title">${esc(item.name)}</h2>
-
-        <div class="product-page-price-row">
-          <span class="product-live-price" id="prod-live-price">${money(unitPrice(item, currentProductPicks) * currentProductQty)}</span>
-          ${showCompare ? `<del class="product-compare-price">${money(item.compare_price_cents)}</del>` : ''}
-          ${badges.map((b) => `<span class="menu-badge ${b.cls}">${esc(b.label)}</span>`).join('')}
+        <div class="product-page-head">
+          <h1 class="product-page-title" dir="auto">${esc(item.name)}</h1>
+          <div class="product-page-price-row" dir="ltr">
+            <span class="product-live-price" id="prod-live-price">${money(unitPrice(item, currentProductPicks) * currentProductQty)}</span>
+            ${showCompare ? `<del class="product-compare-price">${money(item.compare_price_cents)}</del>` : ''}
+          </div>
         </div>
 
-        <p class="product-page-desc">${esc(item.description)}</p>
-
-        <div class="product-tasting-box">
-          <strong>✦ Tasting Note:</strong> ${esc(inferPairing(item))}
-        </div>
+        ${item.description ? `<p class="product-page-desc" dir="auto">${esc(item.description)}</p>` : ''}
 
         <div id="product-options-root">
           ${optionsHtml}
         </div>
 
         <div class="option-group-box option-group-note">
-          <label for="prod-note-input" class="option-group-title" style="margin-bottom:6px;">
-            <span>Special Requests &amp; Notes</span>
+          <label for="prod-note-input" class="option-group-title">
+            <span>Special Requests</span>
             <span class="option-group-req">Optional</span>
           </label>
-          <input type="text" id="prod-note-input" maxlength="200" placeholder="Candle request, packaging notes, allergies…">
+          <input type="text" id="prod-note-input" dir="auto" maxlength="200" placeholder="Allergies, packaging notes, or special requests…">
         </div>
 
         <div class="product-page-actions">
-          <div class="qty product-qty">
+          <div class="qty product-qty" dir="ltr">
             <button type="button" id="prod-qty-dec" aria-label="Decrease quantity">−</button>
             <span id="prod-qty-display" aria-live="polite">1</span>
             <button type="button" id="prod-qty-inc" aria-label="Increase quantity">+</button>
           </div>
 
           <button type="button" class="btn btn-gold product-add-btn" id="prod-add-btn" ${ordersOpen ? '' : 'disabled'}>
-            ${ordersOpen ? `Add to Order · ${money(unitPrice(item, currentProductPicks) * currentProductQty)}` : 'Atelier Closed'}
+            ${ordersOpen ? `<span>Add to Order</span> <span dir="ltr">· ${money(unitPrice(item, currentProductPicks) * currentProductQty)}</span>` : 'Closed'}
           </button>
 
           <a href="#cart" class="btn btn-outline product-view-cart-btn" id="prod-view-cart-btn" hidden>
@@ -1187,7 +1387,7 @@ function showProductView(productId) {
     if (qtyEl) qtyEl.textContent = String(currentProductQty);
     const btnEl = productPageCard.querySelector('#prod-add-btn');
     if (btnEl && ordersOpen) {
-      btnEl.textContent = `Add to Order · ${money(total)}`;
+      btnEl.innerHTML = `<span>Add to Order</span> <span dir="ltr">· ${money(total)}</span>`;
     }
   }
 
@@ -1199,7 +1399,6 @@ function showProductView(productId) {
       productPageCard.querySelectorAll(`[data-bubble-group="${gi}"]`).forEach((b) => {
         b.classList.toggle('active', b === btn);
       });
-      playClick();
       updateProductLiveDisplay();
     });
   });
@@ -1209,19 +1408,16 @@ function showProductView(productId) {
       const gi = Number(chk.dataset.addonGroup);
       currentProductPicks[gi] = [...productPageCard.querySelectorAll(`[data-addon-group="${gi}"]:checked`)]
         .map((c) => Number(c.dataset.addonChoice));
-      playClick();
       updateProductLiveDisplay();
     });
   });
 
   productPageCard.querySelector('#prod-qty-dec')?.addEventListener('click', () => {
     currentProductQty = Math.max(1, currentProductQty - 1);
-    playClick();
     updateProductLiveDisplay();
   });
   productPageCard.querySelector('#prod-qty-inc')?.addEventListener('click', () => {
     currentProductQty = Math.min(99, currentProductQty + 1);
-    playClick();
     updateProductLiveDisplay();
   });
 
@@ -1274,9 +1470,14 @@ function setSearchModeUI(searching) {
   if (viewSearch) viewSearch.hidden = !searching;
   if (featuredSliderEl) featuredSliderEl.hidden = searching || sliderSlides.length === 0;
   if (categoriesSection) categoriesSection.hidden = searching;
-  if (boxBanner) boxBanner.hidden = searching;
-  if (searching) stopSliderAutoplay();
-  else if (!viewMenu?.hidden) startSliderAutoplay();
+  if (boxBanner) boxBanner.hidden = true;
+  if (menuReelsSection) menuReelsSection.hidden = searching;
+  if (searching) {
+    stopSliderAutoplay();
+    pauseGridReels();
+  } else if (!viewMenu?.hidden) {
+    startSliderAutoplay();
+  }
 }
 
 function matchesFilter(item) {
@@ -1309,6 +1510,7 @@ function renderSearchView() {
       document.getElementById('reset-empty-search')?.addEventListener('click', resetSearchAndFilters);
     } else {
       searchRowsList.innerHTML = filtered.map(renderRowCard).join('');
+      applyCardStagger(searchRowsList, '.menu-row-card');
     }
   }
   updateBreadcrumbs({ view: 'menu' });
@@ -1414,13 +1616,13 @@ function handleHashRouting() {
   }
 
   if (hash === '#gift-box') {
-    showMenuHomeView();
+    showMenuHomeView({ navKey: 'gift-box' });
     openBoxBuilderModal();
     return;
   }
 
   if (hash === '#visit' || hash === '#visit-section') {
-    showMenuHomeView({ scrollTarget: visitSection });
+    showMenuHomeView({ scrollTarget: visitSection, navKey: 'visit' });
     return;
   }
 
@@ -1450,8 +1652,40 @@ prodBackBtn?.addEventListener('click', () => {
   }
 });
 
+// Delegated SVG icon fallback when a product or category image fails to load
+document.addEventListener('error', (e) => {
+  const img = e.target;
+  if (!(img instanceof HTMLImageElement)) return;
+  const prodVisual = img.closest('.row-card-visual');
+  const prodCard = prodVisual?.closest('[data-open-product]');
+  if (prodVisual && prodCard) {
+    const item = itemsById.get(Number(prodCard.dataset.openProduct));
+    if (item) {
+      prodVisual.innerHTML = `<div class="row-card-icon">${illustrationFor(item)}</div>`;
+    }
+    return;
+  }
+  const catVisual = img.closest('.folder-visual');
+  const catCard = catVisual?.closest('[data-nav-cat]');
+  if (catVisual && catCard) {
+    const meta = CATEGORY_META[catCard.dataset.navCat] || { icon: DEFAULT_CATEGORY_ICON };
+    catVisual.innerHTML = `<div class="folder-icon">${meta.icon}</div>`;
+  }
+}, true);
+
 // Delegated interactions across all screens
 document.addEventListener('click', (e) => {
+  const samePageHash = e.target.closest('a[href^="#"], a[href^="/#"]');
+  if (samePageHash && (location.pathname === '/' || location.pathname === '/index.html')) {
+    const rawHref = samePageHash.getAttribute('href') || '';
+    const targetHash = rawHref.startsWith('/#') ? rawHref.slice(1) : rawHref;
+    if (targetHash && window.location.hash === targetHash) {
+      e.preventDefault();
+      handleHashRouting();
+      return;
+    }
+  }
+
   const rowBtn = e.target.closest('[data-open-product]');
   if (rowBtn) {
     e.preventDefault();
@@ -1465,6 +1699,13 @@ document.addEventListener('click', (e) => {
     e.preventDefault();
     const size = Number(offerBoxBtn.dataset.openOfferBox);
     openBoxBuilderModal([9, 16, 25].includes(size) ? size : null);
+    return;
+  }
+
+  const sliderHrefBtn = e.target.closest('[data-slider-href]');
+  if (sliderHrefBtn) {
+    e.preventDefault();
+    window.location.hash = sliderHrefBtn.dataset.sliderHref;
     return;
   }
 
@@ -1631,7 +1872,17 @@ document.getElementById('box-form')?.addEventListener('submit', (e) => {
 fulfillment = setupFulfillment(form, settings, renderCart);
 const branchOf = await setupBranches(form);
 
+dataLoaded = true;
 renderCart();
+mountReelsStrip(menuReelsGrid, {
+  menuItems: items,
+  onOpenProduct: (id) => {
+    window.location.hash = `#product/${id}`;
+  },
+});
+if (userLeftOnboardingEarly && (!window.location.hash || window.location.hash === '#welcome')) {
+  window.location.hash = '#menu';
+}
 handleHashRouting();
 
 form.addEventListener('submit', async (event) => {

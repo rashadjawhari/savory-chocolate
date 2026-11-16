@@ -1,4 +1,4 @@
-import { $, $$, esc, money, mediaSrc, adminApi, toast, formError, busy, cents, errorBlock, emptyCard } from './core.js';
+import { $, $$, esc, money, mediaSrc, adminApi, toast, formError, busy, cents, bindImageInputs, errorBlock, emptyCard } from './core.js';
 import { illustrationFor } from '/js/illustrations.js';
 
 let items = [];
@@ -100,16 +100,12 @@ function setPreview(src) {
   $('#i-preview').innerHTML = src ? `<img src="${esc(src)}" alt="">` : '';
 }
 
-$('#i-image').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  const urlVal = $('#i-image-url')?.value.trim();
-  setPreview(file ? URL.createObjectURL(file) : urlVal ? mediaSrc(urlVal) : editing?.image ? mediaSrc(editing.image) : null);
-});
-
-$('#i-image-url')?.addEventListener('input', (e) => {
-  if ($('#i-image').files[0]) return;
-  const val = e.target.value.trim();
-  setPreview(val ? mediaSrc(val) : editing?.image ? mediaSrc(editing.image) : null);
+bindImageInputs({
+  fileInput: $('#i-image'),
+  urlInput: $('#i-image-url'),
+  removeBox: $('#i-remove'),
+  getFallback: () => (editing?.image ? mediaSrc(editing.image) : null),
+  onPreview: setPreview,
 });
 
 // ---------- add-on editor ----------

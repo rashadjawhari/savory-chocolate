@@ -3,7 +3,7 @@
 // the full SAVORY database (seeded from /seed.json + localStorage) so all 3 sites
 // (Cake Studio, Menu, and Admin) work out of the box on *.web.app.
 
-const DB_KEY = 'savory_static_db_v3';
+const DB_KEY = 'savory_static_db_v6';
 const SESSION_KEY = 'savory_admin_session_v1';
 
 const BOX_TIERS = {
@@ -123,7 +123,7 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
       })),
     };
   }
-  if (method === 'GET' && path === '/api/gallery') return state.gallery_images || [];
+  if (method === 'GET' && path === '/api/gallery') return sortRows(state.gallery_images || [], 'gallery');
   if (method === 'GET' && path === '/api/reviews') return (state.reviews || []).filter((r) => r.available !== 0);
   if (method === 'GET' && path === '/api/faqs') return (state.faqs || []).filter((f) => f.available !== 0);
 
@@ -401,6 +401,15 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
     fail(400, 'Photo uploads need the live server. This preview site can\'t store photos.');
   }
 
+  // Reject binary file uploads cleanly when running in static Firebase Hosting mode.
+  if (form instanceof FormData) {
+    for (const v of form.values()) {
+      if (v instanceof File && v.size > 0) {
+        fail(400, 'File uploads require the live Node server. Paste a /img/... preset path or https:// URL instead.');
+      }
+    }
+  }
+
   // Lists the dashboard manages: menu items, cake options, gallery, reviews, FAQ, branches, messages.
   const crud = path.match(/^\/api\/admin\/([a-z-]+)(?:\/(\d+))?$/);
   const collection = crud && COLLECTIONS[crud[1]];
@@ -462,6 +471,7 @@ const parseOptions = (v) => (typeof v === 'string' ? JSON.parse(v || '[]') : (v 
 function sortRows(rows = [], order = 'sort') {
   const list = [...rows];
   if (order === 'newest') return list.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)) || b.id - a.id);
+  if (order === 'gallery') return list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || (b.id - a.id));
   return list.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || (a.id - b.id));
 }
 
@@ -516,7 +526,10 @@ const COLLECTIONS = {
     fields: (d, existing) => {
       const media_url = str(d.media_url) || existing?.media_url || '';
       if (!media_url) fail(400, 'Please enter a media URL or preset path.');
-      const media_type = str(d.media_type) === 'video' || /\.(mp4|webm|mov)$/i.test(media_url) ? 'video' : 'image';
+      const explicit = str(d.media_type);
+      const media_type = (explicit === 'video' || explicit === 'image')
+        ? explicit
+        : /\.(mp4|webm|mov)(\?.*)?$/i.test(media_url) ? 'video' : 'image';
       return {
         media_type,
         media_url,
@@ -551,7 +564,7 @@ const COLLECTIONS = {
   gallery: {
     key: 'gallery_images',
     label: 'Photo',
-    order: 'sort',
+    order: 'gallery',
     fields: (d) => ({ caption: str(d.caption), sort_order: toInt(d.sort_order) }),
   },
   reviews: {
