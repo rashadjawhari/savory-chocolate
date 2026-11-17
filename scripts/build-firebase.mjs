@@ -102,7 +102,7 @@ function stampHtml(html) {
   const dir = prepareSiteDir('cakes');
   const opts = { siteMode: 'cakes', ...URLS };
   fs.writeFileSync(path.join(dir, 'index.html'), stampHtml(renderPage('home', opts)));
-  for (const page of ['cakes', 'gallery', 'about', 'faq', 'contact', 'track', '404']) {
+  for (const page of ['cakes', 'gallery', 'about', 'faq', 'contact', 'track', 'present', '404']) {
     fs.writeFileSync(path.join(dir, `${page}.html`), stampHtml(renderPage(page, opts)));
   }
   fs.writeFileSync(path.join(dir, 'manifest.webmanifest'), JSON.stringify({
@@ -123,7 +123,7 @@ function stampHtml(html) {
   const dir = prepareSiteDir('menu');
   const opts = { siteMode: 'menu', ...URLS };
   fs.writeFileSync(path.join(dir, 'index.html'), stampHtml(renderPage('menu', opts)));
-  for (const page of ['about', 'faq', 'contact', 'track', '404']) {
+  for (const page of ['about', 'faq', 'contact', 'track', 'present', '404']) {
     fs.writeFileSync(path.join(dir, `${page}.html`), stampHtml(renderPage(page, opts)));
   }
   fs.writeFileSync(path.join(dir, 'manifest.webmanifest'), JSON.stringify({

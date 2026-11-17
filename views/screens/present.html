@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>{{shop_name}} · Client Presentation &amp; Interactive Prototype</title>
+  <meta name="description" content="Interactive client walkthrough for SAVORY Chocolatier & Patisserie — slides, live Phone & Laptop prototypes, and 3D Cake Studio.">
+  {{> head}}
+  <link rel="stylesheet" href="/css/present.css">
+</head>
+<body
+  class="present-body"
+  data-menu-url="{{menu_site_url}}"
+  data-cakes-url="{{cakes_site_url}}"
+  data-admin-url="{{admin_site_url}}"
+>
+  <!-- Top Presentation Control Bar -->
+  <header class="p-topbar">
+    <div class="p-brand" role="button" tabindex="0" data-goto-slide="0" title="Back to Slide 01">
+      {{> brand-logo}}
+      <span class="p-deck-badge">Client Showcase</span>
+    </div>
+
+    <div class="p-mode-tabs" role="tablist" aria-label="Presentation mode">
+      <button type="button" class="p-tab is-active" data-mode="slides" aria-selected="true">Slides</button>
+      <button type="button" class="p-tab" data-mode="sandbox" aria-selected="false">Live Playground</button>
+      <button type="button" class="p-tab" data-mode="grid" aria-selected="false">⊞ Grid</button>
+    </div>
+
+    <div class="p-top-actions">
+      <button type="button" class="p-icon-btn" id="p-notes-btn" title="Presenter notes (N)" aria-pressed="false">
+        <span>Notes</span>
+      </button>
+      <button type="button" class="p-icon-btn" id="p-fullscreen-btn" title="Toggle fullscreen (F)">
+        <span aria-hidden="true">⛶</span>
+      </button>
+      <a class="p-live-cta" id="p-open-menu" href="/" target="_blank" rel="noopener">
+        <span>Live Menu</span>
+        <span aria-hidden="true">↗</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Presentation Stage -->
+  <main class="p-stage" id="p-stage">
+    <!-- SLIDE 01: COVER & BRAND IDENTITY -->
+    <section class="p-slide p-slide-dark is-active" data-slide="0" data-title="Overview & Identity">
+      <div class="p-slide-inner p-cover-grid">
+        <div class="p-copy-col">
+          <div class="p-eyebrow p-eyebrow-gold">Aramoun &amp; Aley · Digital Flagship Showcase</div>
+          <h1 class="p-hero-title">SAVORY</h1>
+          <p class="p-hero-sub">Editorial E-Commerce Menu, Looped Video Onboarding &amp; Interactive 3D Cake Studio.</p>
+          <p class="p-lead">Crafted directly on SAVORY’s Butter-Cream (<code>#F7F7D3</code>) and Deep Cocoa (<code>#4C2007</code>) identity in clean <strong>Cabin</strong> typography—borderless UI, silent touch carousels, native mobile viewport lock, and instant WhatsApp ordering.</p>
+
+          <div class="p-swatches">
+            <div class="p-swatch" style="--sw:#F7F7D3; --st:#4C2007">
+              <strong>Butter-Cream</strong>
+              <span>#F7F7D3 · Background</span>
+            </div>
+            <div class="p-swatch" style="--sw:#4C2007; --st:#F7F7D3">
+              <strong>Deep Cocoa</strong>
+              <span>#4C2007 · Brand Ink</span>
+            </div>
+            <div class="p-swatch" style="--sw:#D9B066; --st:#220B03">
+              <strong>Champagne Gold</strong>
+              <span>#D9B066 · Accent</span>
+            </div>
+            <div class="p-swatch" style="--sw:#220B03; --st:#F7F7D3">
+              <strong>Espresso</strong>
+              <span>#220B03 · Cinema</span>
+            </div>
+          </div>
+
+          <div class="p-cover-actions">
+            <button type="button" class="p-btn-cream" data-goto-slide="1">
+              <span>Start Walkthrough</span>
+              <span aria-hidden="true">→</span>
+            </button>
+            <button type="button" class="p-btn-ghost-dark" data-goto-slide="6">
+              <span>Try Live Phone &amp; Laptop Playground</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-collage-col">
+          <div class="p-collage">
+            <figure class="p-photo p-photo-tall">
+              <img src="/img/social/reel-dubai-crepe.jpg" alt="Dubai Kunafa Chocolate Crepe">
+            </figure>
+            <figure class="p-photo">
+              <img src="/img/social/shop-aley-boutique.jpg" alt="SAVORY Boutique">
+            </figure>
+            <figure class="p-photo">
+              <img src="/img/social/cake-heart-chocolate.jpg" alt="SAVORY Celebration Cake">
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 02: LOOPED VIDEO ONBOARDING (#welcome) -->
+    <section class="p-slide" data-slide="1" data-title="Video Onboarding" data-embed-path="/#welcome">
+      <div class="p-slide-inner p-split-demo">
+        <div class="p-copy-col">
+          <div class="p-eyebrow">01 · Screen 0 · #welcome</div>
+          <h2 class="p-h2">Looped Video Onboarding With 1:1 Touch Physics</h2>
+          <p class="p-lead">Guests enter through full-bleed looping chocolate reels that glide seamlessly with finger swipes on mobile or clean borderless arrows on laptop.</p>
+
+          <ul class="p-feature-list">
+            <li>
+              <strong>Borderless UI Directly on Video</strong>
+              <span>Zero heavy boxes or marketing clutter—only the stacked SAVORY cocoa mark, <code>عربي</code> switcher, subtle indicators, and <code>ORDER NOW →</code>.</span>
+            </li>
+            <li>
+              <strong>Smooth &amp; Silent Navigation</strong>
+              <span>60fps horizontal touch-drag snap tracking with audio clicks removed for an effortless luxury feel.</span>
+            </li>
+            <li>
+              <strong>Try It Live Right Here</strong>
+              <span>Swipe or click the <code>←</code> / <code>→</code> arrows inside the live preview frame, toggle language, or tap <strong>Order Now</strong>.</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="p-device-col" data-device-slot="1"></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 03: EDITORIAL SPLIT SLIDER & MENU HOME (#menu) -->
+    <section class="p-slide" data-slide="2" data-title="Editorial Menu & Slider" data-embed-path="/#menu">
+      <div class="p-slide-inner p-split-demo">
+        <div class="p-copy-col">
+          <div class="p-eyebrow">02 · Screen 1 · #menu</div>
+          <h2 class="p-h2">Editorial Split Carousel &amp; Borderless Categories</h2>
+          <p class="p-lead">Inspired by clean magazine layouts: oversized <strong>Featured</strong> typography anchored next to <code>← 01 02 03 →</code> navigation and crisp <code>1:1</code> square product cards.</p>
+
+          <ul class="p-feature-list">
+            <li>
+              <strong>Interactive Search &amp; Quick Filters</strong>
+              <span>Filter instantly by <strong>Popular</strong>, <strong>Pistachio</strong>, <strong>Dark Chocolate</strong>, or <strong>Under $10</strong> without leaving the page.</span>
+            </li>
+            <li>
+              <strong>Minimal Category &amp; Product Cards</strong>
+              <span>Image-first cards directly on the Butter-Cream canvas with clean Cabin titles and prices—no extra borders or boxes.</span>
+            </li>
+            <li>
+              <strong>Horizontal @savory.chocolate Reels Strip</strong>
+              <span>Scroll horizontally through shop videos and jump directly into ordering each featured dessert.</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="p-device-col" data-device-slot="2"></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 04: REDESIGNED PRODUCT CUSTOMIZATION (#product) -->
+    <section class="p-slide" data-slide="3" data-title="Borderless Product Page" data-embed-path="/#category/Crepes%20%26%20Waffles">
+      <div class="p-slide-inner p-split-demo">
+        <div class="p-copy-col">
+          <div class="p-eyebrow">03 · Screen 2 &amp; 3 · #category → #product</div>
+          <h2 class="p-h2">Clean Product Customization &amp; Native Mobile Ergonomics</h2>
+          <p class="p-lead">Stripped out boxed white cards, floating price stickers, multi-line pill clutter, and pinch-zoom glitches in favor of calm editorial hierarchy.</p>
+
+          <ul class="p-feature-list">
+            <li>
+              <strong>Locked Viewport &amp; Zero Overflow</strong>
+              <span>Viewport zoom locked across iOS/Android with <code>16px</code> inputs and constrained grid tracks so buttons never clip off-screen.</span>
+            </li>
+            <li>
+              <strong>RTL &amp; Bidi Text Safe</strong>
+              <span>Every product title uses <code>dir="auto"</code> while currency and modifiers keep <code>dir="ltr"</code> formatting.</span>
+            </li>
+            <li>
+              <strong>Interactive Variants &amp; Hairline Extras</strong>
+              <span>Tap any creation in the live preview on the right to open its product page, pick a Drizzle Style, add Extras, and update your cart.</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="p-device-col" data-device-slot="3"></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 05: INTERACTIVE 3D CAKE STUDIO -->
+    <section class="p-slide p-slide-dark" data-slide="4" data-title="3D Custom Cake Studio" data-embed-site="cakes" data-embed-path="/cakes">
+      <div class="p-slide-inner p-split-demo">
+        <div class="p-copy-col">
+          <div class="p-eyebrow p-eyebrow-gold">04 · Sister Site · Interactive WebGL</div>
+          <h2 class="p-h2 p-h2-cream">See Your Celebration Cake in 3D Before We Bake It</h2>
+          <p class="p-lead p-lead-cream">A dedicated 3D configurator allowing customers to sculpt multi-tier cakes, rotate in real time, cut a slice to inspect fillings, light candles, and share via WhatsApp.</p>
+
+          <div class="p-cake-mini-grid">
+            <img src="/img/social/cake-heart-chocolate.jpg" alt="Dark Belgian Heart Cake">
+            <img src="/img/social/cake-valentine-ribbons.jpg" alt="Ribbon Celebration Cake">
+            <img src="/img/social/cake-strawberry-hearts.jpg" alt="Strawberry Heart Cake">
+          </div>
+
+          <div class="p-cover-actions">
+            <a class="p-btn-cream" href="{{cakes_site_url}}/cakes" target="_blank" rel="noopener">
+              <span>Open Full 3D Cake Builder</span>
+              <span aria-hidden="true">↗</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="p-device-col" data-device-slot="4"></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 06: ADMIN PORTAL & CLOUD DEPLOYMENT -->
+    <section class="p-slide" data-slide="5" data-title="Admin & Hosting Architecture">
+      <div class="p-slide-inner p-arch-layout">
+        <div class="p-arch-head">
+          <div class="p-eyebrow">05 · Operations &amp; Cloud Infrastructure</div>
+          <h2 class="p-h2">Unified Admin Portal &amp; Three-Site Production Deployment</h2>
+        </div>
+
+        <div class="p-arch-grid">
+          <article class="p-arch-card">
+            <span class="p-arch-num">01</span>
+            <h3>Menu, Categories &amp; Modifiers CMS</h3>
+            <p>Add or edit chocolate bars, crepes, prices, compare-at discounts, required single choices, and optional extras anytime.</p>
+          </article>
+          <article class="p-arch-card">
+            <span class="p-arch-num">02</span>
+            <h3>Video Onboarding &amp; Slider Control</h3>
+            <p>Manage the fullscreen <code>#welcome</code> video reels and inside-menu <strong>Featured</strong> carousel cards with live ordering.</p>
+          </article>
+          <article class="p-arch-card">
+            <span class="p-arch-num">03</span>
+            <h3>Order Queue, Kitchen Prep &amp; WhatsApp</h3>
+            <p>Manage pickup and delivery orders for <strong>Aramoun</strong> &amp; <strong>Aley</strong>, print kitchen tickets, and send instant WhatsApp updates.</p>
+          </article>
+          <article class="p-arch-card">
+            <span class="p-arch-num">04</span>
+            <h3>3 Live Production Sites + GitHub Main</h3>
+            <p>Separated CDN targets with cache-busted asset hashes (<code>savory-962f3-menu</code>, <code>savory-962f3-cakes</code>, <code>savory-962f3-admin</code>).</p>
+          </article>
+        </div>
+
+        <div class="p-url-strip">
+          <a class="p-url-pill" href="{{menu_site_url}}" target="_blank" rel="noopener">
+            <span>01 · Menu Storefront</span>
+            <strong>savory-962f3-menu.web.app ↗</strong>
+          </a>
+          <a class="p-url-pill" href="{{cakes_site_url}}" target="_blank" rel="noopener">
+            <span>02 · 3D Cake Studio</span>
+            <strong>savory-962f3-cakes.web.app ↗</strong>
+          </a>
+          <a class="p-url-pill" href="{{admin_site_url}}" target="_blank" rel="noopener">
+            <span>03 · Admin Studio</span>
+            <strong>savory-962f3-admin.web.app ↗</strong>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 07: FULL INTERACTIVE SANDBOX (PHONE & LAPTOP PLAYGROUND) -->
+    <section class="p-slide p-slide-sandbox" data-slide="6" data-title="Interactive Sandbox" data-embed-path="/#welcome">
+      <div class="p-sandbox-wrap">
+        <div class="p-sandbox-bar">
+          <div class="p-sandbox-jumps" role="group" aria-label="Jump to screen">
+            <button type="button" class="p-jump is-active" data-jump-site="menu" data-jump-path="/#welcome">Video Onboarding</button>
+            <button type="button" class="p-jump" data-jump-site="menu" data-jump-path="/#menu">Menu Home</button>
+            <button type="button" class="p-jump" data-jump-site="menu" data-jump-path="/#category/Crepes%20%26%20Waffles">Crepes &amp; Waffles</button>
+            <button type="button" class="p-jump" data-jump-site="menu" data-jump-path="/#category/Chocolates%20%26%20Bark">Chocolates &amp; Bark</button>
+            <button type="button" class="p-jump" data-jump-site="menu" data-jump-path="/#gift-box">Gift Boxes</button>
+            <button type="button" class="p-jump" data-jump-site="menu" data-jump-path="/#cart">Cart &amp; Checkout</button>
+            <button type="button" class="p-jump" data-jump-site="cakes" data-jump-path="/cakes">3D Cake Builder</button>
+          </div>
+        </div>
+        <div class="p-sandbox-stage" data-device-slot="6"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Slide Grid Overview Modal (like Figma Slides Grid View) -->
+  <section class="p-grid-overlay" id="p-grid-overlay" hidden aria-label="All slides overview">
+    <div class="p-grid-head">
+      <h2>All Presentation Slides</h2>
+      <button type="button" class="p-icon-btn p-grid-close" id="p-grid-close">✕ Close Grid</button>
+    </div>
+    <div class="p-grid-cards" id="p-grid-cards"></div>
+  </section>
+
+  <!-- Presenter Notes Drawer -->
+  <aside class="p-notes-drawer" id="p-notes-drawer" hidden aria-label="Presenter speaker notes">
+    <div class="p-notes-head">
+      <span id="p-notes-slide-label">Slide 01 · Speaker Notes</span>
+      <button type="button" id="p-notes-close" aria-label="Close speaker notes">✕</button>
+    </div>
+    <p id="p-notes-text"></p>
+  </aside>
+
+  <!-- Bottom Borderless Navigation Strip -->
+  <footer class="p-bottombar">
+    <button type="button" class="p-nav-arrow" id="p-prev" aria-label="Previous slide">← Prev</button>
+    <div class="p-slide-dots" id="p-slide-dots" role="tablist" aria-label="Slide selector"></div>
+    <div class="p-counter-wrap">
+      <span class="p-counter" id="p-counter">01 / 07</span>
+      <button type="button" class="p-nav-arrow" id="p-next" aria-label="Next slide">Next →</button>
+    </div>
+  </footer>
+
+  <!-- Shared Interactive Device Simulator Template (moved smoothly to active slide) -->
+  <template id="p-device-tpl">
+    <div class="p-device-shell" data-shell-mode="phone">
+      <div class="p-device-controls">
+        <div class="p-dev-toggle" role="group" aria-label="Switch device frame">
+          <button type="button" class="p-dev-btn is-active" data-set-device="phone">Phone</button>
+          <button type="button" class="p-dev-btn" data-set-device="laptop">Laptop</button>
+        </div>
+        <button type="button" class="p-dev-action" data-dev-reload title="Reload preview">↻ Reload</button>
+        <a class="p-dev-action" data-dev-external href="/" target="_blank" rel="noopener">Open ↗</a>
+      </div>
+
+      <div class="p-device-stage-area">
+        <div class="p-bezel p-bezel-phone" id="p-bezel">
+          <div class="p-phone-island" aria-hidden="true"></div>
+          <div class="p-laptop-bar" aria-hidden="true">
+            <span></span><span></span><span></span>
+            <small class="p-laptop-url" data-url-label>savory-962f3-menu.web.app</small>
+          </div>
+          <div class="p-iframe-wrap">
+            <iframe
+              class="p-device-iframe"
+              title="SAVORY Live Interactive Preview"
+              loading="lazy"
+            ></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script type="module" src="/js/screens/present.js"></script>
+</body>
+</html>

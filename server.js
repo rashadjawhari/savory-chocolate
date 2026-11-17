@@ -48,6 +48,7 @@ const CAKES_PAGES = {
   '/faq': 'faq',
   '/contact': 'contact',
   '/track': 'track',
+  '/present': 'present',
 };
 
 const MENU_PAGES = {
@@ -56,6 +57,7 @@ const MENU_PAGES = {
   '/faq': 'faq',
   '/contact': 'contact',
   '/track': 'track',
+  '/present': 'present',
 };
 
 export function createApp(forcedSiteMode = '') {
@@ -68,7 +70,7 @@ export function createApp(forcedSiteMode = '') {
   app.use((req, res, next) => {
     res.set({
       'X-Content-Type-Options': 'nosniff',
-      'X-Frame-Options': 'DENY',
+      'X-Frame-Options': 'SAMEORIGIN',
       'Referrer-Policy': 'same-origin',
     });
     next();
@@ -86,7 +88,7 @@ export function createApp(forcedSiteMode = '') {
     res.status(status).type('html').send(renderPage(screen, { siteMode, ...urls }));
   };
 
-  app.get(['/', '/cakes', '/menu', '/gallery', '/about', '/faq', '/contact', '/track', '/track/:code', '/admin'], (req, res) => {
+  app.get(['/', '/cakes', '/menu', '/gallery', '/about', '/faq', '/contact', '/track', '/track/:code', '/present', '/admin'], (req, res) => {
     const siteMode = detectSiteMode(req, forcedSiteMode);
     const route = req.path.startsWith('/track/') ? '/track' : req.path;
 
