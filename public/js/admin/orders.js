@@ -148,7 +148,7 @@ function printKitchenSheet(o) {
   <meta charset="utf-8">
   <title>Kitchen Prep Sheet · ${esc(o.code)}</title>
   <style>
-    body { font-family: system-ui, -apple-system, sans-serif; color: #2b1205; background: #fff; margin: 24px; line-height: 1.45; }
+    body { font-family: 'Cabin', system-ui, -apple-system, sans-serif; color: #2b1205; background: #fff; margin: 24px; line-height: 1.45; }
     .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #4C2007; padding-bottom: 14px; margin-bottom: 18px; }
     h1 { margin: 0; font-size: 26px; letter-spacing: 0.08em; color: #4C2007; }
     .code { font-family: monospace; font-size: 24px; font-weight: 800; border: 2px solid #4C2007; padding: 4px 12px; border-radius: 6px; }

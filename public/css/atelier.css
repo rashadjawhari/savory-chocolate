@@ -11,8 +11,8 @@
   --at-muted: #6E462C;
   --at-gold: #D9B066;
   --at-line: rgba(76, 32, 7, 0.14);
-  --at-serif: 'Cormorant Garamond', Georgia, serif;
-  --at-sans: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --at-serif: 'Cabin', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --at-sans: 'Cabin', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --at-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -88,7 +88,7 @@
 .at-actions { display: flex; align-items: center; gap: 8px; flex: none; }
 .at-lang {
   min-height: 44px; padding: 0 12px; border: 0; background: transparent; color: var(--at-cocoa);
-  font: 500 15px/1 'Readex Pro', var(--at-sans); cursor: pointer; border-radius: 999px;
+  font: 500 15px/1 'Cabin', 'Readex Pro', var(--at-sans); cursor: pointer; border-radius: 999px;
   transition: background-color 0.25s var(--at-ease), transform 0.2s var(--at-ease);
 }
 .at-lang:hover { background: rgba(76, 32, 7, 0.07); }

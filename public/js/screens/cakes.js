@@ -604,7 +604,7 @@ async function cakeCard() {
     i.onerror = reject;
     i.src = render;
   });
-  await Promise.all(['600 72px "Cormorant Garamond"', '500 30px Manrope', '60px "Great Vibes"'].map((f) => document.fonts.load(f).catch(() => {})));
+  await Promise.all(['600 72px Cabin', '500 30px Cabin', '700 58px Cabin'].map((f) => document.fonts.load(f).catch(() => {})));
 
   const c = document.createElement('canvas');
   c.width = 1080;
@@ -627,12 +627,12 @@ async function cakeCard() {
   gold.addColorStop(1, '#4C2007');
   ctx.textAlign = 'center';
   ctx.fillStyle = gold;
-  ctx.font = '700 58px Manrope, sans-serif';
+  ctx.font = '700 58px Cabin, sans-serif';
   ctx.fillText(settings.shop_name || 'SAVORY', 540, 165);
-  ctx.font = '60px "Great Vibes", cursive';
+  ctx.font = 'italic 600 44px Cabin, sans-serif';
   ctx.fillText('Designed by you', 540, 1250);
   ctx.fillStyle = '#6E462C';
-  ctx.font = '500 30px Manrope, sans-serif';
+  ctx.font = '500 30px Cabin, sans-serif';
   ctx.fillText(document.getElementById('preview-title').textContent, 540, 1300);
   return c.toDataURL('image/png');
 }

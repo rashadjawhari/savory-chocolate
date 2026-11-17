@@ -289,7 +289,7 @@ export function createCakeStage(container, {
 let snapshotRig = null;
 export async function renderCakeSnapshot(config, { width = 720, height = 720, type = 'image/png', quality } = {}) {
   if (!webglAvailable()) return null;
-  if (document.fonts) await document.fonts.load('80px "Great Vibes"').catch(() => {});
+  if (document.fonts) await document.fonts.load('700 80px Cabin').catch(() => {});
   if (!snapshotRig) {
     const renderer = createRenderer({ alpha: true, preserveDrawingBuffer: true });
     renderer.setPixelRatio(1);
@@ -1081,7 +1081,7 @@ function topper(top) {
     grad.addColorStop(0.5, '#d9b066');
     grad.addColorStop(1, '#a57936');
     ctx.fillStyle = grad;
-    fitText(ctx, 'Happy Birthday', w * 0.92, 200, '"Great Vibes", cursive');
+    fitText(ctx, 'Happy Birthday', w * 0.92, 160, '700 Cabin, sans-serif');
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('Happy Birthday', w / 2, h / 2);
@@ -1170,7 +1170,7 @@ function plaque(top, message, shape) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const lines = wrap(message, 18);
-    const size = fitText(ctx, lines.reduce((a, b) => (a.length > b.length ? a : b)), w * 1.08, lines.length > 1 ? 140 : 185, '"Great Vibes", "Amiri", cursive, serif');
+    const size = fitText(ctx, lines.reduce((a, b) => (a.length > b.length ? a : b)), w * 1.08, lines.length > 1 ? 132 : 172, 'Cabin, "Readex Pro", sans-serif');
     lines.forEach((line, i) => ctx.fillText(line, 0, 32 + (i - (lines.length - 1) / 2) * size * 1.05));
     ctx.restore();
   });
@@ -1255,8 +1255,8 @@ function textTexture(w, h, draw) {
     texture.needsUpdate = true;
   };
   paint();
-  if (document.fonts && !document.fonts.check('80px "Great Vibes"')) {
-    document.fonts.load('80px "Great Vibes"').then(paint).catch(() => {});
+  if (document.fonts && !document.fonts.check('700 80px Cabin')) {
+    document.fonts.load('700 80px Cabin').then(paint).catch(() => {});
   }
   return texture;
 }

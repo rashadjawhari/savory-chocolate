@@ -179,7 +179,7 @@ const ART = {
     <!-- SAVORY branded cup -->
     <path d="M62 84 H138 L128 144 H72 Z" fill="url(#gDarkChoc)"/>
     <rect x="66" y="102" width="68" height="18" rx="3" fill="#F7F7D3"/>
-    <text x="100" y="115" text-anchor="middle" fill="#4C2007" font-family="serif" font-weight="700" font-size="11" letter-spacing="2">SAVORY</text>
+    <text x="100" y="115" text-anchor="middle" fill="#4C2007" font-family="Cabin, sans-serif" font-weight="700" font-size="11" letter-spacing="2">SAVORY</text>
     <!-- Soft serve swirl -->
     <path d="M58 84 C58 64 142 64 142 84 Z" fill="url(#gCream)"/>
     <path d="M68 68 C68 50 132 50 132 68 Z" fill="url(#gCream)"/>

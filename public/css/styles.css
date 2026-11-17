@@ -29,14 +29,15 @@
   --radius-lg: 28px;
   --shadow: 0 20px 50px -24px rgba(76, 32, 7, 0.16), 0 2px 6px rgba(76, 32, 7, 0.05);
   --glow: 0 0 0 1px var(--line-strong), 0 20px 50px -20px rgba(76, 32, 7, 0.24);
-  --font-display: 'Cormorant Garamond', 'Times New Roman', serif;
-  --font-body: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-script: 'Great Vibes', cursive;
+  --font-display: 'Cabin', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body: 'Cabin', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-script: 'Cabin', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --header-h: 78px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
+button, input, select, textarea { font-family: inherit; }
 
 [hidden] { display: none !important; }
 
@@ -2055,7 +2056,7 @@ a.credit:hover { color: var(--text); }
   border: 0;
   background: transparent;
   color: var(--text);
-  font-family: 'Readex Pro', var(--font-body);
+  font-family: 'Cabin', 'Readex Pro', var(--font-body);
   font-size: 0.84rem;
   font-weight: 700;
   padding: 7px 11px;
@@ -2070,10 +2071,10 @@ a.credit:hover { color: var(--text); }
 
 /* RTL Support */
 html[dir="rtl"] body {
-  font-family: 'Readex Pro', var(--font-body);
+  font-family: 'Cabin', 'Readex Pro', var(--font-body);
 }
 html[dir="rtl"] h1, html[dir="rtl"] h2, html[dir="rtl"] h3, html[dir="rtl"] blockquote {
-  font-family: 'Amiri', var(--font-display);
+  font-family: 'Cabin', 'Readex Pro', var(--font-display);
 }
 html[dir="rtl"] .eyebrow.left::after {
   background: linear-gradient(270deg, var(--gold), transparent);
@@ -4618,7 +4619,7 @@ body.is-cart-page .bottom-bar {
   border: 0;
   color: #F7F7D3 !important;
   font: inherit;
-  font-family: 'Readex Pro', var(--font-body);
+  font-family: 'Cabin', 'Readex Pro', var(--font-body);
   font-size: 0.85rem;
   font-weight: 700;
   text-decoration: none;
