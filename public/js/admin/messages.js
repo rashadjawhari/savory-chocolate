@@ -53,7 +53,7 @@ async function setRead(message, isRead) {
 }
 
 $('#messages-list').addEventListener('click', async (e) => {
-  const find = (attr) => messages.find((m) => m.id === Number(e.target.closest(`[${attr}]`)?.getAttribute(attr)));
+  const find = (attr) => messages.find((m) => String(m.id) === String(e.target.closest(`[${attr}]`)?.getAttribute(attr)));
 
   const reply = find('data-reply');
   if (reply && !reply.is_read) setRead(reply, true);

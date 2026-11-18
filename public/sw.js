@@ -36,8 +36,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Bypass API calls, let serverless-api / backend handle them
-  if (url.pathname.startsWith('/api/') || event.request.method !== 'GET') {
+  // Bypass cross-origin requests (Firestore, Firebase Auth, fonts) and backend API calls
+  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/') || event.request.method !== 'GET') {
     return;
   }
 

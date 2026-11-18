@@ -1,11 +1,32 @@
-// Browser-side API fallback for static Firebase Hosting deployments (Spark plan).
-// When the Express backend is not reachable at /api/*, this module serves and persists
-// the full SAVORY database (seeded from /seed.json + localStorage) so all 3 sites
-// (Cake Studio, Menu, and Admin) work out of the box on *.web.app.
+// Browser-side API handler for static Firebase Hosting deployments.
+// Syncs live across devices with Cloud Firestore + Firebase Auth when enabled,
+// and gracefully falls back to /seed.json + localStorage offline or pre-setup.
 import { evaluatePromo, normalizePromoList } from './promo.js';
+import {
+  cloudFetchPublicState,
+  cloudLookupPromo,
+  cloudLookupOrderTracking,
+  cloudSubmitOrder,
+  cloudSubmitMessage,
+  cloudAdminLogin,
+  cloudAdminStatus,
+  cloudAdminLogout,
+  cloudChangePassword,
+  cloudSeedIfEmpty,
+  cloudAdminSaveCatalog,
+  cloudAdminGetSettings,
+  cloudAdminSaveSettings,
+  cloudAdminListOrders,
+  cloudAdminPatchOrderStatus,
+  cloudAdminListMessages,
+  cloudAdminPatchMessage,
+  cloudAdminDeleteMessage,
+} from './firebase-cloud.js';
 
 const DB_KEY = 'savory_static_db_v7';
 const SESSION_KEY = 'savory_admin_session_v1';
+const ADMIN_USER_KEY = 'savory_admin_user_v1';
+let cloudHydrated = false;
 
 const BOX_TIERS = {
   9: { name: 'SAVORY 9-Piece Assorted Gift Box', price_cents: 1800 },
@@ -126,8 +147,40 @@ function buildWhatsAppUrl(state, order, itemsSummary, promo = null) {
   return `https://wa.me/${digits}?text=${encodeURIComponent(lines.join('\n'))}`;
 }
 
+async function hydrateFromCloud(state) {
+  if (cloudHydrated) return state;
+  cloudHydrated = true;
+  const cloud = await cloudFetchPublicState();
+  if (!cloud) return state;
+  if (cloud.settings) {
+    const prevPromo = state.settings?.promo_codes;
+    state.settings = { ...(state.settings || {}), ...cloud.settings };
+    if (prevPromo !== undefined) state.settings.promo_codes = prevPromo;
+  }
+  if (cloud.catalog) {
+    for (const k of ['branches', 'menu_items', 'offers', 'onboarding_slides', 'cake_groups', 'cake_options', 'gallery_images', 'reviews', 'faqs']) {
+      if (Array.isArray(cloud.catalog[k])) state[k] = cloud.catalog[k];
+    }
+  }
+  saveDb(state);
+  return state;
+}
+
+async function resolvePromo(state, rawCode, subtotal = 0) {
+  const clean = String(rawCode || '').trim().toUpperCase();
+  if (!clean) return { valid: false, code: '', percent: 0, discountCents: 0 };
+  const cloudRes = await cloudLookupPromo(clean);
+  if (cloudRes) {
+    if (!cloudRes.exists || cloudRes.percent <= 0) return { valid: false, code: clean, percent: 0, discountCents: 0 };
+    const pct = cloudRes.percent;
+    const discountCents = subtotal > 0 ? Math.round((subtotal * pct) / 100) : 0;
+    return { valid: true, code: clean, percent: pct, discountCents };
+  }
+  return evaluatePromo(state.settings?.promo_codes, clean, subtotal);
+}
+
 export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}) {
-  const state = await getDb();
+  const state = await hydrateFromCloud(await getDb());
   const url = new URL(rawPath, location.origin);
   const path = url.pathname;
   const data = parseBody(body, form);
@@ -139,7 +192,7 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
     return s;
   }
   if (method === 'POST' && path === '/api/promo/validate') {
-    const res = evaluatePromo(state.settings?.promo_codes, data.code, Number(data.subtotal_cents) || 0);
+    const res = await resolvePromo(state, data.code, Number(data.subtotal_cents) || 0);
     if (!res.valid) fail(400, 'Promo code is invalid or expired.');
     return res;
   }
@@ -179,13 +232,17 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
   const trackMatch = path.match(/^\/api\/orders\/track\/([^/]+)$/);
   if (method === 'GET' && trackMatch) {
     const code = decodeURIComponent(trackMatch[1]).trim().toUpperCase();
-    const order = (state.orders || []).find((o) => String(o.code).toUpperCase() === code);
+    const cloudOrder = await cloudLookupOrderTracking(code);
+    const localOrder = (state.orders || []).find((o) => String(o.code).toUpperCase() === code);
+    const order = cloudOrder || localOrder;
     if (!order) {
       const err = new Error('No order found with that code. Please double-check your code.');
       err.status = 404;
       throw err;
     }
-    const firstName = String(order.customer_name || '').trim().split(/\s+/)[0] || 'Guest';
+    const firstName = order.customer_first_name
+      || String(order.customer_name || '').trim().split(/\s+/)[0]
+      || 'Guest';
     return {
       code: order.code,
       type: order.type,
@@ -196,6 +253,8 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
       fulfillment: order.fulfillment,
       branch: order.branch,
       total_cents: order.total_cents,
+      promo_code: order.promo_code || '',
+      discount_cents: order.discount_cents || 0,
       delivery_fee_cents: order.delivery_fee_cents || 0,
       created_at: order.created_at,
       items: order.items || [],
@@ -214,6 +273,7 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
       is_read: 0,
       created_at: new Date().toISOString(),
     };
+    await cloudSubmitMessage(msg);
     state.messages = [msg, ...(state.messages || [])];
     saveDb(state);
     return { ok: true };
@@ -252,7 +312,7 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
     const qty = Math.max(1, Number(data.quantity) || 1);
     const subtotal = unitPrice * qty;
     const rawPromo = String(data.promo_code || '').trim();
-    const promo = rawPromo ? evaluatePromo(state.settings?.promo_codes, rawPromo, subtotal) : { valid: false, code: '', percent: 0, discountCents: 0 };
+    const promo = rawPromo ? await resolvePromo(state, rawPromo, subtotal) : { valid: false, code: '', percent: 0, discountCents: 0 };
     if (rawPromo && !promo.valid) fail(400, 'Promo code is invalid or expired.');
     const deliveryFee = data.fulfillment === 'delivery' ? Number(state.settings?.delivery_fee || 0) : 0;
     const totalCents = Math.max(0, subtotal - promo.discountCents) + deliveryFee;
@@ -290,6 +350,7 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
       items: [item],
     };
     order.whatsapp_url = buildWhatsAppUrl(state, order, [`${qty}x ${item.name} - $${((unitPrice * qty) / 100).toFixed(2)}`], promo);
+    await cloudSubmitOrder(order);
     state.orders = [order, ...(state.orders || [])];
     saveDb(state);
     return order;
@@ -341,9 +402,10 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
         subtotal += unitPrice * qty;
       }
     }
+    if (!orderItems.length) fail(400, 'Your cart is empty.');
 
     const rawPromo = String(data.promo_code || '').trim();
-    const promo = rawPromo ? evaluatePromo(state.settings?.promo_codes, rawPromo, subtotal) : { valid: false, code: '', percent: 0, discountCents: 0 };
+    const promo = rawPromo ? await resolvePromo(state, rawPromo, subtotal) : { valid: false, code: '', percent: 0, discountCents: 0 };
     if (rawPromo && !promo.valid) fail(400, 'Promo code is invalid or expired.');
 
     const deliveryFee = data.fulfillment === 'delivery' ? Number(state.settings?.delivery_fee || 0) : 0;
@@ -381,6 +443,7 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
       orderItems.map((i) => `${i.quantity}x ${i.name} - $${((i.unit_price_cents * i.quantity) / 100).toFixed(2)}`),
       promo,
     );
+    await cloudSubmitOrder(order);
     state.orders = [order, ...(state.orders || [])];
     saveDb(state);
     return order;
@@ -389,24 +452,51 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
   // ---------- Admin Endpoints ----------
   if (path === '/api/admin/status') {
     const admins = state.admins || [];
-    return {
-      setupNeeded: false,
-      admin: isLoggedIn() && admins.length ? { id: 1, username: admins[0].username } : null,
-    };
+    try {
+      const cloud = await cloudAdminStatus();
+      if (cloud.admin) {
+        logIn(cloud.admin.username);
+        return { setupNeeded: false, admin: cloud.admin };
+      }
+      logOut();
+      return { setupNeeded: false, admin: null };
+    } catch {
+      return {
+        setupNeeded: false,
+        admin: isLoggedIn() && admins.length ? { id: 1, username: localStorage.getItem(ADMIN_USER_KEY) || admins[0].username } : null,
+      };
+    }
   }
   if (method === 'POST' && path === '/api/admin/setup') {
     fail(403, 'Public admin registration is disabled. Please log in.');
   }
   if (method === 'POST' && path === '/api/admin/login') {
-    const admin = (state.admins || [])[0];
-    const sameUser = admin && admin.username.toLowerCase() === String(data.username || '').trim().toLowerCase();
-    if (!sameUser || !(await checkPassword(state, admin, String(data.password || '')))) {
-      fail(401, 'Wrong username or password.');
+    const uname = String(data.username || '').trim();
+    const pw = String(data.password || '');
+    try {
+      const res = await cloudAdminLogin(uname, pw);
+      logIn(res.admin.username);
+      if (res.firestoreOnline) await cloudSeedIfEmpty(state);
+      return { ok: true, admin: res.admin };
+    } catch (err) {
+      if (err.isAuthRejection || err.status === 401 || err.status === 403 || err.status === 429) {
+        fail(err.status || 401, err.message);
+      }
+      if (typeof window !== 'undefined' && navigator?.onLine !== false && err?.code !== 'unavailable') {
+        console.warn('[SAVORY Firebase Auth]', err?.code || '', err?.message || err);
+        fail(401, err?.message || 'Sign-in failed.');
+      }
+      const admin = (state.admins || [])[0];
+      const sameUser = admin && admin.username.toLowerCase() === uname.toLowerCase();
+      if (!sameUser || !(await checkPassword(state, admin, pw))) {
+        fail(401, 'Wrong username or password.');
+      }
+      logIn(admin.username);
+      return { ok: true };
     }
-    logIn();
-    return { ok: true };
   }
   if (method === 'POST' && path === '/api/admin/logout') {
+    await cloudAdminLogout().catch(() => {});
     logOut();
     return { ok: true };
   }
@@ -415,24 +505,31 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
   if (path.startsWith('/api/admin/') && !isLoggedIn()) fail(401, 'Please log in.');
 
   if (method === 'POST' && path === '/api/admin/password') {
-    const admin = (state.admins || [])[0];
-    if (!admin || !(await checkPassword(state, admin, String(data.current_password || '')))) {
-      fail(400, 'Current password is wrong.');
+    const cur = String(data.current_password || '');
+    const { password } = checkCredentials((state.admins || [])[0]?.username || 'admin', data.new_password);
+    try {
+      await cloudChangePassword(cur, password);
+    } catch (err) {
+      if (err.status) fail(err.status, err.message);
+      const admin = (state.admins || [])[0];
+      if (!admin || !(await checkPassword(state, admin, cur))) fail(400, 'Current password is wrong.');
+      admin.password_hash = await hashPassword(password);
+      saveDb(state);
     }
-    const { password } = checkCredentials(admin.username, data.new_password);
-    admin.password_hash = await hashPassword(password);
-    saveDb(state);
     return { ok: true };
   }
   if (path === '/api/admin/counts') {
+    const [cloudOrders, cloudMessages] = await Promise.all([cloudAdminListOrders(), cloudAdminListMessages()]);
+    const allOrders = cloudOrders || state.orders || [];
+    const allMsgs = cloudMessages || state.messages || [];
     return {
-      newOrders: (state.orders || []).filter((o) => o.status === 'new').length,
-      unreadMessages: (state.messages || []).filter((m) => !m.is_read).length,
+      newOrders: allOrders.filter((o) => o.status === 'new').length,
+      unreadMessages: allMsgs.filter((m) => !m.is_read).length,
     };
   }
   if (method === 'GET' && path === '/api/admin/orders') {
     const filter = url.searchParams.get('status') || 'active';
-    const all = state.orders || [];
+    const all = (await cloudAdminListOrders()) || state.orders || [];
     const orders = filter === 'active'
       ? all.filter((o) => ['new', 'confirmed', 'baking', 'ready'].includes(o.status))
       : filter === 'all'
@@ -442,21 +539,43 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
     for (const o of all) counts[o.status] = (counts[o.status] || 0) + 1;
     return { orders, counts };
   }
-  const orderPatch = path.match(/^\/api\/admin\/orders\/(\d+)$/);
+  const orderPatch = path.match(/^\/api\/admin\/orders\/([^/]+)$/);
   if (orderPatch && method === 'PATCH') {
     if (!ORDER_STATUSES.includes(data.status)) fail(400, 'Unknown status.');
-    const o = (state.orders || []).find((x) => Number(x.id) === Number(orderPatch[1]));
-    if (!o) fail(404, 'Order not found.');
-    o.status = data.status;
-    saveDb(state);
+    const targetId = decodeURIComponent(orderPatch[1]);
+    const o = (state.orders || []).find((x) => String(x.id) === targetId || String(x.code) === targetId);
+    let synced = false;
+    try {
+      synced = await cloudAdminPatchOrderStatus(o?.code || targetId, data.status);
+    } catch (err) {
+      fail(500, err.message || 'Could not update order.');
+    }
+    if (o) {
+      o.status = data.status;
+      saveDb(state);
+    } else if (!synced) {
+      fail(404, 'Order not found.');
+    }
     return { ok: true };
   }
   if (method === 'GET' && path === '/api/admin/cake-options') {
     return { groups: state.cake_groups || [], options: sortRows(state.cake_options) };
   }
-  if (method === 'GET' && path === '/api/admin/settings') return state.settings || {};
+  if (method === 'GET' && path === '/api/admin/settings') {
+    const cloudSettings = await cloudAdminGetSettings(state.settings || {});
+    if (cloudSettings) {
+      state.settings = { ...(state.settings || {}), ...cloudSettings };
+      saveDb(state);
+    }
+    return state.settings || {};
+  }
   if (method === 'PUT' && path === '/api/admin/settings') {
     state.settings = { ...(state.settings || {}), ...settingsFields(data) };
+    await cloudAdminSaveSettings(state.settings).catch((err) => {
+      if (err && !String(err.code || '').includes('unavailable') && !String(err.code || '').includes('failed-precondition')) {
+        throw err;
+      }
+    });
     saveDb(state);
     return state.settings;
   }
@@ -474,9 +593,30 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
   }
 
   // Lists the dashboard manages: menu items, cake options, gallery, reviews, FAQ, branches, messages.
-  const crud = path.match(/^\/api\/admin\/([a-z-]+)(?:\/(\d+))?$/);
+  const crud = path.match(/^\/api\/admin\/([a-z-]+)(?:\/([^/]+))?$/);
   const collection = crud && COLLECTIONS[crud[1]];
   if (collection) {
+    if (crud[1] === 'messages') {
+      const id = crud[2] ? decodeURIComponent(crud[2]) : null;
+      if (id === null && method === 'GET') {
+        const cloudMsgs = await cloudAdminListMessages();
+        return cloudMsgs || sortRows(state.messages || [], 'newest');
+      }
+      if (id !== null && method === 'PATCH') {
+        const patch = collection.patch(data);
+        await cloudAdminPatchMessage(id, patch).catch(() => {});
+        const local = (state.messages || []).find((r) => String(r.id) === id);
+        if (local) { Object.assign(local, patch); saveDb(state); }
+        return local || { id, ...patch };
+      }
+      if (id !== null && method === 'DELETE') {
+        await cloudAdminDeleteMessage(id).catch(() => {});
+        state.messages = (state.messages || []).filter((r) => String(r.id) !== id);
+        saveDb(state);
+        return { ok: true };
+      }
+    }
+
     const rows = (state[collection.key] ||= []);
     const id = crud[2] ? Number(crud[2]) : null;
     if (id === null) {
@@ -485,6 +625,7 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
         const row = { id: nextId(rows), ...collection.fields(data) };
         rows.push(row);
         saveDb(state);
+        await cloudAdminSaveCatalog(state).catch(() => {});
         return collection.out ? collection.out(row) : row;
       }
     } else {
@@ -493,12 +634,14 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
       if (method === 'DELETE') {
         rows.splice(index, 1);
         saveDb(state);
+        await cloudAdminSaveCatalog(state).catch(() => {});
         return { ok: true };
       }
       const update = method === 'PATCH' ? collection.patch : collection.fields;
       if ((method === 'PUT' || method === 'PATCH') && update) {
         Object.assign(rows[index], update(data, rows[index]));
         saveDb(state);
+        await cloudAdminSaveCatalog(state).catch(() => {});
         return collection.out ? collection.out(rows[index]) : rows[index];
       }
     }
@@ -518,9 +661,13 @@ function fail(status, message) {
 }
 
 const isLoggedIn = () => Boolean(sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY));
-const logIn = () => localStorage.setItem(SESSION_KEY, '1');
+function logIn(username = '') {
+  localStorage.setItem(SESSION_KEY, '1');
+  if (username) localStorage.setItem(ADMIN_USER_KEY, username);
+}
 function logOut() {
   localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(ADMIN_USER_KEY);
   sessionStorage.removeItem(SESSION_KEY);
 }
 

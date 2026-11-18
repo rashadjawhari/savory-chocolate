@@ -1,0 +1,427 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model — SAVORY Chocolate (savory-962f3)
+// ===============================================================
+//
+// Collection: admins/{uid}
+//   Admin authorization marker / metadata (Auth UID == document ID).
+//   Fields (all optional; bounded for safety):
+//     - uid: string (immutable on update, must match {uid})
+//     - email: string (<= 200)
+//     - username: string (<= 60)
+//     - name: string (<= 120)
+//     - role: string (<= 30)
+//     - created_at / createdAt: timestamp or ISO string (immutable on update)
+//     - updated_at / updatedAt: timestamp or ISO string
+//
+// Collection: site/{docId}
+//   Only two public storefront documents are allowed: 'public_settings' and 'catalog'.
+//   - public_settings: shop info, hours, delivery flags/fees, currency (NEVER promo_codes).
+//   - catalog: arrays for branches, menu_items, offers, onboarding_slides,
+//              cake_groups, cake_options, gallery_images, reviews, faqs.
+//
+// Collection: private/{docId}
+//   Admin-only configuration (e.g., private/settings holding promo_codes).
+//
+// Collection: promos/{code}
+//   Individual promo code lookup documents (exact `get` at checkout; `list` admin-only).
+//   Fields: code (string), percent (int 1..100), active (bool or 0/1), timestamps.
+//
+// Collection: orders/{code}
+//   Full customer orders including PII (create-only for customers; read/update/delete admin-only).
+//   Document ID: SAV-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4,10}
+//   Required fields: code (== {code}), status ('new' on create), type ('menu' | 'cake'),
+//                    customer_name (1..120), customer_phone (1..40),
+//                    total_cents (int 0..100000000), items (list 1..100).
+//   Optional fields: id, order_code, customer_first_name, customer_email, pickup_date,
+//                    pickup_time, fulfillment, delivery_address, delivery_fee_cents,
+//                    branch, notes, subtotal_cents, promo_code, promo_percent,
+//                    discount_cents, currency, whatsapp_url, reference_image,
+//                    created_at, createdAt, updated_at, updatedAt.
+//   Immutable on update: code, type, created_at, createdAt.
+//
+// Collection: order_tracking/{code}
+//   Public non-PII live order tracker mirror (exact `get` public; `list`/update/delete admin-only).
+//   Document ID: SAV-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4,10}
+//   Required fields: code (== {code}), status ('new' on create), type ('menu' | 'cake'),
+//                    total_cents (int 0..100000000).
+//   Optional non-PII fields: order_code, customer_first_name (<= 60), pickup_date,
+//                            pickup_time, fulfillment, delivery_fee_cents, branch,
+//                            currency, subtotal_cents, discount_cents, promo_code,
+//                            items (list <= 100), created_at, createdAt, updated_at, updatedAt.
+//   Strictly forbidden PII fields: customer_phone, customer_email, delivery_address,
+//                                  notes, customer_name, whatsapp_url.
+//   Immutable on update: code, type, created_at, createdAt.
+//
+// Collection: messages/{id}
+//   Customer contact messages (create-only for visitors; read/update/delete admin-only).
+//   Required fields: name (1..120), message (1..2000), is_read (0 on create; 0/1 or bool on update).
+//   Optional fields: id, email, phone, website (must be '' if present), created_at, createdAt,
+//                    updated_at, updatedAt.
+//   Immutable on update: name, message, email, phone, created_at, createdAt.
+//
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isNonEmptyString(val, maxLen) {
+      return val is string && val.size() > 0 && val.size() <= maxLen;
+    }
+
+    function isOptionalString(data, field, maxLen) {
+      return !(field in data)
+        || (data[field] is string && data[field].size() <= maxLen);
+    }
+
+    function isOptionalNonNegInt(data, field, maxVal) {
+      return !(field in data)
+        || (data[field] is int && data[field] >= 0 && data[field] <= maxVal);
+    }
+
+    function isOptionalEmail(data, field) {
+      return !(field in data)
+        || data[field] == ''
+        || (data[field] is string
+            && data[field].size() <= 200
+            && data[field].matches('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$'));
+    }
+
+    function isOptionalHttpsUrl(data, field, maxLen) {
+      return !(field in data)
+        || data[field] == ''
+        || (data[field] is string
+            && data[field].size() <= maxLen
+            && data[field].matches('^https://.*'));
+    }
+
+    function isOptionalTimestampOrIsoString(data, field) {
+      return !(field in data)
+        || data[field] is timestamp
+        || (data[field] is string && data[field].size() <= 40);
+    }
+
+    function isValidOrderCode(code) {
+      return code is string
+        && code.matches('^SAV-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4,10}$');
+    }
+
+    function isValidOrderStatus(status) {
+      return status in ['new', 'confirmed', 'baking', 'ready', 'completed', 'cancelled'];
+    }
+
+    function isValidOrderType(type) {
+      return type in ['menu', 'cake'];
+    }
+
+    function isValidFulfillment(val) {
+      return val in ['pickup', 'delivery'];
+    }
+
+    function isValidCents(val) {
+      return val is int && val >= 0 && val <= 100000000;
+    }
+
+    function isImmutableIfPresent(field) {
+      return !(field in resource.data)
+        || ((field in request.resource.data)
+            && request.resource.data[field] == resource.data[field]);
+    }
+
+    // ===============================================================
+    // Domain Validators (invoked on both create and update)
+    // ===============================================================
+
+    function isValidAdminDoc(data, uid) {
+      return data.keys().size() <= 20
+        && (!('uid' in data) || data.uid == uid)
+        && isOptionalString(data, 'email', 200)
+        && isOptionalString(data, 'username', 60)
+        && isOptionalString(data, 'name', 120)
+        && isOptionalString(data, 'role', 30)
+        && isOptionalTimestampOrIsoString(data, 'created_at')
+        && isOptionalTimestampOrIsoString(data, 'createdAt')
+        && isOptionalTimestampOrIsoString(data, 'updated_at')
+        && isOptionalTimestampOrIsoString(data, 'updatedAt');
+    }
+
+    function isValidSiteDoc(data, docId) {
+      return docId in ['public_settings', 'catalog']
+        && (
+          (docId == 'public_settings'
+            && !('promo_codes' in data)
+            && data.keys().size() <= 60
+            && isOptionalString(data, 'shop_name', 120)
+            && isOptionalString(data, 'hero_title', 200)
+            && isOptionalString(data, 'slogan', 200)
+            && isOptionalString(data, 'tagline', 300)
+            && isOptionalString(data, 'about', 5000)
+            && isOptionalString(data, 'about_story', 10000)
+            && isOptionalString(data, 'phone', 60)
+            && isOptionalString(data, 'whatsapp', 40)
+            && isOptionalString(data, 'email', 200)
+            && isOptionalString(data, 'address', 500)
+            && isOptionalString(data, 'hours', 1000)
+            && isOptionalString(data, 'delivery_area', 500)
+            && isOptionalString(data, 'currency', 10))
+          || (docId == 'catalog'
+            && data.keys().size() <= 40
+            && (!('branches' in data) || (data.branches is list && data.branches.size() <= 100))
+            && (!('menu_items' in data) || (data.menu_items is list && data.menu_items.size() <= 1000))
+            && (!('offers' in data) || (data.offers is list && data.offers.size() <= 200))
+            && (!('onboarding_slides' in data) || (data.onboarding_slides is list && data.onboarding_slides.size() <= 100))
+            && (!('cake_groups' in data) || (data.cake_groups is list && data.cake_groups.size() <= 50))
+            && (!('cake_options' in data) || (data.cake_options is list && data.cake_options.size() <= 500))
+            && (!('gallery_images' in data) || (data.gallery_images is list && data.gallery_images.size() <= 500))
+            && (!('reviews' in data) || (data.reviews is list && data.reviews.size() <= 500))
+            && (!('faqs' in data) || (data.faqs is list && data.faqs.size() <= 200)))
+        );
+    }
+
+    function isValidPrivateDoc(data) {
+      return data.keys().size() <= 60
+        && (!('promo_codes' in data)
+          || (data.promo_codes is string && data.promo_codes.size() <= 10000)
+          || (data.promo_codes is list && data.promo_codes.size() <= 500)
+          || (data.promo_codes is map && data.promo_codes.keys().size() <= 500));
+    }
+
+    function isValidPromoDoc(data, code) {
+      return code.matches('^[A-Za-z0-9_-]{2,40}$')
+        && data.keys().size() <= 20
+        && (!('code' in data) || isNonEmptyString(data.code, 40))
+        && (!('percent' in data) || (data.percent is int && data.percent >= 1 && data.percent <= 100))
+        && (!('active' in data) || data.active is bool || data.active in [0, 1])
+        && isOptionalTimestampOrIsoString(data, 'created_at')
+        && isOptionalTimestampOrIsoString(data, 'createdAt')
+        && isOptionalTimestampOrIsoString(data, 'updated_at')
+        && isOptionalTimestampOrIsoString(data, 'updatedAt');
+    }
+
+    function isValidOrderItem(item) {
+      return (item is map
+          && item.keys().size() >= 1
+          && item.keys().size() <= 20
+          && isOptionalString(item, 'name', 200)
+          && isOptionalNonNegInt(item, 'quantity', 999)
+          && isOptionalNonNegInt(item, 'unit_price_cents', 100000000)
+          && isOptionalNonNegInt(item, 'price_cents', 100000000)
+          && (!('details' in item) || (item.details is map && item.details.keys().size() <= 30)))
+        || isNonEmptyString(item, 200);
+    }
+
+    function isValidOrder(data, code, isCreate) {
+      return isValidOrderCode(code)
+        && data.keys().hasOnly([
+          'id', 'code', 'order_code', 'type', 'status',
+          'customer_name', 'customer_first_name', 'customer_phone', 'customer_email',
+          'pickup_date', 'pickup_time', 'fulfillment', 'delivery_address',
+          'delivery_fee_cents', 'branch', 'notes', 'total_cents', 'subtotal_cents',
+          'promo_code', 'promo_percent', 'discount_cents', 'currency',
+          'whatsapp_url', 'reference_image', 'items',
+          'created_at', 'createdAt', 'updated_at', 'updatedAt'
+        ])
+        && data.code == code
+        && ((isCreate && data.status == 'new') || (!isCreate && isValidOrderStatus(data.status)))
+        && isValidOrderType(data.type)
+        && isNonEmptyString(data.customer_name, 120)
+        && isOptionalString(data, 'customer_first_name', 60)
+        && isNonEmptyString(data.customer_phone, 40)
+        && isOptionalEmail(data, 'customer_email')
+        && isOptionalString(data, 'order_code', 20)
+        && isOptionalString(data, 'pickup_date', 20)
+        && isOptionalString(data, 'pickup_time', 20)
+        && (!('fulfillment' in data) || isValidFulfillment(data.fulfillment))
+        && isOptionalString(data, 'delivery_address', 500)
+        && isOptionalNonNegInt(data, 'delivery_fee_cents', 100000000)
+        && isOptionalString(data, 'branch', 120)
+        && isOptionalString(data, 'notes', 2000)
+        && isValidCents(data.total_cents)
+        && isOptionalNonNegInt(data, 'subtotal_cents', 100000000)
+        && isOptionalString(data, 'promo_code', 40)
+        && isOptionalNonNegInt(data, 'promo_percent', 100)
+        && isOptionalNonNegInt(data, 'discount_cents', 100000000)
+        && isOptionalString(data, 'currency', 10)
+        && isOptionalHttpsUrl(data, 'whatsapp_url', 4000)
+        && isOptionalString(data, 'reference_image', 500)
+        && (!('id' in data) || data.id is int || (data.id is string && data.id.size() <= 40))
+        && data.items is list
+        && data.items.size() >= 1
+        && data.items.size() <= 100
+        && isValidOrderItem(data.items[0])
+        && isOptionalTimestampOrIsoString(data, 'created_at')
+        && isOptionalTimestampOrIsoString(data, 'createdAt')
+        && isOptionalTimestampOrIsoString(data, 'updated_at')
+        && isOptionalTimestampOrIsoString(data, 'updatedAt');
+    }
+
+    function hasNoTrackingPii(data) {
+      return !('customer_phone' in data)
+        && !('customer_email' in data)
+        && !('delivery_address' in data)
+        && !('notes' in data)
+        && !('customer_name' in data)
+        && !('whatsapp_url' in data);
+    }
+
+    function isValidOrderTracking(data, code, isCreate) {
+      return isValidOrderCode(code)
+        && hasNoTrackingPii(data)
+        && data.keys().hasOnly([
+          'code', 'order_code', 'type', 'status',
+          'customer_first_name', 'pickup_date', 'pickup_time',
+          'fulfillment', 'delivery_fee_cents', 'branch', 'currency',
+          'total_cents', 'subtotal_cents', 'discount_cents', 'promo_code',
+          'items', 'created_at', 'createdAt', 'updated_at', 'updatedAt'
+        ])
+        && data.code == code
+        && ((isCreate && data.status == 'new') || (!isCreate && isValidOrderStatus(data.status)))
+        && isValidOrderType(data.type)
+        && isValidCents(data.total_cents)
+        && isOptionalString(data, 'order_code', 20)
+        && isOptionalString(data, 'customer_first_name', 60)
+        && isOptionalString(data, 'pickup_date', 20)
+        && isOptionalString(data, 'pickup_time', 20)
+        && (!('fulfillment' in data) || isValidFulfillment(data.fulfillment))
+        && isOptionalNonNegInt(data, 'delivery_fee_cents', 100000000)
+        && isOptionalString(data, 'branch', 120)
+        && isOptionalString(data, 'currency', 10)
+        && isOptionalNonNegInt(data, 'subtotal_cents', 100000000)
+        && isOptionalNonNegInt(data, 'discount_cents', 100000000)
+        && isOptionalString(data, 'promo_code', 40)
+        && (!('items' in data)
+            || (data.items is list
+                && data.items.size() <= 100
+                && (data.items.size() == 0 || isValidOrderItem(data.items[0]))))
+        && isOptionalTimestampOrIsoString(data, 'created_at')
+        && isOptionalTimestampOrIsoString(data, 'createdAt')
+        && isOptionalTimestampOrIsoString(data, 'updated_at')
+        && isOptionalTimestampOrIsoString(data, 'updatedAt');
+    }
+
+    function isValidMessage(data, isCreate) {
+      return data.keys().hasOnly([
+          'id', 'name', 'email', 'phone', 'message', 'is_read',
+          'website', 'created_at', 'createdAt', 'updated_at', 'updatedAt'
+        ])
+        && isNonEmptyString(data.name, 120)
+        && isOptionalEmail(data, 'email')
+        && isOptionalString(data, 'phone', 40)
+        && isNonEmptyString(data.message, 2000)
+        && ((isCreate && data.is_read == 0)
+            || (!isCreate && (data.is_read in [0, 1] || data.is_read is bool)))
+        && (!('website' in data) || data.website == '')
+        && (!('id' in data) || data.id is int || (data.id is string && data.id.size() <= 64))
+        && isOptionalTimestampOrIsoString(data, 'created_at')
+        && isOptionalTimestampOrIsoString(data, 'createdAt')
+        && isOptionalTimestampOrIsoString(data, 'updated_at')
+        && isOptionalTimestampOrIsoString(data, 'updatedAt');
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    // 1. Admin markers: users may read only their own doc to verify admin status;
+    //    one-time bootstrap create allowed strictly for the provisioned CLI UID 'savory-admin-1';
+    //    only existing admins may list, create other admins, update, or delete.
+    match /admins/{uid} {
+      allow get: if (isSignedIn() && request.auth.uid == uid) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if ((isSignedIn()
+          && request.auth.uid == 'savory-admin-1'
+          && uid == 'savory-admin-1')
+          || isAdmin())
+        && isValidAdminDoc(request.resource.data, uid);
+      allow update: if isAdmin()
+        && isValidAdminDoc(request.resource.data, uid)
+        && isImmutableIfPresent('uid')
+        && isImmutableIfPresent('created_at')
+        && isImmutableIfPresent('createdAt');
+      allow delete: if isAdmin();
+    }
+
+    // 2. Public storefront config & catalog: readable publicly for the two allowed docs;
+    //    writable/deletable only by admins on those exact two docs.
+    match /site/{docId} {
+      allow read: if docId in ['public_settings', 'catalog'];
+      allow create, update: if isAdmin() && isValidSiteDoc(request.resource.data, docId);
+      allow delete: if isAdmin() && docId in ['public_settings', 'catalog'];
+    }
+
+    // 3. Private settings (promo_codes, etc.): strictly admin-only.
+    match /private/{docId} {
+      allow read, delete: if isAdmin();
+      allow create, update: if isAdmin() && isValidPrivateDoc(request.resource.data);
+    }
+
+    // 4. Promo code lookup: exact single-doc `get` allowed at checkout without exposing list.
+    match /promos/{code} {
+      allow get: if true;
+      allow list, delete: if isAdmin();
+      allow create, update: if isAdmin() && isValidPromoDoc(request.resource.data, code);
+    }
+
+    // 5. Full customer orders (contains PII): public `create` validated strictly;
+    //    all reads, updates, and deletes restricted to admins.
+    match /orders/{code} {
+      allow create: if isValidOrder(request.resource.data, code, true);
+      allow read, delete: if isAdmin();
+      allow update: if isAdmin()
+        && isValidOrder(request.resource.data, code, false)
+        && request.resource.data.code == resource.data.code
+        && request.resource.data.type == resource.data.type
+        && isImmutableIfPresent('created_at')
+        && isImmutableIfPresent('createdAt');
+    }
+
+    // 6. Public non-PII live order tracker mirror: exact `get` allowed without PII exposure;
+    //    list, update, and delete restricted to admins.
+    match /order_tracking/{code} {
+      allow get: if true;
+      allow list, delete: if isAdmin();
+      allow create: if isValidOrderTracking(request.resource.data, code, true);
+      allow update: if isAdmin()
+        && isValidOrderTracking(request.resource.data, code, false)
+        && request.resource.data.code == resource.data.code
+        && request.resource.data.type == resource.data.type
+        && isImmutableIfPresent('created_at')
+        && isImmutableIfPresent('createdAt');
+    }
+
+    // 7. Customer contact messages: public `create` validated strictly;
+    //    read, update (e.g., is_read toggle), and delete restricted to admins.
+    match /messages/{id} {
+      allow create: if id.size() >= 1 && id.size() <= 128
+        && isValidMessage(request.resource.data, true);
+      allow read, delete: if isAdmin();
+      allow update: if isAdmin()
+        && isValidMessage(request.resource.data, false)
+        && request.resource.data.name == resource.data.name
+        && request.resource.data.message == resource.data.message
+        && isImmutableIfPresent('email')
+        && isImmutableIfPresent('phone')
+        && isImmutableIfPresent('created_at')
+        && isImmutableIfPresent('createdAt');
+    }
+
+    // 8. Default deny catch-all for any unmatched path or subcollection.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

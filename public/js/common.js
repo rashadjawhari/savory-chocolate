@@ -6,7 +6,7 @@ import { tr, isAr } from '/js/i18n-ar.js';
 
 export { tr, isAr };
 
-let useServerlessFallback = false;
+let useServerlessFallback = typeof location !== 'undefined' && /(^|\.)(web\.app|firebaseapp\.com)$/i.test(location.hostname);
 
 export async function api(path, { method = 'GET', body, form } = {}) {
   if (useServerlessFallback) {
