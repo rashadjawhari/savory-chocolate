@@ -144,15 +144,27 @@ let onboardIdx = 0;
 let onboardTimer = null;
 let onboardSlideEls = [];
 let onboardDotEls = [];
+let onboardCloneEl = null;
+let onboardWrapCleanup = null;
 let currentCategory = null;
 let currentProduct = null;
 let currentProductPicks = [];
 let currentProductQty = 1;
 
+function clearOnboardingWrap() {
+  if (onboardWrapCleanup) {
+    const fn = onboardWrapCleanup;
+    onboardWrapCleanup = null;
+    fn();
+  }
+}
+
 function pauseOnboardingMedia() {
   clearTimeout(onboardTimer);
   onboardTimer = null;
+  clearOnboardingWrap();
   onboardSlideEls.forEach((el) => el.querySelector('video')?.pause());
+  onboardCloneEl?.querySelector('video')?.pause();
   onboardingBg?.querySelectorAll('video').forEach((v) => v.pause());
 }
 
@@ -318,14 +330,23 @@ function posterForVideo(srcUrl) {
     : '/img/social/reel-dubai-crepe.webp';
 }
 
-function ensureVideoPlaying(vid) {
+function ensureVideoPlaying(vid, { onAutoplayBlocked = null } = {}) {
   if (!vid) return;
+  const shouldLoop = activeOnboardingSlides.length <= 1;
   vid.muted = true;
   vid.defaultMuted = true;
-  vid.loop = true;
+  vid.loop = shouldLoop;
+  if (!shouldLoop) vid.removeAttribute('loop');
   vid.autoplay = true;
   vid.playsInline = true;
-  const attempt = () => { vid.play().catch(() => {}); };
+  const attempt = () => {
+    const p = vid.play();
+    if (p && typeof p.catch === 'function') {
+      p.catch(() => {
+        if (typeof onAutoplayBlocked === 'function') onAutoplayBlocked();
+      });
+    }
+  };
   if (vid.readyState >= 2) {
     attempt();
   } else {
@@ -336,23 +357,88 @@ function ensureVideoPlaying(vid) {
 
 function buildOnboardingVideo(srcUrl, eager = false) {
   const video = document.createElement('video');
+  const shouldLoop = activeOnboardingSlides.length <= 1;
   video.muted = true;
   video.defaultMuted = true;
-  video.loop = true;
+  video.loop = shouldLoop;
   video.autoplay = true;
   video.playsInline = true;
   video.setAttribute('playsinline', '');
   video.setAttribute('muted', '');
   video.setAttribute('autoplay', '');
-  video.setAttribute('loop', '');
+  if (shouldLoop) video.setAttribute('loop', '');
   video.preload = eager ? 'auto' : 'metadata';
   video.poster = posterForVideo(srcUrl);
   video.src = srcUrl;
   return video;
 }
 
+function bindOnboardingSlideEvents(vid, slideIndex, wrap, srcUrl) {
+  if (!vid || vid.dataset.onboardBound) return;
+  vid.dataset.onboardBound = '1';
+
+  vid.addEventListener('ended', () => {
+    if (
+      activeOnboardingSlides.length <= 1
+      || onboardIdx !== slideIndex
+      || !document.body.classList.contains('is-onboarding')
+      || document.hidden
+      || onboardTouchActive
+    ) {
+      return;
+    }
+    setOnboardingSlide(slideIndex + 1);
+  });
+
+  vid.addEventListener('loadedmetadata', () => {
+    if (onboardIdx === slideIndex && document.body.classList.contains('is-onboarding')) {
+      scheduleOnboardingAdvance();
+    }
+  });
+
+  vid.addEventListener('error', () => {
+    const fallback = document.createElement('img');
+    fallback.src = posterForVideo(srcUrl);
+    fallback.alt = '';
+    wrap.innerHTML = '';
+    wrap.append(fallback);
+    if (onboardIdx === slideIndex && document.body.classList.contains('is-onboarding')) {
+      scheduleOnboardingAdvance();
+    }
+  }, { once: true });
+}
+
+function createOnboardingSlideNode(slide, index, { isClone = false } = {}) {
+  const srcUrl = mediaSrc(slide.media_url);
+  const wrap = document.createElement('div');
+  wrap.className = `onboarding-slide${!isClone && index === 0 ? ' is-active' : ''}`;
+  if (isClone) {
+    wrap.dataset.onboardClone = 'first';
+    wrap.setAttribute('aria-hidden', 'true');
+  }
+  if (isVideoSlide(slide)) {
+    const video = buildOnboardingVideo(srcUrl, !isClone && index <= 1);
+    if (isClone) {
+      video.autoplay = false;
+      video.removeAttribute('autoplay');
+      video.preload = 'metadata';
+    } else {
+      bindOnboardingSlideEvents(video, index, wrap, srcUrl);
+    }
+    wrap.append(video);
+  } else {
+    const img = document.createElement('img');
+    img.src = srcUrl;
+    img.alt = '';
+    img.decoding = 'async';
+    wrap.append(img);
+  }
+  return wrap;
+}
+
 function setupOnboardingMedia() {
   if (!onboardingBg) return;
+  onboardCloneEl = null;
   const initialWrap = onboardingBg.querySelector('[data-initial-video]');
   const initialVid = initialWrap?.querySelector('video');
   const firstSlide = activeOnboardingSlides[0];
@@ -373,32 +459,21 @@ function setupOnboardingMedia() {
     if (i === 0 && canReuseInitial) {
       initialWrap.className = 'onboarding-slide is-active';
       initialVid.poster = posterForVideo(srcUrl);
+      bindOnboardingSlideEvents(initialVid, 0, initialWrap, srcUrl);
       ensureVideoPlaying(initialVid);
       return initialWrap;
     }
 
-    const wrap = document.createElement('div');
-    wrap.className = `onboarding-slide${i === 0 ? ' is-active' : ''}`;
-    if (isVideoSlide(slide)) {
-      const video = buildOnboardingVideo(srcUrl, i <= 1);
-      video.addEventListener('error', () => {
-        const fallback = document.createElement('img');
-        fallback.src = posterForVideo(srcUrl);
-        fallback.alt = '';
-        wrap.innerHTML = '';
-        wrap.append(fallback);
-      }, { once: true });
-      wrap.append(video);
-    } else {
-      const img = document.createElement('img');
-      img.src = srcUrl;
-      img.alt = '';
-      img.decoding = 'async';
-      wrap.append(img);
-    }
+    const wrap = createOnboardingSlideNode(slide, i);
     onboardingBg.append(wrap);
     return wrap;
   });
+
+  // Append a clone of slide 0 at the end so advancing past the last slide always scrolls left seamlessly.
+  if (activeOnboardingSlides.length > 1 && firstSlide) {
+    onboardCloneEl = createOnboardingSlideNode(firstSlide, 0, { isClone: true });
+    onboardingBg.append(onboardCloneEl);
+  }
 
   if (onboardingDots) {
     onboardingDots.innerHTML = activeOnboardingSlides.length > 1
@@ -410,16 +485,100 @@ function setupOnboardingMedia() {
   }
 }
 
+function updateOnboardingIndicators() {
+  onboardDotEls.forEach((dot, i) => {
+    dot.classList.toggle('is-active', i === onboardIdx);
+  });
+  if (onboardingCaption) {
+    onboardingCaption.textContent = activeOnboardingSlides[onboardIdx]?.caption || '';
+  }
+}
+
 function setOnboardingSlide(nextIdx, { preservePlaying = false } = {}) {
-  if (!onboardSlideEls.length) return;
-  onboardIdx = ((nextIdx % onboardSlideEls.length) + onboardSlideEls.length) % onboardSlideEls.length;
-  const upcomingIdx = (onboardIdx + 1) % onboardSlideEls.length;
+  const count = onboardSlideEls.length;
+  if (!count) return;
+  clearTimeout(onboardTimer);
+  onboardTimer = null;
+  clearOnboardingWrap();
+
+  // Seamless forward wrap: transition left onto the cloned first slide, then reset quietly to index 0.
+  if (count > 1 && nextIdx === count && onboardCloneEl && onboardingBg) {
+    onboardIdx = 0;
+    const cloneVid = onboardCloneEl.querySelector('video');
+    if (cloneVid) {
+      cloneVid.preload = 'auto';
+      if (cloneVid.readyState >= 1) {
+        try { cloneVid.currentTime = 0; } catch {}
+      }
+      ensureVideoPlaying(cloneVid);
+    }
+
+    onboardingBg.style.transition = '';
+    onboardingBg.style.transform = `translate3d(-${count * 100}%, 0, 0)`;
+    updateOnboardingIndicators();
+
+    let settled = false;
+    let fallbackTimer = null;
+    const finalizeSnap = () => {
+      if (settled) return;
+      settled = true;
+      onboardingBg.removeEventListener('transitionend', onTransitionEnd);
+      clearTimeout(fallbackTimer);
+      onboardWrapCleanup = null;
+
+      onboardingBg.style.transition = 'none';
+      const firstWrap = onboardSlideEls[0];
+      const firstVid = firstWrap?.querySelector('video');
+      onboardSlideEls.forEach((el, i) => {
+        el.classList.toggle('is-active', i === 0);
+        if (i !== 0) el.querySelector('video')?.pause();
+      });
+      if (firstVid && document.body.classList.contains('is-onboarding') && !document.hidden) {
+        if (firstVid.readyState >= 1) {
+          try {
+            firstVid.currentTime = cloneVid && Number.isFinite(cloneVid.currentTime) ? cloneVid.currentTime : 0.65;
+          } catch {}
+        }
+        ensureVideoPlaying(firstVid);
+      }
+      onboardingBg.style.transform = 'translate3d(0%, 0, 0)';
+      void onboardingBg.offsetWidth;
+      requestAnimationFrame(() => {
+        cloneVid?.pause();
+        if (onboardingBg) onboardingBg.style.transition = '';
+      });
+      scheduleOnboardingAdvance();
+    };
+
+    const onTransitionEnd = (e) => {
+      if (e.target === onboardingBg && e.propertyName === 'transform') finalizeSnap();
+    };
+    onboardingBg.addEventListener('transitionend', onTransitionEnd);
+    fallbackTimer = setTimeout(finalizeSnap, 780);
+    onboardWrapCleanup = () => {
+      settled = true;
+      onboardingBg?.removeEventListener('transitionend', onTransitionEnd);
+      clearTimeout(fallbackTimer);
+      cloneVid?.pause();
+    };
+    return;
+  }
+
+  onboardIdx = ((nextIdx % count) + count) % count;
+  const upcomingIdx = (onboardIdx + 1) % count;
+  onboardCloneEl?.querySelector('video')?.pause();
 
   if (onboardingBg) {
     onboardingBg.style.transition = '';
     onboardingBg.style.transform = `translate3d(-${onboardIdx * 100}%, 0, 0)`;
   }
 
+  if (onboardIdx === count - 1 && onboardCloneEl) {
+    const cloneVid = onboardCloneEl.querySelector('video');
+    if (cloneVid && cloneVid.preload !== 'auto') cloneVid.preload = 'auto';
+  }
+
+  let playbackBlocked = false;
   onboardSlideEls.forEach((el, i) => {
     const active = i === onboardIdx;
     el.classList.toggle('is-active', active);
@@ -431,36 +590,46 @@ function setOnboardingSlide(nextIdx, { preservePlaying = false } = {}) {
       if (!(preservePlaying && !vid.paused) && vid.readyState >= 1) {
         vid.currentTime = 0;
       }
-      ensureVideoPlaying(vid);
+      ensureVideoPlaying(vid, {
+        onAutoplayBlocked: () => {
+          playbackBlocked = true;
+          scheduleOnboardingAdvance(true);
+        },
+      });
     } else {
       vid.pause();
     }
   });
 
-  onboardDotEls.forEach((dot, i) => {
-    dot.classList.toggle('is-active', i === onboardIdx);
-  });
-
-  if (onboardingCaption) {
-    onboardingCaption.textContent = activeOnboardingSlides[onboardIdx]?.caption || '';
-  }
-
-  scheduleOnboardingAdvance();
+  updateOnboardingIndicators();
+  scheduleOnboardingAdvance(playbackBlocked);
 }
 
-function scheduleOnboardingAdvance() {
+function scheduleOnboardingAdvance(forceQuickFallback = false) {
   clearTimeout(onboardTimer);
   onboardTimer = null;
   if (
     activeOnboardingSlides.length <= 1
     || !document.body.classList.contains('is-onboarding')
     || document.hidden
-    || reducedMotion()
   ) {
     return;
   }
-  const current = activeOnboardingSlides[onboardIdx];
-  const delay = isVideoSlide(current) ? 8500 : 5000;
+  const activeEl = onboardSlideEls[onboardIdx];
+  const activeVid = activeEl?.querySelector('video');
+
+  // Video slides advance immediately via their 'ended' listener; keep only a long safety fail-safe timer.
+  let delay = 5000;
+  if (activeVid) {
+    if (forceQuickFallback) {
+      delay = 6000;
+    } else if (Number.isFinite(activeVid.duration) && activeVid.duration > 0) {
+      delay = Math.max(4000, Math.round(activeVid.duration * 1000) + 2500);
+    } else {
+      delay = 25000;
+    }
+  }
+
   onboardTimer = setTimeout(() => {
     setOnboardingSlide(onboardIdx + 1);
   }, delay);
@@ -1005,6 +1174,9 @@ function renderCart() {
   renderRecentReorderBar();
 
   // Sync header badge & onboarding utility cart pill
+  if (headerCartBtn) {
+    headerCartBtn.classList.toggle('has-items', count > 0);
+  }
   if (headerCartCount) {
     const prevCount = Number(headerCartCount.dataset.prevCount || '0');
     headerCartCount.textContent = String(count);
