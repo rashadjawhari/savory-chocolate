@@ -43,6 +43,18 @@ async function getDb() {
           saveDb(parsed);
         }
       }
+      // Migrate legacy bundled /img/*.jpg asset URLs in cached static DBs to optimized .webp.
+      let migratedWebp = false;
+      const toWebp = (u) => {
+        if (typeof u !== 'string' || !/^\/img\/.+\.jpg(\?.*)?$/i.test(u)) return u;
+        migratedWebp = true;
+        return u.replace(/\.jpg(\?.*)?$/i, '.webp$1');
+      };
+      for (const m of parsed.menu_items || []) m.image = toWebp(m.image);
+      for (const o of parsed.offers || []) o.image = toWebp(o.image);
+      for (const g of parsed.gallery_images || []) g.image = toWebp(g.image);
+      for (const s of parsed.onboarding_slides || []) s.media_url = toWebp(s.media_url);
+      if (migratedWebp) saveDb(parsed);
       return parsed;
     }
   } catch { /* ignore */ }

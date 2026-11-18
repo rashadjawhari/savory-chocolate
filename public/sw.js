@@ -10,7 +10,7 @@ const STATIC_ASSETS = [
   '/img/favicon.svg',
   '/img/logo.svg',
   '/img/cake.svg',
-  '/img/onboarding-box.jpg',
+  '/img/onboarding-box.webp',
   '/js/common.js',
   '/js/audio.js',
   '/js/cake3d.js',

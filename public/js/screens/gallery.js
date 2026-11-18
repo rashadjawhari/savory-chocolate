@@ -56,7 +56,7 @@ await renderLookbook();
 if (photos.length) {
   gridPhotos.innerHTML = photos.map((p, i) => `
     <figure tabindex="0" data-index="${i}" data-reveal style="--delay: ${(i % 3) * 0.08}s">
-      <img src="${esc(mediaSrc(p.image))}" alt="${esc(p.caption || 'Cake from our kitchen')}" loading="lazy">
+      <img src="${esc(mediaSrc(p.image))}" alt="${esc(p.caption || 'Cake from our kitchen')}" loading="lazy" decoding="async">
       ${p.caption ? `<figcaption>${esc(p.caption)}</figcaption>` : ''}
     </figure>`).join('');
   reveal(gridPhotos);

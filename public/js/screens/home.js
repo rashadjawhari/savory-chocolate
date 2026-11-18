@@ -19,7 +19,7 @@ const HERO_CAKE = {
 
 const MENU_URL = document.querySelector('#ways a.at-tile:last-child')?.getAttribute('href') || '/menu';
 const menuProductHref = (id) => `${MENU_URL.replace(/\/$/, '')}/#product/${id}`;
-const photo = (g, { eager = false } = {}) => `<img src="${esc(mediaSrc(g.image))}" alt="${esc(g.caption || '')}"${eager ? '' : ' loading="lazy"'}>`;
+const photo = (g, { eager = false } = {}) => `<img src="${esc(mediaSrc(g.image))}" alt="${esc(g.caption || '')}"${eager ? ' fetchpriority="high"' : ' loading="lazy"'} decoding="async">`;
 
 // loadSettings also sets the shop's currency for money().
 const [, gallery, menu, reviews] = await Promise.all([

@@ -314,8 +314,8 @@ const activeOnboardingSlides = onboardingSlides.length
 
 function posterForVideo(srcUrl) {
   return /\/img\/social\/reel-[^/?#]+\.(mp4|webm|mov)(\?.*)?$/i.test(srcUrl)
-    ? srcUrl.replace(/\.(mp4|webm|mov)(\?.*)?$/i, '.jpg')
-    : '/img/social/reel-dubai-crepe.jpg';
+    ? srcUrl.replace(/\.(mp4|webm|mov)(\?.*)?$/i, '.webp')
+    : '/img/social/reel-dubai-crepe.webp';
 }
 
 function ensureVideoPlaying(vid) {
@@ -602,10 +602,10 @@ function buildSliderCard(entry) {
 
     const label = tr(o.title);
     const visualHtml = o.image
-      ? `<img src="${esc(mediaSrc(o.image))}" alt="${esc(label)}" loading="eager">`
+      ? `<img src="${esc(mediaSrc(o.image))}" alt="${esc(label)}" loading="eager" decoding="async">`
       : targetProduct
         ? illustrationFor(targetProduct)
-        : `<img src="/img/onboarding-box.jpg" alt="${esc(label)}" loading="eager">`;
+        : `<img src="/img/onboarding-box.webp" alt="${esc(label)}" loading="eager" decoding="async">`;
 
     return `
       <article class="slider-slide" role="button" tabindex="0" ${actionAttr} aria-label="${esc(label)}">
@@ -627,7 +627,7 @@ function buildSliderCard(entry) {
   return `
     <article class="slider-slide" role="button" tabindex="0" data-open-product="${item.id}" aria-label="${esc(itemLabel)}">
       <div class="slider-slide-media">
-        ${item.image ? `<img src="${esc(mediaSrc(item.image))}" alt="${esc(itemLabel)}" loading="eager">` : illustrationFor(item)}
+        ${item.image ? `<img src="${esc(mediaSrc(item.image))}" alt="${esc(itemLabel)}" loading="eager" decoding="async">` : illustrationFor(item)}
       </div>
       <div class="slider-slide-copy">
         <h3>${esc(itemLabel)}</h3>
@@ -990,7 +990,7 @@ function renderCartThumb(line) {
   }
   const item = itemsById.get(line.id);
   if (!item) return '';
-  if (item.image) return `<img src="${esc(mediaSrc(item.image))}" alt="${esc(item.name)}" loading="lazy">`;
+  if (item.image) return `<img src="${esc(mediaSrc(item.image))}" alt="${esc(item.name)}" loading="lazy" decoding="async">`;
   return illustrationFor(item);
 }
 
@@ -1252,7 +1252,7 @@ function showMenuHomeView({ scrollTarget = null, scrollTop = true, navKey = 'men
       const catImg = pickCategoryImage(catItems, usedImgs);
       const catLabel = tr(catName);
       const visualHtml = catImg
-        ? `<img src="${esc(mediaSrc(catImg))}" alt="${esc(catLabel)}" loading="lazy">`
+        ? `<img src="${esc(mediaSrc(catImg))}" alt="${esc(catLabel)}" loading="lazy" decoding="async">`
         : `<div class="folder-icon">${meta.icon}</div>`;
       return `
         <a class="folder-card" href="#category/${encodeURIComponent(catName)}" data-nav-cat="${esc(catName)}">
@@ -1299,7 +1299,7 @@ function renderRowCard(item) {
   const displayPrice = from ? fromPrice(item) : item.price_cents;
   const label = tr(item.name);
   const visualHtml = item.image
-    ? `<img src="${esc(mediaSrc(item.image))}" alt="${esc(label)}" loading="lazy">`
+    ? `<img src="${esc(mediaSrc(item.image))}" alt="${esc(label)}" loading="lazy" decoding="async">`
     : `<div class="row-card-icon">${illustrationFor(item)}</div>`;
 
   return `
@@ -1441,7 +1441,7 @@ function showProductView(productId) {
   productPageCard.innerHTML = `
     <div class="product-page-grid">
       <div class="product-page-visual">
-        ${item.image ? `<img src="${esc(mediaSrc(item.image))}" alt="${esc(itemTitle)}">` : illustrationFor(item)}
+        ${item.image ? `<img src="${esc(mediaSrc(item.image))}" alt="${esc(itemTitle)}" loading="eager" fetchpriority="high" decoding="async">` : illustrationFor(item)}
       </div>
 
       <div class="product-page-body">

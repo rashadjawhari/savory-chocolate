@@ -12,7 +12,7 @@ const PRESET_SLIDES = [
   { label: 'Chocolate Pancakes Reel (IG · MP4)', value: '/img/social/reel-pancakes.mp4' },
   { label: 'Strawberry Crepe Reel (IG · MP4)', value: '/img/social/reel-strawberry-crepe.mp4' },
   { label: 'Atelier Video Reel (MP4)', value: '/img/onboarding-reel.mp4' },
-  { label: 'Luxury Chocolate Gift Box Photo', value: '/img/social/gift-eid-box.jpg' },
+  { label: 'Luxury Chocolate Gift Box Photo', value: '/img/social/gift-eid-box.webp' },
 ];
 
 export async function load() {

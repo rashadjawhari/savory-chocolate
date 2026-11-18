@@ -102,6 +102,7 @@ const MIGRATIONS = [
   migrateToVersion8,
   migrateToVersion9,
   migrateToVersion10,
+  migrateToVersion11,
 ];
 const LATEST = MIGRATIONS.length;
 
@@ -149,7 +150,7 @@ function migrateToVersion8() {
       1100,
       1,
       'VIRAL HIT · #1 REEL',
-      '/img/social/reel-dubai-crepe.jpg',
+      '/img/social/reel-dubai-crepe.webp',
       JSON.stringify([
         { name: 'Drizzle Style', type: 'single', required: true, choices: [{ name: 'Triple Chocolate & Pistachio', price_cents: 0 }, { name: 'Dark 70% & Pistachio', price_cents: 50 }] },
         { name: 'Extras', type: 'multi', required: false, choices: [{ name: 'Extra pistachio kunafa crunch', price_cents: 200 }, { name: 'Fresh strawberries', price_cents: 150 }] },
@@ -164,7 +165,7 @@ function migrateToVersion8() {
       0,
       1,
       'TOP REEL',
-      '/img/social/reel-london-cake.jpg',
+      '/img/social/reel-london-cake.webp',
       JSON.stringify([
         { name: 'Portion', type: 'single', required: true, choices: [{ name: 'Generous Individual Slice', price_cents: 0 }, { name: 'Sharing Loaf (Serves 6–8)', price_cents: 1950 }] },
       ]),
@@ -178,7 +179,7 @@ function migrateToVersion8() {
       0,
       1,
       'NEW LAUNCH',
-      '/img/social/reel-cinnamon-rolls.jpg',
+      '/img/social/reel-cinnamon-rolls.webp',
       JSON.stringify([
         { name: 'Glaze', type: 'single', required: true, choices: [{ name: 'Classic Cream & Caramel', price_cents: 0 }, { name: 'Lotus Biscoff Drizzle', price_cents: 100 }, { name: 'Belgian Chocolate Pour', price_cents: 100 }] },
         { name: 'Pack Size', type: 'single', required: true, choices: [{ name: 'Single Warm Roll', price_cents: 0 }, { name: 'Box of 4 Warm Rolls', price_cents: 1400 }] },
@@ -193,7 +194,7 @@ function migrateToVersion8() {
       0,
       1,
       'CHEF SPECIAL',
-      '/img/social/reel-kunafa-cookie.jpg',
+      '/img/social/reel-kunafa-cookie.webp',
       JSON.stringify([
         { name: 'Finish', type: 'single', required: false, choices: [{ name: 'Milk Chocolate & Pistachio Drip', price_cents: 0 }, { name: 'Double Dipping Chocolate Pot', price_cents: 150 }] },
       ]),
@@ -207,7 +208,7 @@ function migrateToVersion8() {
       0,
       0,
       '',
-      '/img/social/ig-kunafa-eclair.jpg',
+      '/img/social/ig-kunafa-eclair.webp',
       '[]',
       5,
     ],
@@ -219,7 +220,7 @@ function migrateToVersion8() {
       0,
       0,
       '',
-      '/img/social/reel-pancakes.jpg',
+      '/img/social/reel-pancakes.webp',
       JSON.stringify([
         { name: 'Add-ons', type: 'multi', required: false, choices: [{ name: 'Fresh strawberries', price_cents: 150 }, { name: 'Vanilla gelato scoop', price_cents: 200 }] },
       ]),
@@ -233,7 +234,7 @@ function migrateToVersion8() {
       0,
       0,
       '',
-      '/img/social/reel-strawberry-crepe.jpg',
+      '/img/social/reel-strawberry-crepe.webp',
       '[]',
       7,
     ],
@@ -245,7 +246,7 @@ function migrateToVersion8() {
       0,
       0,
       '',
-      '/img/social/menu-dessert-cups.jpg',
+      '/img/social/menu-dessert-cups.webp',
       '[]',
       8,
     ],
@@ -257,7 +258,7 @@ function migrateToVersion8() {
       0,
       0,
       '',
-      '/img/social/menu-pistachio-waffle.jpg',
+      '/img/social/menu-pistachio-waffle.webp',
       '[]',
       9,
     ],
@@ -269,7 +270,7 @@ function migrateToVersion8() {
       0,
       0,
       '',
-      '/img/social/gift-eid-box.jpg',
+      '/img/social/gift-eid-box.webp',
       JSON.stringify([
         { name: 'Assortment', type: 'single', required: true, choices: [{ name: 'Mixed Milk, Dark & Hazelnut Pralines', price_cents: 0 }, { name: 'Dark & Roasted Nut Reserve', price_cents: 300 }] },
       ]),
@@ -282,21 +283,21 @@ function migrateToVersion8() {
   }
 
   // Upgrade existing menu item photos with real extracted SAVORY social media photography.
-  const setPhoto = db.prepare("UPDATE menu_items SET image = ? WHERE name = ? AND (image IS NULL OR image = '' OR image IN ('/img/onboarding-crepe.jpg', '/img/onboarding-flurry.jpg'))");
-  setPhoto.run('/img/social/reel-london-cake.jpg', 'Molten Chocolate Lava Crown');
-  setPhoto.run('/img/social/cake-heart-chocolate.jpg', 'Mirror-Glaze Orange & Dark Torte');
-  setPhoto.run('/img/social/ig-savory-box.jpg', 'Loaded Roasted Almond & Pistachio Bark');
-  setPhoto.run('/img/social/reel-strawberry-crepe.jpg', 'Triple Belgian Chocolate Crepe');
-  setPhoto.run('/img/social/reel-dubai-crepe.jpg', 'Pistachio & Kunafa Crunch Crepe');
-  setPhoto.run('/img/social/menu-icecream-cup.jpg', 'Savory Oreo & Brownie Flurry');
-  setPhoto.run('/img/social/menu-dessert-cups.jpg', 'Ferrero & Hazelnut Thick Shake');
-  setPhoto.run('/img/social/ig-kunafa-eclair.jpg', 'Belgian Chocolate Éclair');
-  setPhoto.run('/img/social/ig-savory-box.jpg', 'Smoked & Roasted Mixed Nuts');
-  setPhoto.run('/img/social/reel-london-cake.jpg', 'Chocolate fudge slice');
-  setPhoto.run('/img/social/cake-floral-pink.jpg', 'Carrot cake slice');
-  setPhoto.run('/img/social/ig-kunafa-cookie-drip.jpg', 'Brownie');
-  setPhoto.run('/img/social/reel-kunafa-cookie.jpg', 'Chocolate chip cookie');
-  setPhoto.run('/img/social/reel-sunday-boutique.jpg', 'Hot chocolate');
+  const setPhoto = db.prepare("UPDATE menu_items SET image = ? WHERE name = ? AND (image IS NULL OR image = '' OR image IN ('/img/onboarding-crepe.jpg', '/img/onboarding-flurry.jpg', '/img/onboarding-crepe.webp', '/img/onboarding-flurry.webp'))");
+  setPhoto.run('/img/social/reel-london-cake.webp', 'Molten Chocolate Lava Crown');
+  setPhoto.run('/img/social/cake-heart-chocolate.webp', 'Mirror-Glaze Orange & Dark Torte');
+  setPhoto.run('/img/social/ig-savory-box.webp', 'Loaded Roasted Almond & Pistachio Bark');
+  setPhoto.run('/img/social/reel-strawberry-crepe.webp', 'Triple Belgian Chocolate Crepe');
+  setPhoto.run('/img/social/reel-dubai-crepe.webp', 'Pistachio & Kunafa Crunch Crepe');
+  setPhoto.run('/img/social/menu-icecream-cup.webp', 'Savory Oreo & Brownie Flurry');
+  setPhoto.run('/img/social/menu-dessert-cups.webp', 'Ferrero & Hazelnut Thick Shake');
+  setPhoto.run('/img/social/ig-kunafa-eclair.webp', 'Belgian Chocolate Éclair');
+  setPhoto.run('/img/social/ig-savory-box.webp', 'Smoked & Roasted Mixed Nuts');
+  setPhoto.run('/img/social/reel-london-cake.webp', 'Chocolate fudge slice');
+  setPhoto.run('/img/social/cake-floral-pink.webp', 'Carrot cake slice');
+  setPhoto.run('/img/social/ig-kunafa-cookie-drip.webp', 'Brownie');
+  setPhoto.run('/img/social/reel-kunafa-cookie.webp', 'Chocolate chip cookie');
+  setPhoto.run('/img/social/reel-sunday-boutique.webp', 'Hot chocolate');
 
   // Upgrade default onboarding slides to real @savory.chocolate Instagram Reels.
   const hasOnlySeedSlides = db.prepare("SELECT COUNT(*) AS n FROM onboarding_slides WHERE media_url NOT LIKE '/img/onboarding-%'").get().n === 0;
@@ -325,7 +326,7 @@ function migrateToVersion8() {
       'Dubai Kunafa Chocolate Crepe',
       'Our #1 trending Instagram Reel creation — crisp pistachio kunafa wrapped in warm crepe and triple Belgian chocolate.',
       'VIRAL HIT · #1 REEL',
-      '/img/social/reel-dubai-crepe.jpg',
+      '/img/social/reel-dubai-crepe.webp',
       'Order Crepe',
       dubaiCrepe ? 'product' : 'category',
       dubaiCrepe ? String(dubaiCrepe.id) : 'Crepes & Waffles',
@@ -335,7 +336,7 @@ function migrateToVersion8() {
       'London Layered Chocolate Cake',
       'Because one layer of Belgian chocolate is never enough — velvety sponge, mousse and warm ganache pour.',
       'CHEF SIGNATURE',
-      '/img/social/reel-london-cake.jpg',
+      '/img/social/reel-london-cake.webp',
       'Order London Cake',
       londonCake ? 'product' : 'category',
       londonCake ? String(londonCake.id) : 'Signature Gateaux & Bakes',
@@ -345,7 +346,7 @@ function migrateToVersion8() {
       'Warm Frosted Cinnamon Rolls',
       'Now baked fresh daily across both Aley and Aramoun branches — glazed warm with cream icing and caramel.',
       'NEW LAUNCH',
-      '/img/social/reel-cinnamon-rolls.jpg',
+      '/img/social/reel-cinnamon-rolls.webp',
       'Order Cinnamon Rolls',
       cinnamonRolls ? 'product' : 'category',
       cinnamonRolls ? String(cinnamonRolls.id) : 'Bakes',
@@ -355,7 +356,7 @@ function migrateToVersion8() {
       'SAVORY Gift Boxes & Foil Assortments',
       'Curate 9, 16, or 25 artisan chocolates with a hand-tied satin ribbon for Eid, visits and celebrations.',
       'LUXURY GIFTING',
-      '/img/social/gift-eid-box.jpg',
+      '/img/social/gift-eid-box.webp',
       'Curate a Box',
       'box',
       '16',
@@ -367,18 +368,18 @@ function migrateToVersion8() {
   if (db.prepare('SELECT COUNT(*) AS n FROM gallery_images').get().n === 0) {
     const addGallery = db.prepare('INSERT INTO gallery_images (image, caption, sort_order) VALUES (?, ?, ?)');
     [
-      ['/img/social/cake-heart-chocolate.jpg', 'Hand-glazed dark chocolate heart cake with gold piping', 0],
-      ['/img/social/cake-floral-pink.jpg', 'Artisan blush buttercream ruffle celebration cake', 1],
-      ['/img/social/gift-eid-box.jpg', 'Signature foil-wrapped Belgian chocolates in a SAVORY gift box', 2],
-      ['/img/social/cake-strawberry-hearts.jpg', 'Fresh strawberry & Chantilly celebration cake', 3],
-      ['/img/social/cake-valentine-ribbons.jpg', 'Satin-ribbon heart celebration cake', 4],
-      ['/img/social/cake-red-velvet-heart.jpg', 'Three-layer Red Velvet heart cake with cream cheese frosting', 5],
-      ['/img/social/cake-unicorn-tiers.jpg', 'Four-tier pastel unicorn celebration cake', 6],
-      ['/img/social/cake-butterfly-lavender.jpg', 'Lavender & blush buttercream rosette celebration cake', 7],
-      ['/img/social/menu-dessert-cups.jpg', 'Assorted profiterole & truffle cups: Pistachio, Lotus & Tiramisu', 8],
-      ['/img/social/menu-donuts-platter.jpg', 'Pastel glazed artisan celebration donuts', 9],
-      ['/img/social/menu-pistachio-waffle.jpg', 'Pistachio cream crisp waffle stick', 10],
-      ['/img/social/shop-aley-boutique.jpg', 'Inside the SAVORY Chocolate boutique in Aley', 11],
+      ['/img/social/cake-heart-chocolate.webp', 'Hand-glazed dark chocolate heart cake with gold piping', 0],
+      ['/img/social/cake-floral-pink.webp', 'Artisan blush buttercream ruffle celebration cake', 1],
+      ['/img/social/gift-eid-box.webp', 'Signature foil-wrapped Belgian chocolates in a SAVORY gift box', 2],
+      ['/img/social/cake-strawberry-hearts.webp', 'Fresh strawberry & Chantilly celebration cake', 3],
+      ['/img/social/cake-valentine-ribbons.webp', 'Satin-ribbon heart celebration cake', 4],
+      ['/img/social/cake-red-velvet-heart.webp', 'Three-layer Red Velvet heart cake with cream cheese frosting', 5],
+      ['/img/social/cake-unicorn-tiers.webp', 'Four-tier pastel unicorn celebration cake', 6],
+      ['/img/social/cake-butterfly-lavender.webp', 'Lavender & blush buttercream rosette celebration cake', 7],
+      ['/img/social/menu-dessert-cups.webp', 'Assorted profiterole & truffle cups: Pistachio, Lotus & Tiramisu', 8],
+      ['/img/social/menu-donuts-platter.webp', 'Pastel glazed artisan celebration donuts', 9],
+      ['/img/social/menu-pistachio-waffle.webp', 'Pistachio cream crisp waffle stick', 10],
+      ['/img/social/shop-aley-boutique.webp', 'Inside the SAVORY Chocolate boutique in Aley', 11],
     ].forEach(([img, cap, order]) => addGallery.run(img, cap, order));
   }
 }
@@ -408,7 +409,16 @@ function migrateToVersion10() {
         media_url = '/img/social/reel-strawberry-crepe.mp4',
         caption = 'Strawberry & Banana Belgian Crepe'
     WHERE media_url = '/img/social/gift-eid-box.jpg'
+       OR media_url = '/img/social/gift-eid-box.webp'
   `).run();
+}
+
+// Version 11: serve optimized WebP imagery across default storefront photography.
+function migrateToVersion11() {
+  db.prepare("UPDATE menu_items SET image = REPLACE(image, '.jpg', '.webp') WHERE image LIKE '/img/%.jpg'").run();
+  db.prepare("UPDATE offers SET image = REPLACE(image, '.jpg', '.webp') WHERE image LIKE '/img/%.jpg'").run();
+  db.prepare("UPDATE onboarding_slides SET media_url = REPLACE(media_url, '.jpg', '.webp') WHERE media_url LIKE '/img/%.jpg'").run();
+  db.prepare("UPDATE gallery_images SET image = REPLACE(image, '.jpg', '.webp') WHERE image LIKE '/img/%.jpg'").run();
 }
 
 // Version 7: featured item flags on menu_items, admin-managed offers slider, and onboarding background media slides.
@@ -453,10 +463,10 @@ function migrateToVersion7() {
         image = COALESCE(image, ?)
     WHERE name = ?
   `);
-  markFeatured.run("Chef's Pick", 0, '/img/onboarding-kunafa.jpg', 'Pistachio Kunafa Chocolate Bar');
+  markFeatured.run("Chef's Pick", 0, '/img/onboarding-kunafa.webp', 'Pistachio Kunafa Chocolate Bar');
   markFeatured.run('Best Seller', 800, null, 'Molten Chocolate Lava Crown');
-  markFeatured.run('House Favorite', 0, '/img/onboarding-crepe.jpg', 'Triple Belgian Chocolate Crepe');
-  markFeatured.run('Chilled Signature', 0, '/img/onboarding-flurry.jpg', 'Savory Oreo & Brownie Flurry');
+  markFeatured.run('House Favorite', 0, '/img/onboarding-crepe.webp', 'Triple Belgian Chocolate Crepe');
+  markFeatured.run('Chilled Signature', 0, '/img/onboarding-flurry.webp', 'Savory Oreo & Brownie Flurry');
 
   if (db.prepare('SELECT COUNT(*) AS n FROM offers').get().n === 0) {
     const kunafa = db.prepare('SELECT id FROM menu_items WHERE name = ?').get('Pistachio Kunafa Chocolate Bar');
@@ -468,7 +478,7 @@ function migrateToVersion7() {
       'Pistachio Kunafa Collection',
       'Hand-tempered Belgian chocolate shells filled with roasted kataifi pastry and vibrant Lebanese pistachio cream.',
       'SIGNATURE OFFER',
-      '/img/onboarding-kunafa.jpg',
+      '/img/onboarding-kunafa.webp',
       'Order Bar',
       kunafa ? 'product' : 'category',
       kunafa ? String(kunafa.id) : 'Chocolates & Bark',
@@ -478,7 +488,7 @@ function migrateToVersion7() {
       'Bespoke Satin Truffle Gift Boxes',
       'Curate 9, 16, or 25 artisan pralines and kunafa truffles presented with a hand-tied ribbon.',
       'LUXURY GIFTING',
-      '/img/onboarding-box.jpg',
+      '/img/onboarding-box.webp',
       'Curate a Box',
       'box',
       '16',
@@ -488,7 +498,7 @@ function migrateToVersion7() {
       'Warm Belgian Chocolate Crepes',
       'Griddled to order and folded with triple Belgian dark, milk, and white chocolate plus roasted hazelnuts.',
       'FRESH FROM GRIDDLE',
-      '/img/onboarding-crepe.jpg',
+      '/img/onboarding-crepe.webp',
       'Browse Crepes',
       'category',
       'Crepes & Waffles',
@@ -502,10 +512,10 @@ function migrateToVersion7() {
       VALUES (?, ?, ?, 1, ?)
     `);
     addSlide.run('video', '/img/onboarding-reel.mp4', 'Handcrafted in Aramoun & Aley', 0);
-    addSlide.run('image', '/img/onboarding-box.jpg', 'Luxury Satin Truffle Boxes', 1);
-    addSlide.run('image', '/img/onboarding-kunafa.jpg', 'Pistachio Kunafa Chocolate Bars', 2);
-    addSlide.run('image', '/img/onboarding-crepe.jpg', 'Warm Belgian Chocolate Crepes', 3);
-    addSlide.run('image', '/img/onboarding-flurry.jpg', 'Signature Savory Flurry', 4);
+    addSlide.run('image', '/img/onboarding-box.webp', 'Luxury Satin Truffle Boxes', 1);
+    addSlide.run('image', '/img/onboarding-kunafa.webp', 'Pistachio Kunafa Chocolate Bars', 2);
+    addSlide.run('image', '/img/onboarding-crepe.webp', 'Warm Belgian Chocolate Crepes', 3);
+    addSlide.run('image', '/img/onboarding-flurry.webp', 'Signature Savory Flurry', 4);
   }
 }
 

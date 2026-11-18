@@ -6,7 +6,7 @@ export const SOCIAL_REELS = [
   {
     id: 'DWmOnzxgilv',
     video: '/img/social/reel-dubai-crepe.mp4',
-    poster: '/img/social/reel-dubai-crepe.jpg',
+    poster: '/img/social/reel-dubai-crepe.webp',
     title: 'Dubai Chocolate Crepe',
     caption: 'Dubai Crepe? Who knows ✨🤤',
     likes: 280,
@@ -17,7 +17,7 @@ export const SOCIAL_REELS = [
   {
     id: 'DbV61IARz3t',
     video: '/img/social/reel-london-cake.mp4',
-    poster: '/img/social/reel-london-cake.jpg',
+    poster: '/img/social/reel-london-cake.webp',
     title: 'London Chocolate Cake',
     caption: 'London Cake… لأن طبقة شوكولا وحدة ما بتكفّي 🤎',
     likes: 96,
@@ -28,7 +28,7 @@ export const SOCIAL_REELS = [
   {
     id: 'DfphCjTCyJm',
     video: '/img/social/reel-cinnamon-rolls.mp4',
-    poster: '/img/social/reel-cinnamon-rolls.jpg',
+    poster: '/img/social/reel-cinnamon-rolls.webp',
     title: 'Warm Cinnamon Rolls',
     caption: 'Soft, warm, and covered in sweetness 🤎✨',
     likes: 24,
@@ -39,7 +39,7 @@ export const SOCIAL_REELS = [
   {
     id: 'DfH2turx-CR',
     video: '/img/social/reel-kunafa-cookie.mp4',
-    poster: '/img/social/reel-kunafa-cookie.jpg',
+    poster: '/img/social/reel-kunafa-cookie.webp',
     title: 'Pistachio Kunafa Cookie',
     caption: 'Special pistachio kunafa cookies 👀',
     likes: 12,
@@ -50,7 +50,7 @@ export const SOCIAL_REELS = [
   {
     id: 'DfXbe31xVBd',
     video: '/img/social/reel-pancakes.mp4',
-    poster: '/img/social/reel-pancakes.jpg',
+    poster: '/img/social/reel-pancakes.webp',
     title: 'Kinder & Triple Pancakes',
     caption: 'Pancakes hits different 🤤😋',
     likes: 10,
@@ -61,7 +61,7 @@ export const SOCIAL_REELS = [
   {
     id: 'DYSMvoyCHQ4',
     video: '/img/social/reel-strawberry-crepe.mp4',
-    poster: '/img/social/reel-strawberry-crepe.jpg',
+    poster: '/img/social/reel-strawberry-crepe.webp',
     title: 'Strawberry & Banana Crepe',
     caption: 'Watch out for your heart to melt ✨',
     likes: 30,

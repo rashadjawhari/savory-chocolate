@@ -46,7 +46,8 @@ export const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ESC
 export function mediaSrc(value) {
   const raw = String(value ?? '').trim();
   if (!raw) return '';
-  if (raw.startsWith('/') || /^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith('/')) return raw.replace(/^(\/img\/.+)\.jpg(\?.*)?$/i, '$1.webp$2');
+  if (/^https?:\/\//i.test(raw)) return raw;
   return `/uploads/${raw}`;
 }
 
@@ -332,8 +333,12 @@ const PHRASE_AR = new Map([
   ['Whole cake', 'القالب كاملاً'],
   ['Make a wish', 'تمنَّ أمنية'],
   ['Lights on', 'إضاءة كاملة'],
+  ['Atelier light', 'إضاءة دافئة'],
+  ['Golden hour', 'إضاءة ذهبية'],
+  ['Bright studio', 'إضاءة ساطعة'],
   ['Surprise me', 'فاجئني بتصميم'],
   ['Share 3D link', 'مشاركة الرابط'],
+  ['Link copied!', 'تم نسخ الرابط!'],
   ['Save card', 'حفظ الصورة'],
   ['Place cake order', 'تأكيد طلب الكيك'],
   ['Place order', 'تأكيد الطلب'],

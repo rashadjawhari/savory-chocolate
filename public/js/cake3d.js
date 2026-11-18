@@ -115,6 +115,37 @@ export function createCakeStage(container, {
   let pop = 1;
   let intro = -1;
   let wishMode = false;
+  let lightPreset = 'atelier';
+
+  function applyLights() {
+    const lights = scene.userData.lights;
+    if (!lights) return;
+    if (wishMode) {
+      lights.hemi.color.setHex(0xffe8cc);
+      lights.hemi.intensity = 0.14;
+      lights.key.color.setHex(0xfff0dc);
+      lights.key.intensity = 0.48;
+      lights.rim.color.setHex(0xffc27a);
+      lights.rim.intensity = 0.75;
+      lights.fill.intensity = 0.18;
+      scene.environmentIntensity = 0.2;
+      return;
+    }
+    const presets = {
+      atelier: { hemiHex: 0xfff2e4, hemi: 0.46, keyHex: 0xfff2e2, key: 2.35, rimHex: 0xffc682, rim: 2.2, fill: 0.68, env: 0.6 },
+      golden: { hemiHex: 0xffe4c4, hemi: 0.42, keyHex: 0xffd29c, key: 2.55, rimHex: 0xffa74f, rim: 2.75, fill: 0.56, env: 0.66 },
+      gallery: { hemiHex: 0xffffff, hemi: 0.68, keyHex: 0xfffbf4, key: 2.1, rimHex: 0xffe0b8, rim: 1.55, fill: 0.96, env: 0.74 },
+    };
+    const p = presets[lightPreset] || presets.atelier;
+    lights.hemi.color.setHex(p.hemiHex);
+    lights.hemi.intensity = p.hemi;
+    lights.key.color.setHex(p.keyHex);
+    lights.key.intensity = p.key;
+    lights.rim.color.setHex(p.rimHex);
+    lights.rim.intensity = p.rim;
+    lights.fill.intensity = p.fill;
+    scene.environmentIntensity = p.env;
+  }
 
   function setCake(config, { intro: withIntro = false } = {}) {
     const next = buildCake({ ...DEFAULT_CAKE, ...config, wishMode });
@@ -148,16 +179,18 @@ export function createCakeStage(container, {
 
   function setWishMode(active) {
     wishMode = Boolean(active);
-    const lights = scene.userData.lights;
-    if (lights) {
-      lights.hemi.intensity = wishMode ? 0.14 : 0.4;
-      lights.key.intensity = wishMode ? 0.48 : 2.3;
-      lights.rim.intensity = wishMode ? 0.75 : 2.2;
-      lights.fill.intensity = wishMode ? 0.18 : 0.6;
-      scene.environmentIntensity = wishMode ? 0.2 : 0.55;
-    }
+    applyLights();
     container.classList.toggle('wish-mode', wishMode);
     requestRender();
+  }
+
+  function setLightPreset(mode) {
+    if (mode === 'atelier' || mode === 'golden' || mode === 'gallery') {
+      lightPreset = mode;
+      applyLights();
+      requestRender();
+    }
+    return lightPreset;
   }
 
   function placeCamera(v) {
@@ -271,6 +304,8 @@ export function createCakeStage(container, {
     setCake,
     setWishMode,
     getWishMode: () => wishMode,
+    setLightPreset,
+    getLightPreset: () => lightPreset,
     dispose() {
       cancelAnimationFrame(frame);
       resizeObserver.disconnect();
@@ -407,15 +442,29 @@ function poolTexture() {
 const STAND_HEIGHT = 0.78;
 const BEVEL = 0.09;
 
-const gold = () => new THREE.MeshStandardMaterial({ color: 0xd9b066, metalness: 1, roughness: 0.24 });
+const gold = () => new THREE.MeshStandardMaterial({ color: 0xd9b066, metalness: 0.94, roughness: 0.2 });
 
 function frostingMaterial(color) {
-  return new THREE.MeshStandardMaterial({ color, roughness: 0.66 });
+  return new THREE.MeshStandardMaterial({ color, roughness: 0.58, metalness: 0.01 });
 }
 
 function dripMaterial(color, metallic) {
-  if (metallic) return new THREE.MeshStandardMaterial({ color: 0xd4a75a, metalness: 1, roughness: 0.2 });
-  return new THREE.MeshStandardMaterial({ color, roughness: 0.14, metalness: 0.05 });
+  if (metallic) {
+    return new THREE.MeshPhysicalMaterial({
+      color: 0xdfb25f,
+      metalness: 0.94,
+      roughness: 0.16,
+      clearcoat: 0.55,
+      clearcoatRoughness: 0.14,
+    });
+  }
+  return new THREE.MeshPhysicalMaterial({
+    color,
+    roughness: 0.13,
+    metalness: 0.03,
+    clearcoat: 0.92,
+    clearcoatRoughness: 0.08,
+  });
 }
 
 function lighten(hex, amount) {
@@ -853,6 +902,14 @@ function buildStand(cakeRadius, wide = false) {
   plate.userData.receive = true;
   plate.position.y = STAND_HEIGHT - 0.04;
   stand.add(plate);
+  // Subtle ivory patisserie inlay coaster so dark cocoa tiers sit cleanly against the brass plate.
+  const inlay = new THREE.Mesh(
+    new THREE.CylinderGeometry(R * 0.87, R * 0.87, 0.014, 96),
+    new THREE.MeshStandardMaterial({ color: 0xf7f1e3, roughness: 0.48, metalness: 0.02 }),
+  );
+  inlay.userData.receive = true;
+  inlay.position.y = STAND_HEIGHT + 0.002;
+  stand.add(inlay);
   const rim = new THREE.Mesh(new THREE.TorusGeometry(R, 0.035, 12, 120), mat);
   rim.rotation.x = Math.PI / 2;
   rim.position.y = STAND_HEIGHT - 0.03;
@@ -876,23 +933,28 @@ function mesh(geo, mat, x, y, z) {
 
 function berries(top, rng) {
   const g = new THREE.Group();
-  const rasp = new THREE.MeshStandardMaterial({ color: 0xb3203b, roughness: 0.55, flatShading: true });
-  const blue = new THREE.MeshStandardMaterial({ color: 0x2b3263, roughness: 0.3 });
-  const mint = new THREE.MeshStandardMaterial({ color: 0x4f8a3a, roughness: 0.5 });
-  for (let i = 0; i < 16; i++) {
-    const angle = -Math.PI * 1.05 + (i / 15) * Math.PI * 1.1 + (rng() - 0.5) * 0.15;
-    const p = top.edge(angle, 0.62 + rng() * 0.16);
-    if (i % 3 === 2) {
+  const rasp = new THREE.MeshStandardMaterial({ color: 0xb3203b, roughness: 0.48, flatShading: true });
+  const black = new THREE.MeshPhysicalMaterial({ color: 0x1e1424, roughness: 0.22, clearcoat: 0.65, flatShading: true });
+  const blue = new THREE.MeshPhysicalMaterial({ color: 0x2b3263, roughness: 0.26, clearcoat: 0.55 });
+  const mint = new THREE.MeshStandardMaterial({ color: 0x4f8a3a, roughness: 0.44 });
+  for (let i = 0; i < 18; i++) {
+    const angle = -Math.PI * 1.08 + (i / 17) * Math.PI * 1.16 + (rng() - 0.5) * 0.14;
+    const p = top.edge(angle, 0.58 + rng() * 0.2);
+    if (i % 4 === 2) {
       g.add(mesh(new THREE.SphereGeometry(0.075, 16, 12), blue, p.x, top.y + 0.07, p.z));
+    } else if (i % 4 === 3) {
+      const berry = mesh(new THREE.IcosahedronGeometry(0.095, 1), black, p.x, top.y + 0.09, p.z);
+      berry.scale.set(1, 1.12, 1);
+      g.add(berry);
     } else {
       const berry = mesh(new THREE.IcosahedronGeometry(0.105, 1), rasp, p.x, top.y + 0.1, p.z);
       berry.scale.set(1, 1.15, 1);
       berry.rotation.set(rng(), rng(), rng());
       g.add(berry);
     }
-    if (i % 5 === 1) {
-      const leaf = mesh(new THREE.SphereGeometry(0.11, 12, 8), mint, p.x * 0.9, top.y + 0.13, p.z * 0.9);
-      leaf.scale.set(1, 0.18, 0.5);
+    if (i % 4 === 1) {
+      const leaf = mesh(new THREE.SphereGeometry(0.115, 12, 8), mint, p.x * 0.9, top.y + 0.13, p.z * 0.9);
+      leaf.scale.set(1, 0.18, 0.52);
       leaf.rotation.y = rng() * Math.PI;
       leaf.rotation.z = 0.4;
       g.add(leaf);
@@ -970,15 +1032,47 @@ function flowers(top) {
 
 function shards(top, rng) {
   const g = new THREE.Group();
-  const choc = new THREE.MeshStandardMaterial({ color: 0x2a150c, roughness: 0.22 });
-  for (let i = 0; i < 5; i++) {
-    const p = top.edge(-Math.PI / 2 + (i - 2) * 0.45, 0.32 + rng() * 0.15);
-    const w = 0.35 + rng() * 0.25;
-    const h = 0.45 + rng() * 0.3;
-    const shard = mesh(new THREE.BoxGeometry(w, h, 0.025), choc, p.x, top.y + h * 0.38, p.z);
-    shard.rotation.set((rng() - 0.5) * 0.5, rng() * Math.PI, (rng() - 0.5) * 0.6);
+  const darkChoc = new THREE.MeshPhysicalMaterial({
+    color: 0x2a140a,
+    roughness: 0.18,
+    metalness: 0.04,
+    clearcoat: 0.72,
+    clearcoatRoughness: 0.12,
+  });
+  const ivoryChoc = new THREE.MeshPhysicalMaterial({
+    color: 0xefe1c8,
+    roughness: 0.24,
+    metalness: 0.02,
+    clearcoat: 0.6,
+    clearcoatRoughness: 0.16,
+  });
+  const sailShape = new THREE.Shape();
+  sailShape.moveTo(-0.22, 0);
+  sailShape.lineTo(0.24, 0);
+  sailShape.lineTo(0.08, 0.62);
+  sailShape.lineTo(-0.14, 0.44);
+  sailShape.closePath();
+
+  const baseGeo = new THREE.ExtrudeGeometry(sailShape, {
+    depth: 0.022,
+    bevelEnabled: true,
+    bevelThickness: 0.007,
+    bevelSize: 0.006,
+    bevelSegments: 2,
+  });
+  baseGeo.translate(0, 0, -0.011);
+
+  for (let i = 0; i < 6; i++) {
+    const p = top.edge(-Math.PI / 2 + (i - 2.5) * 0.38, 0.28 + rng() * 0.22);
+    const scaleX = 0.75 + rng() * 0.48;
+    const scaleY = 0.78 + rng() * 0.52;
+    const shard = new THREE.Mesh(baseGeo.clone(), i % 3 === 1 ? ivoryChoc : darkChoc);
+    shard.scale.set(scaleX, scaleY, 1);
+    shard.position.set(p.x, top.y + 0.02, p.z);
+    shard.rotation.set((rng() - 0.5) * 0.34, rng() * Math.PI, (rng() - 0.5) * 0.42);
     g.add(shard);
   }
+  baseGeo.dispose();
   return g;
 }
 

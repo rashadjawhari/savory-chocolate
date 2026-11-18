@@ -586,7 +586,9 @@ sliceBtn?.addEventListener('click', () => {
   isSliced = !isSliced;
   sliceBtn.setAttribute('aria-pressed', String(isSliced));
   sliceBtn.classList.toggle('active', isSliced);
-  sliceBtn.querySelector('span').textContent = isSliced ? 'Whole cake' : 'Cut a slice';
+  sliceBtn.querySelector('span').textContent = isSliced
+    ? (isAr() ? 'القالب كامل' : 'Whole cake')
+    : (isAr() ? 'قطع شريحة' : 'Cut a slice');
   playSlice();
   update();
 });
@@ -597,9 +599,50 @@ wishBtn?.addEventListener('click', () => {
   stage?.setWishMode(next);
   wishBtn.setAttribute('aria-pressed', String(next));
   wishBtn.classList.toggle('active', next);
-  wishBtn.querySelector('span').textContent = next ? 'Lights on' : 'Make a wish';
+  wishBtn.querySelector('span').textContent = next
+    ? (isAr() ? 'تشغيل الإضاءة' : 'Lights on')
+    : (isAr() ? 'تمنَّ أمنية' : 'Make a wish');
   playWish();
   update();
+});
+
+const LIGHT_MODES = ['atelier', 'golden', 'gallery'];
+const lightBtn = document.getElementById('light-btn');
+const syncLightLabel = () => {
+  const label = document.getElementById('light-label');
+  if (!label) return;
+  const cur = stage?.getLightPreset?.() || 'atelier';
+  const ar = isAr();
+  label.textContent = cur === 'golden'
+    ? (ar ? 'إضاءة ذهبية' : 'Golden hour')
+    : cur === 'gallery'
+      ? (ar ? 'إضاءة ساطعة' : 'Bright studio')
+      : (ar ? 'إضاءة دافئة' : 'Atelier light');
+};
+lightBtn?.addEventListener('click', () => {
+  const cur = stage?.getLightPreset?.() || 'atelier';
+  const next = LIGHT_MODES[(LIGHT_MODES.indexOf(cur) + 1) % LIGHT_MODES.length];
+  if (stage?.getWishMode?.()) {
+    stage.setWishMode(false);
+    wishBtn?.setAttribute('aria-pressed', 'false');
+    wishBtn?.classList.remove('active');
+    const ws = wishBtn?.querySelector('span');
+    if (ws) ws.textContent = isAr() ? 'تمنَّ أمنية' : 'Make a wish';
+  }
+  stage?.setLightPreset?.(next);
+  syncLightLabel();
+window.addEventListener('savory:langchange', () => {
+  syncLightLabel();
+  if (sliceBtn) sliceBtn.querySelector('span').textContent = isSliced ? (isAr() ? 'القالب كاملاً' : 'Whole cake') : (isAr() ? 'اقطع شريحة' : 'Cut a slice');
+  if (wishBtn) wishBtn.querySelector('span').textContent = stage?.getWishMode?.() ? (isAr() ? 'إضاءة كاملة' : 'Lights on') : (isAr() ? 'تمنَّ أمنية' : 'Make a wish');
+});
+  playClick();
+});
+syncLightLabel();
+window.addEventListener('savory:langchange', () => {
+  syncLightLabel();
+  if (sliceBtn) sliceBtn.querySelector('span').textContent = isSliced ? (isAr() ? 'القالب كاملاً' : 'Whole cake') : (isAr() ? 'اقطع شريحة' : 'Cut a slice');
+  if (wishBtn) wishBtn.querySelector('span').textContent = stage?.getWishMode?.() ? (isAr() ? 'إضاءة كاملة' : 'Lights on') : (isAr() ? 'تمنَّ أمنية' : 'Make a wish');
 });
 
 document.getElementById('surprise-btn')?.addEventListener('click', () => {
