@@ -1,13 +1,82 @@
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import { db } from './db.js';
 
 const SESSION_COOKIE = 'sc_admin';
 const SESSION_DAYS = 7;
+const ENV_FILE = path.resolve('.env');
 
 export function hashPassword(password) {
   const salt = crypto.randomBytes(16);
   const hash = crypto.scryptSync(password, salt, 64);
   return `scrypt$${salt.toString('hex')}$${hash.toString('hex')}`;
+}
+
+export function hashPasswordPbkdf2(password, rounds = 210000) {
+  const salt = crypto.randomBytes(16);
+  const derived = crypto.pbkdf2Sync(Buffer.from(password, 'utf8'), salt, rounds, 32, 'sha256');
+  return `pbkdf2$${rounds}$${salt.toString('hex')}$${derived.toString('hex')}`;
+}
+
+function randomToken(length, alphabet) {
+  const bytes = crypto.randomBytes(length);
+  let out = '';
+  for (let i = 0; i < length; i++) out += alphabet[bytes[i] % alphabet.length];
+  return out;
+}
+
+function readEnvFile() {
+  if (!fs.existsSync(ENV_FILE)) return {};
+  const out = {};
+  for (const rawLine of fs.readFileSync(ENV_FILE, 'utf8').split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) continue;
+    const match = line.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
+    if (!match) continue;
+    let val = match[2].trim();
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1);
+    }
+    out[match[1]] = val;
+  }
+  return out;
+}
+
+/**
+ * Returns admin login credentials from environment variables or `.env`.
+ * When none are set yet, generates random credentials and persists them to gitignored `.env`.
+ */
+export function resolveInitialAdminCredentials({ writeEnvIfMissing = true } = {}) {
+  const envMap = readEnvFile();
+  let username = (process.env.ADMIN_USERNAME || envMap.ADMIN_USERNAME || '').trim();
+  let password = process.env.ADMIN_PASSWORD || envMap.ADMIN_PASSWORD || '';
+  let generated = false;
+
+  if (!username || !password) {
+    generated = true;
+    username = username || `savory_${randomToken(4, 'abcdefghjkmnpqrstuvwxyz23456789')}`;
+    password = password || `Savory-${randomToken(10, 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#%')}`;
+    if (writeEnvIfMissing) {
+      const existing = fs.existsSync(ENV_FILE) ? fs.readFileSync(ENV_FILE, 'utf8').trimEnd() : '';
+      const lines = existing ? existing.split(/\r?\n/).filter((l) => !/^\s*ADMIN_(USERNAME|PASSWORD)\s*=/.test(l)) : [];
+      lines.push(`ADMIN_USERNAME=${username}`, `ADMIN_PASSWORD=${password}`);
+      fs.writeFileSync(ENV_FILE, `${lines.join('\n')}\n`, 'utf8');
+    }
+  }
+
+  process.env.ADMIN_USERNAME ||= username;
+  process.env.ADMIN_PASSWORD ||= password;
+  return { username, password, generated };
+}
+
+/** Ensures an admin login account exists in SQLite without exposing public signup. */
+export function ensureDefaultAdmin() {
+  if (adminCount() > 0) return null;
+  const { username, password, generated } = resolveInitialAdminCredentials({ writeEnvIfMissing: true });
+  db.prepare('INSERT OR IGNORE INTO admins (username, password_hash) VALUES (?, ?)')
+    .run(username, hashPassword(password));
+  return { username, generated };
 }
 
 export function verifyPassword(password, stored) {

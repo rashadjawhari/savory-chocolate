@@ -3,7 +3,7 @@
 // the full SAVORY database (seeded from /seed.json + localStorage) so all 3 sites
 // (Cake Studio, Menu, and Admin) work out of the box on *.web.app.
 
-const DB_KEY = 'savory_static_db_v6';
+const DB_KEY = 'savory_static_db_v7';
 const SESSION_KEY = 'savory_admin_session_v1';
 
 const BOX_TIERS = {
@@ -14,18 +14,32 @@ const BOX_TIERS = {
 
 let seedPromise = null;
 
-async function getDb() {
-  try {
-    const raw = localStorage.getItem(DB_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
-
+function loadSeed() {
   if (!seedPromise) {
     seedPromise = fetch('/seed.json')
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null);
   }
-  const seed = (await seedPromise) || {
+  return seedPromise;
+}
+
+async function getDb() {
+  try {
+    const raw = localStorage.getItem(DB_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed.admins) || !parsed.admins.length) {
+        const seed = await loadSeed();
+        if (seed?.admins?.length) {
+          parsed.admins = seed.admins;
+          saveDb(parsed);
+        }
+      }
+      return parsed;
+    }
+  } catch { /* ignore */ }
+
+  const seed = (await loadSeed()) || {
     settings: { shop_name: 'SAVORY', currency: 'USD', orders_open: '1', delivery_enabled: '1', delivery_fee: '500', delivery_min: '0', cake_lead_days: '2', whatsapp: '+961 79 167 464', phone: '05 411 405' },
     branches: [],
     menu_items: [],
@@ -322,17 +336,12 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
   if (path === '/api/admin/status') {
     const admins = state.admins || [];
     return {
-      setupNeeded: admins.length === 0,
+      setupNeeded: false,
       admin: isLoggedIn() && admins.length ? { id: 1, username: admins[0].username } : null,
     };
   }
   if (method === 'POST' && path === '/api/admin/setup') {
-    if ((state.admins || []).length) fail(403, 'An admin account already exists. Please log in.');
-    const { username, password } = checkCredentials(data.username, data.password);
-    state.admins = [{ id: 1, username, password_hash: await hashPassword(password) }];
-    saveDb(state);
-    logIn();
-    return { ok: true };
+    fail(403, 'Public admin registration is disabled. Please log in.');
   }
   if (method === 'POST' && path === '/api/admin/login') {
     const admin = (state.admins || [])[0];

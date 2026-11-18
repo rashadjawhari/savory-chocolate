@@ -5,6 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { db, getSettings, UPLOAD_DIR } from '../src/db.js';
+import { resolveInitialAdminCredentials, hashPasswordPbkdf2 } from '../src/auth.js';
 import { CAKE_GROUPS } from '../src/cake-groups.js';
 import { renderPage } from '../src/pages.js';
 
@@ -21,9 +22,10 @@ const URLS = {
 
 const BUILD_ID = Date.now().toString(36);
 
-// seed.json is a public file, so it only holds what the shop shows to everyone.
-// Orders, contact messages and admin accounts (customer names, phones, addresses) never go in it.
+// seed.json is a public file, so it holds shop catalog data plus only a salted PBKDF2 admin hash (never plaintext credentials).
+// Orders and customer contact messages never go in it.
 function buildSeed() {
+  const { username, password } = resolveInitialAdminCredentials({ writeEnvIfMissing: true });
   return {
     settings: getSettings(),
     branches: db.prepare('SELECT * FROM branches ORDER BY sort_order, id').all(),
@@ -37,7 +39,7 @@ function buildSeed() {
     faqs: db.prepare('SELECT * FROM faqs ORDER BY sort_order, id').all(),
     orders: [],
     messages: [],
-    admins: [],
+    admins: [{ id: 1, username, password_hash: hashPasswordPbkdf2(password) }],
   };
 }
 

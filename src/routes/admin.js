@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { db, getSettings, DEFAULT_SETTINGS } from '../db.js';
 import { withImage, withMedia, removeImage, removeMedia } from '../uploads.js';
 import {
-  hashPassword, verifyPassword, adminCount, createSession, destroySession, currentAdmin, requireAdmin,
+  hashPassword, verifyPassword, ensureDefaultAdmin, createSession, destroySession, currentAdmin, requireAdmin,
   loginBlocked, recordLoginFailure, clearLoginFailures,
 } from '../auth.js';
 import { CAKE_GROUPS } from '../cake-groups.js';
@@ -14,17 +14,13 @@ export const router = Router();
 // ---------- Account ----------
 
 router.get('/status', (req, res) => {
-  res.json({ setupNeeded: adminCount() === 0, admin: currentAdmin(req) });
+  ensureDefaultAdmin();
+  res.json({ setupNeeded: false, admin: currentAdmin(req) });
 });
 
-// Creates the first admin account. Only works while no admin exists yet.
-router.post('/setup', (req, res) => {
-  if (adminCount() > 0) throw new HttpError(403, 'An admin account already exists. Please log in.');
-  const { username, password } = credentials(req.body);
-  const { lastInsertRowid } = db.prepare('INSERT INTO admins (username, password_hash) VALUES (?, ?)')
-    .run(username, hashPassword(password));
-  createSession(res, Number(lastInsertRowid));
-  res.status(201).json({ ok: true });
+// Public admin registration is disabled; credentials are provisioned privately via .env or Settings.
+router.post('/setup', () => {
+  throw new HttpError(403, 'Public admin registration is disabled. Please log in.');
 });
 
 router.post('/login', (req, res) => {

@@ -2,6 +2,7 @@ import path from 'node:path';
 import express from 'express';
 import multer from 'multer';
 import { UPLOAD_DIR } from './src/db.js';
+import { ensureDefaultAdmin } from './src/auth.js';
 import { renderPage } from './src/pages.js';
 import { router as publicApi } from './src/routes/public.js';
 import { router as adminApi } from './src/routes/admin.js';
@@ -142,12 +143,14 @@ export function createApp(forcedSiteMode = '') {
 }
 
 if (process.env.PORT || process.env.SITE_MODE) {
+  ensureDefaultAdmin();
   const port = Number(process.env.PORT) || 3000;
   const app = createApp(process.env.SITE_MODE || '');
   app.listen(port, () => {
     console.log(`SAVORY server listening on http://localhost:${port} (mode: ${process.env.SITE_MODE || 'host-based: cakes / menu / admin'})`);
   });
 } else {
+  ensureDefaultAdmin();
   const cakesPort = Number(process.env.CAKES_PORT) || 3000;
   const menuPort = Number(process.env.MENU_PORT) || 3001;
   const adminPort = Number(process.env.ADMIN_PORT) || 3002;

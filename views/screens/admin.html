@@ -8,12 +8,12 @@
 </head>
 <body class="admin" data-cakes-url="{{cakes_site_url}}" data-menu-url="{{menu_site_url}}">
 
-  <!-- Log in / first-time setup -->
+  <!-- Admin login -->
   <main id="auth-view" class="auth-wrap" hidden>
     <div class="card auth-card">
       <a class="brand brand-stacked" href="/">{{> brand-logo}}</a>
       <h1 id="auth-title">Admin login</h1>
-      <p id="auth-intro" class="muted"></p>
+      <p id="auth-intro" class="muted">Sign in to manage orders, menu items, custom cakes, and store settings.</p>
       <form id="auth-form">
         <div class="field">
           <label for="auth-username">Username</label>
@@ -22,10 +22,6 @@
         <div class="field">
           <label for="auth-password">Password</label>
           <input type="password" id="auth-password" name="password" autocomplete="current-password" required>
-        </div>
-        <div class="field" id="auth-confirm-field" hidden>
-          <label for="auth-confirm">Confirm password</label>
-          <input type="password" id="auth-confirm" name="confirm" autocomplete="new-password">
         </div>
         <div id="auth-error" class="alert alert-error" role="alert" hidden></div>
         <button type="submit" class="btn btn-gold btn-block" id="auth-submit">Log in</button>

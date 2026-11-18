@@ -13,7 +13,7 @@ import * as settingsPanel from './settings.js';
 const PANELS = { orders, messages, menu, offers, cakes, gallery, reviews, faq, settings: settingsPanel };
 export const state = { tab: 'orders', settings: {} };
 
-setUnauthorizedHandler(() => showAuth(false));
+setUnauthorizedHandler(() => showAuth());
 
 // ---------- auth ----------
 
@@ -26,22 +26,12 @@ async function init() {
     return;
   }
   if (status.admin) showDashboard(status.admin);
-  else showAuth(status.setupNeeded);
+  else showAuth();
 }
 
-function showAuth(setup) {
+function showAuth() {
   $('#dash-view').hidden = true;
   $('#auth-view').hidden = false;
-  $('#auth-title').textContent = setup ? 'Create your admin account' : 'Admin login';
-  $('#auth-intro').textContent = setup
-    ? 'Welcome! Choose a username and password. You\'ll use them to manage your orders, menu, cake builder and pages.'
-    : '';
-  $('#auth-confirm-field').hidden = !setup;
-  $('#auth-confirm').required = setup;
-  $('#auth-password').autocomplete = setup ? 'new-password' : 'current-password';
-  $('#auth-password').minLength = setup ? 8 : 0;
-  $('#auth-submit').textContent = setup ? 'Create account' : 'Log in';
-  $('#auth-form').dataset.mode = setup ? 'setup' : 'login';
   formError($('#auth-form'), '');
   $('#auth-username').focus();
 }
@@ -49,14 +39,9 @@ function showAuth(setup) {
 $('#auth-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   const form = event.currentTarget;
-  const setup = form.dataset.mode === 'setup';
   formError(form, '');
-  if (setup && form.password.value !== form.confirm.value) {
-    formError(form, 'The two passwords don\'t match.');
-    return;
-  }
   try {
-    await busy($('#auth-submit'), () => api(`/api/admin/${setup ? 'setup' : 'login'}`, {
+    await busy($('#auth-submit'), () => api('/api/admin/login', {
       method: 'POST',
       body: { username: form.username.value.trim(), password: form.password.value },
     }));
@@ -69,7 +54,7 @@ $('#auth-form').addEventListener('submit', async (event) => {
 
 $('#logout-btn').addEventListener('click', async () => {
   await api('/api/admin/logout', { method: 'POST' }).catch(() => {});
-  showAuth(false);
+  showAuth();
 });
 
 // ---------- dashboard ----------
