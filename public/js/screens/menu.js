@@ -1,7 +1,8 @@
 import {
   api, esc, mediaSrc, money, storage, isoDate, loadSettings, setupFulfillment, deliveryFee, reveal,
-  setupBranches, orderConfirmation, openWhatsApp, applyLanguage,
+  setupBranches, orderConfirmation, openWhatsApp, applyLanguage, tr, isAr,
 } from '/js/common.js';
+import { buildItemSearchIndex, normalizeSearchText } from '/js/i18n-ar.js';
 import { illustrationFor } from '/js/illustrations.js';
 import { confetti } from '/js/confetti.js';
 import { playClick, playPop, playCelebration } from '/js/audio.js';
@@ -201,6 +202,7 @@ const [settings, loadedItems, loadedOffers, loadedSlides] = await Promise.all([
 ]);
 
 const items = Array.isArray(loadedItems) ? loadedItems : [];
+items.forEach((it) => { it._searchIdx = buildItemSearchIndex(it); });
 const offers = Array.isArray(loadedOffers) ? loadedOffers : [];
 const onboardingSlides = Array.isArray(loadedSlides) ? loadedSlides : [];
 const itemsById = new Map(items.map((i) => [i.id, i]));
@@ -235,7 +237,7 @@ function unitPrice(item, picks) {
 }
 
 function picksText(item, picks) {
-  return item.options.flatMap((g, gi) => (picks[gi] || []).map((i) => g.choices[i].name)).join(' · ');
+  return item.options.flatMap((g, gi) => (picks[gi] || []).map((i) => tr(g.choices[i].name))).join(' · ');
 }
 
 function fromPrice(item) {
@@ -578,20 +580,21 @@ function buildSliderCard(entry) {
       actionAttr = `data-open-offer-box="${esc(o.target_value || '9')}"`;
     }
 
+    const label = tr(o.title);
     const visualHtml = o.image
-      ? `<img src="${esc(mediaSrc(o.image))}" alt="${esc(o.title)}" loading="eager">`
+      ? `<img src="${esc(mediaSrc(o.image))}" alt="${esc(label)}" loading="eager">`
       : targetProduct
         ? illustrationFor(targetProduct)
-        : `<img src="/img/onboarding-box.jpg" alt="${esc(o.title)}" loading="eager">`;
+        : `<img src="/img/onboarding-box.jpg" alt="${esc(label)}" loading="eager">`;
 
     return `
-      <article class="slider-slide" role="button" tabindex="0" ${actionAttr} aria-label="${esc(o.title)}">
+      <article class="slider-slide" role="button" tabindex="0" ${actionAttr} aria-label="${esc(label)}">
         <div class="slider-slide-media">
           ${visualHtml}
         </div>
         <div class="slider-slide-copy">
-          <h3>${esc(o.title)}</h3>
-          ${targetProduct ? `<span class="slider-live-price">${money(targetProduct.price_cents)}</span>` : ''}
+          <h3>${esc(label)}</h3>
+          ${targetProduct ? `<span class="slider-live-price" dir="ltr">${money(targetProduct.price_cents)}</span>` : ''}
         </div>
       </article>`;
   }
@@ -599,15 +602,16 @@ function buildSliderCard(entry) {
   const item = entry.data;
   const from = item.options.length && fromPrice(item) !== item.price_cents;
   const displayPrice = from ? fromPrice(item) : item.price_cents;
+  const itemLabel = tr(item.name);
 
   return `
-    <article class="slider-slide" role="button" tabindex="0" data-open-product="${item.id}" aria-label="${esc(item.name)}">
+    <article class="slider-slide" role="button" tabindex="0" data-open-product="${item.id}" aria-label="${esc(itemLabel)}">
       <div class="slider-slide-media">
-        ${item.image ? `<img src="${esc(mediaSrc(item.image))}" alt="${esc(item.name)}" loading="eager">` : illustrationFor(item)}
+        ${item.image ? `<img src="${esc(mediaSrc(item.image))}" alt="${esc(itemLabel)}" loading="eager">` : illustrationFor(item)}
       </div>
       <div class="slider-slide-copy">
-        <h3>${esc(item.name)}</h3>
-        <span class="slider-live-price">${money(displayPrice)}</span>
+        <h3>${esc(itemLabel)}</h3>
+        <span class="slider-live-price" dir="ltr">${money(displayPrice)}</span>
       </div>
     </article>`;
 }
@@ -805,18 +809,19 @@ function lineUnitPrice(line) {
 }
 
 function lineDisplay(line) {
+  const ar = isAr();
   if (line.custom_box) {
     const tier = BOX_TIERS[Number(line.custom_box.size)] || BOX_TIERS[9];
     const counts = new Map();
     for (const p of line.custom_box.pieces || []) counts.set(p, (counts.get(p) || 0) + 1);
-    const summary = [...counts.entries()].map(([n, c]) => `${c}× ${n}`).join(', ');
+    const summary = [...counts.entries()].map(([n, c]) => `${c}× ${tr(n)}`).join(ar ? '، ' : ', ');
     const parts = [summary];
-    if (line.custom_box.ribbon) parts.push(`Ribbon: ${line.custom_box.ribbon}`);
-    if (line.custom_box.note) parts.push(`Card: “${line.custom_box.note}”`);
-    return { name: tier.name, extras: parts.filter(Boolean).join(' · ') };
+    if (line.custom_box.ribbon) parts.push(`${ar ? 'الشريط' : 'Ribbon'}: ${tr(line.custom_box.ribbon)}`);
+    if (line.custom_box.note) parts.push(`${ar ? 'البطاقة' : 'Card'}: “${line.custom_box.note}”`);
+    return { name: tr(tier.name), extras: parts.filter(Boolean).join(' · ') };
   }
   const item = itemsById.get(line.id);
-  return { name: item.name, extras: picksText(item, line.picks) };
+  return { name: tr(item.name), extras: picksText(item, line.picks) };
 }
 
 function flyToCart(from) {
@@ -912,6 +917,7 @@ function renderCartThumb(line) {
 }
 
 function renderCart() {
+  const ar = isAr();
   const count = cart.reduce((n, l) => n + l.quantity, 0);
   const subtotal = cart.reduce((sum, l) => sum + l.quantity * lineUnitPrice(l), 0);
   const fee = deliveryFee(settings, fulfillment());
@@ -937,13 +943,15 @@ function renderCart() {
     clearCartBtn.hidden = count === 0 || confirmationVisible;
   }
   if (cartItemsCountLabel) {
-    cartItemsCountLabel.textContent = count ? `(${count} item${count === 1 ? '' : 's'})` : '';
+    cartItemsCountLabel.textContent = count
+      ? (ar ? `(${count} ${count === 1 ? 'صنف' : 'أصناف'})` : `(${count} item${count === 1 ? '' : 's'})`)
+      : '';
   }
 
   // Also refresh product page inline View Cart pill if open
   const prodViewCartBtn = document.getElementById('prod-view-cart-btn');
   if (prodViewCartBtn && count > 0) {
-    prodViewCartBtn.textContent = `View Cart (${count}) →`;
+    prodViewCartBtn.textContent = ar ? `عرض السلّة (${count}) ←` : `View Cart (${count}) →`;
   }
 
   if (cartEmpty) cartEmpty.hidden = count > 0 || confirmationVisible;
@@ -959,14 +967,14 @@ function renderCart() {
           </div>
           <div class="cart-line-info">
             <div class="cart-line-head">
-              <span class="name">${esc(name)}</span>
-              <span class="line-total">${money(lineUnitPrice(l) * l.quantity)}</span>
+              <span class="name" dir="auto">${esc(name)}</span>
+              <span class="line-total" dir="ltr">${money(lineUnitPrice(l) * l.quantity)}</span>
             </div>
-            ${extras ? `<div class="choices">${esc(extras)}</div>` : ''}
-            ${l.note ? `<div class="cart-line-note">Note: “${esc(l.note)}”</div>` : ''}
+            ${extras ? `<div class="choices" dir="auto">${esc(extras)}</div>` : ''}
+            ${l.note ? `<div class="cart-line-note" dir="auto">${ar ? 'ملاحظة' : 'Note'}: “${esc(l.note)}”</div>` : ''}
             <div class="cart-line-actions">
               ${stepper(l.key, l.quantity, name)}
-              <button type="button" class="cart-remove-btn" data-remove-line="${esc(l.key)}" aria-label="Remove ${esc(name)}">Remove</button>
+              <button type="button" class="cart-remove-btn" data-remove-line="${esc(l.key)}" aria-label="${ar ? 'حذف' : 'Remove'} ${esc(name)}">${ar ? 'حذف' : 'Remove'}</button>
             </div>
           </div>
         </li>`;
@@ -981,15 +989,15 @@ function renderCart() {
     if (picks.length && count > 0) {
       upsellEl.hidden = false;
       upsellEl.innerHTML = `
-        <div class="cart-upsell-head">✦ Complete your treat</div>
+        <div class="cart-upsell-head">${ar ? '✦ أكمل تحليتك' : '✦ Complete your treat'}</div>
         <div class="cart-upsell-list">
           ${picks.map((u) => `
             <div class="cart-upsell-item">
               <div class="cart-upsell-info">
-                <strong>${esc(u.name)}</strong>
-                <span>${money(u.price_cents)}</span>
+                <strong>${esc(tr(u.name))}</strong>
+                <span dir="ltr">${money(u.price_cents)}</span>
               </div>
-              <button type="button" class="btn btn-outline btn-sm" data-add-quick="${u.id}">+ Add</button>
+              <button type="button" class="btn btn-outline btn-sm" data-add-quick="${u.id}">${ar ? '+ أضف' : '+ Add'}</button>
             </div>
           `).join('')}
         </div>`;
@@ -1002,8 +1010,8 @@ function renderCart() {
   const sumRows = document.getElementById('sum-rows');
   if (sumRows) {
     sumRows.innerHTML = fee
-      ? `<div class="sum-row"><span>Subtotal</span><span>${money(subtotal)}</span></div>
-         <div class="sum-row"><span>Delivery</span><span>${money(fee)}</span></div>`
+      ? `<div class="sum-row"><span>${ar ? 'المجموع الفرعي' : 'Subtotal'}</span><span dir="ltr">${money(subtotal)}</span></div>
+         <div class="sum-row"><span>${ar ? 'التوصيل' : 'Delivery'}</span><span dir="ltr">${money(fee)}</span></div>`
       : '';
   }
   const cartTotalEl = document.getElementById('cart-total');
@@ -1014,7 +1022,11 @@ function renderCart() {
     bar.classList.toggle('show', count > 0);
     const barCount = document.getElementById('cart-bar-count');
     const barTotal = document.getElementById('cart-bar-total');
-    if (barCount) barCount.textContent = `View cart · ${count} item${count === 1 ? '' : 's'}`;
+    if (barCount) {
+      barCount.textContent = ar
+        ? `عرض السلّة · ${count} ${count === 1 ? 'صنف' : 'أصناف'}`
+        : `View cart · ${count} item${count === 1 ? '' : 's'}`;
+    }
     if (barTotal) barTotal.textContent = money(subtotal + fee);
   }
 }
@@ -1113,7 +1125,7 @@ function updateBreadcrumbs(state) {
   if (state.view === 'category') {
     bcSepCat.hidden = false;
     bcCat.hidden = false;
-    bcCat.textContent = state.category;
+    bcCat.textContent = tr(state.category);
     bcCat.href = `#category/${encodeURIComponent(state.category)}`;
     bcCat.classList.add('bc-current');
     bcSepProd.hidden = true;
@@ -1153,13 +1165,14 @@ function showMenuHomeView({ scrollTarget = null, scrollTop = true, navKey = 'men
         icon: DEFAULT_CATEGORY_ICON,
       };
       const catImg = pickCategoryImage(catItems, usedImgs);
+      const catLabel = tr(catName);
       const visualHtml = catImg
-        ? `<img src="${esc(mediaSrc(catImg))}" alt="${esc(catName)}" loading="lazy">`
+        ? `<img src="${esc(mediaSrc(catImg))}" alt="${esc(catLabel)}" loading="lazy">`
         : `<div class="folder-icon">${meta.icon}</div>`;
       return `
         <a class="folder-card" href="#category/${encodeURIComponent(catName)}" data-nav-cat="${esc(catName)}">
           <div class="folder-card-head">
-            <h3 class="folder-title">${esc(catName)}</h3>
+            <h3 class="folder-title">${esc(catLabel)}</h3>
           </div>
           <div class="folder-visual">
             ${visualHtml}
@@ -1170,7 +1183,7 @@ function showMenuHomeView({ scrollTarget = null, scrollTop = true, navKey = 'men
     const boxCardHtml = `
       <a class="folder-card folder-card-bespoke" href="#gift-box" id="folder-box-builder">
         <div class="folder-card-head">
-          <h3 class="folder-title">Luxury Gift Boxes</h3>
+          <h3 class="folder-title">${esc(tr('Luxury Gift Boxes'))}</h3>
         </div>
         <div class="folder-visual">
           <div class="folder-icon folder-icon-bespoke">
@@ -1199,14 +1212,15 @@ function showMenuHomeView({ scrollTarget = null, scrollTop = true, navKey = 'men
 function renderRowCard(item) {
   const from = item.options.length && fromPrice(item) !== item.price_cents;
   const displayPrice = from ? fromPrice(item) : item.price_cents;
+  const label = tr(item.name);
   const visualHtml = item.image
-    ? `<img src="${esc(mediaSrc(item.image))}" alt="${esc(item.name)}" loading="lazy">`
+    ? `<img src="${esc(mediaSrc(item.image))}" alt="${esc(label)}" loading="lazy">`
     : `<div class="row-card-icon">${illustrationFor(item)}</div>`;
 
   return `
-    <article class="menu-row-card" data-open-product="${item.id}" role="button" tabindex="0" aria-label="View ${esc(item.name)} details">
+    <article class="menu-row-card" data-open-product="${item.id}" role="button" tabindex="0" aria-label="${esc(label)}">
       <div class="row-card-head">
-        <h3 class="row-card-title" dir="auto">${esc(item.name)}</h3>
+        <h3 class="row-card-title" dir="auto">${esc(label)}</h3>
         <span class="row-card-price" dir="ltr">${money(displayPrice)}</span>
       </div>
       <div class="row-card-visual">
@@ -1220,9 +1234,9 @@ function renderCategoryPills(activeCat) {
   const categories = [...getCategoryMap().keys()];
   catPillsNav.innerHTML = [
     ...categories.map((cat) => `
-      <a href="#category/${encodeURIComponent(cat)}" class="cat-pill${cat === activeCat ? ' active' : ''}">${esc(cat)}</a>
+      <a href="#category/${encodeURIComponent(cat)}" class="cat-pill${cat === activeCat ? ' active' : ''}">${esc(tr(cat))}</a>
     `),
-    '<a href="#gift-box" class="cat-pill cat-pill-box">✦ Gift Boxes</a>',
+    `<a href="#gift-box" class="cat-pill cat-pill-box">${isAr() ? '✦ علب الهدايا' : '✦ Gift Boxes'}</a>`,
   ].join('');
 
   const activePill = catPillsNav.querySelector('.cat-pill.active');
@@ -1246,11 +1260,13 @@ function showCategoryView(catName) {
     icon: DEFAULT_CATEGORY_ICON,
   };
 
-  if (catBannerTitle) catBannerTitle.textContent = catName;
-  if (catBannerDesc) catBannerDesc.textContent = meta.desc;
+  if (catBannerTitle) catBannerTitle.textContent = tr(catName);
+  if (catBannerDesc) catBannerDesc.textContent = tr(meta.desc);
   if (catBannerIcon) catBannerIcon.innerHTML = meta.icon;
   if (catProductsCount) {
-    catProductsCount.textContent = `${catItems.length} creation${catItems.length === 1 ? '' : 's'} available to order`;
+    catProductsCount.textContent = isAr()
+      ? `${catItems.length} ${catItems.length === 1 ? 'صنف متوفر' : 'أصناف متوفرة'} للطلب`
+      : `${catItems.length} creation${catItems.length === 1 ? '' : 's'} available to order`;
   }
 
   renderCategoryPills(catName);
@@ -1284,29 +1300,30 @@ function showProductView(productId) {
     return [];
   });
 
-  if (prodBackCatName) prodBackCatName.textContent = item.category;
+  const ar = isAr();
+  if (prodBackCatName) prodBackCatName.textContent = tr(item.category);
 
   const showCompare = item.compare_price_cents > item.price_cents;
 
   const optionsHtml = item.options.map((g, gi) => {
     const isSingle = g.type === 'single';
-    const note = g.required ? 'Required' : 'Optional';
+    const note = g.required ? tr('Required') : tr('Optional');
 
     if (isSingle) {
       return `
         <div class="option-group-box">
           <div class="option-group-title">
-            <span dir="auto">${esc(g.name)}</span>
-            <span class="option-group-req">${note}</span>
+            <span dir="auto">${esc(tr(g.name))}</span>
+            <span class="option-group-req">${esc(note)}</span>
           </div>
           <div class="variant-bubbles-wrap">
             ${!g.required ? `
               <button type="button" class="variant-bubble-btn ${currentProductPicks[gi].length === 0 ? 'active' : ''}" data-bubble-group="${gi}" data-bubble-choice="-1">
-                None
+                ${esc(tr('None'))}
               </button>` : ''}
             ${g.choices.map((c, ci) => `
               <button type="button" class="variant-bubble-btn ${currentProductPicks[gi].includes(ci) ? 'active' : ''}" data-bubble-group="${gi}" data-bubble-choice="${ci}" dir="auto">
-                <span>${esc(c.name)}</span>${c.price_cents ? ` <span dir="ltr">(+${money(c.price_cents)})</span>` : ''}
+                <span>${esc(tr(c.name))}</span>${c.price_cents ? ` <span dir="ltr">(+${money(c.price_cents)})</span>` : ''}
               </button>`).join('')}
           </div>
         </div>`;
@@ -1315,38 +1332,41 @@ function showProductView(productId) {
     return `
       <div class="option-group-box">
         <div class="option-group-title">
-          <span dir="auto">${esc(g.name)}</span>
-          <span class="option-group-req">${note}</span>
+          <span dir="auto">${esc(tr(g.name))}</span>
+          <span class="option-group-req">${esc(note)}</span>
         </div>
         <div class="addon-options-list">
           ${g.choices.map((c, ci) => `
             <label class="addon-option-row">
               <span class="addon-option-left">
                 <input type="checkbox" data-addon-group="${gi}" data-addon-choice="${ci}" ${currentProductPicks[gi].includes(ci) ? 'checked' : ''}>
-                <span class="addon-option-name" dir="auto">${esc(c.name)}</span>
+                <span class="addon-option-name" dir="auto">${esc(tr(c.name))}</span>
               </span>
-              <span class="addon-option-price" dir="ltr">${c.price_cents ? `+${money(c.price_cents)}` : 'Included'}</span>
+              <span class="addon-option-price" dir="ltr">${c.price_cents ? `+${money(c.price_cents)}` : tr('Included')}</span>
             </label>`).join('')}
         </div>
       </div>`;
   }).join('');
 
+  const itemTitle = tr(item.name);
+  const itemDesc = tr(item.description);
+
   productPageCard.innerHTML = `
     <div class="product-page-grid">
       <div class="product-page-visual">
-        ${item.image ? `<img src="${esc(mediaSrc(item.image))}" alt="${esc(item.name)}">` : illustrationFor(item)}
+        ${item.image ? `<img src="${esc(mediaSrc(item.image))}" alt="${esc(itemTitle)}">` : illustrationFor(item)}
       </div>
 
       <div class="product-page-body">
         <div class="product-page-head">
-          <h1 class="product-page-title" dir="auto">${esc(item.name)}</h1>
+          <h1 class="product-page-title" dir="auto">${esc(itemTitle)}</h1>
           <div class="product-page-price-row" dir="ltr">
             <span class="product-live-price" id="prod-live-price">${money(unitPrice(item, currentProductPicks) * currentProductQty)}</span>
             ${showCompare ? `<del class="product-compare-price">${money(item.compare_price_cents)}</del>` : ''}
           </div>
         </div>
 
-        ${item.description ? `<p class="product-page-desc" dir="auto">${esc(item.description)}</p>` : ''}
+        ${item.description ? `<p class="product-page-desc" dir="auto">${esc(itemDesc)}</p>` : ''}
 
         <div id="product-options-root">
           ${optionsHtml}
@@ -1354,10 +1374,10 @@ function showProductView(productId) {
 
         <div class="option-group-box option-group-note">
           <label for="prod-note-input" class="option-group-title">
-            <span>Special Requests</span>
-            <span class="option-group-req">Optional</span>
+            <span>${esc(tr('Special Requests'))}</span>
+            <span class="option-group-req">${esc(tr('Optional'))}</span>
           </label>
-          <input type="text" id="prod-note-input" dir="auto" maxlength="200" placeholder="Allergies, packaging notes, or special requests…">
+          <input type="text" id="prod-note-input" dir="auto" maxlength="200" placeholder="${esc(tr('Allergies, packaging notes, or special requests…'))}">
         </div>
 
         <div class="product-page-actions">
@@ -1368,11 +1388,11 @@ function showProductView(productId) {
           </div>
 
           <button type="button" class="btn btn-gold product-add-btn" id="prod-add-btn" ${ordersOpen ? '' : 'disabled'}>
-            ${ordersOpen ? `<span>Add to Order</span> <span dir="ltr">· ${money(unitPrice(item, currentProductPicks) * currentProductQty)}</span>` : 'Closed'}
+            ${ordersOpen ? `<span>${esc(tr('Add to Order'))}</span> <span dir="ltr">· ${money(unitPrice(item, currentProductPicks) * currentProductQty)}</span>` : esc(tr('Closed'))}
           </button>
 
           <a href="#cart" class="btn btn-outline product-view-cart-btn" id="prod-view-cart-btn" hidden>
-            View Cart →
+            ${esc(tr('View Cart →'))}
           </a>
         </div>
       </div>
@@ -1387,7 +1407,7 @@ function showProductView(productId) {
     if (qtyEl) qtyEl.textContent = String(currentProductQty);
     const btnEl = productPageCard.querySelector('#prod-add-btn');
     if (btnEl && ordersOpen) {
-      btnEl.innerHTML = `<span>Add to Order</span> <span dir="ltr">· ${money(total)}</span>`;
+      btnEl.innerHTML = `<span>${esc(tr('Add to Order'))}</span> <span dir="ltr">· ${money(total)}</span>`;
     }
   }
 
@@ -1425,7 +1445,9 @@ function showProductView(productId) {
     if (!ordersOpen) return;
     if (!picksValid(currentProduct, currentProductPicks)) {
       const missing = currentProduct.options.find((g, gi) => g.required && !currentProductPicks[gi].length);
-      alert(missing ? `Please select a ${missing.name.toLowerCase()}.` : 'Please check your option selections.');
+      alert(missing
+        ? (isAr() ? `يرجى اختيار ${tr(missing.name)}.` : `Please select a ${missing.name.toLowerCase()}.`)
+        : (isAr() ? 'يرجى مراجعة الخيارات المختارة.' : 'Please check your option selections.'));
       return;
     }
 
@@ -1435,12 +1457,12 @@ function showProductView(productId) {
     const viewCartBtn = productPageCard.querySelector('#prod-view-cart-btn');
     if (viewCartBtn) {
       const count = cart.reduce((n, l) => n + l.quantity, 0);
-      viewCartBtn.textContent = `View Cart (${count}) →`;
+      viewCartBtn.textContent = isAr() ? `عرض السلّة (${count}) ←` : `View Cart (${count}) →`;
       viewCartBtn.hidden = false;
     }
 
     const btn = e.currentTarget;
-    btn.textContent = '✓ Added to Order!';
+    btn.textContent = tr('✓ Added to Order!');
     setTimeout(() => {
       if (btn && ordersOpen) updateProductLiveDisplay();
     }, 1500);
@@ -1481,11 +1503,12 @@ function setSearchModeUI(searching) {
 }
 
 function matchesFilter(item) {
-  const text = `${item.name} ${item.description} ${item.category} ${item.offer_badge || ''}`.toLowerCase();
-  if (activeSearchQuery && !text.includes(activeSearchQuery)) return false;
-  if (activeQuickFilter === 'popular') return Boolean(item.featured) || /lava|mirror|kunafa|gift box|fettuccine|flurry/i.test(text);
-  if (activeQuickFilter === 'pistachio') return /pistachio|kunafa|hazelnut|praline|nut/i.test(text);
-  if (activeQuickFilter === 'dark') return /dark|70%|ganache|mirror|lava|truffle|bark/i.test(text);
+  const enText = `${item.name} ${item.description} ${item.category} ${item.offer_badge || ''}`.toLowerCase();
+  const qNorm = normalizeSearchText(activeSearchQuery);
+  if (qNorm && !(item._searchIdx || normalizeSearchText(enText)).includes(qNorm)) return false;
+  if (activeQuickFilter === 'popular') return Boolean(item.featured) || /lava|mirror|kunafa|gift box|fettuccine|flurry/i.test(enText);
+  if (activeQuickFilter === 'pistachio') return /pistachio|kunafa|hazelnut|praline|nut/i.test(enText);
+  if (activeQuickFilter === 'dark') return /dark|70%|ganache|mirror|lava|truffle|bark/i.test(enText);
   if (activeQuickFilter === 'under10') return fromPrice(item) <= 1000;
   return true;
 }
@@ -1495,17 +1518,20 @@ function renderSearchView() {
   switchStageView('view-menu', { scrollTop: false });
   setSearchModeUI(true);
 
+  const ar = isAr();
   const filtered = items.filter(matchesFilter);
   if (searchTitle) {
-    searchTitle.textContent = `Showing ${filtered.length} creation${filtered.length === 1 ? '' : 's'}`;
+    searchTitle.textContent = ar
+      ? `عرض ${filtered.length} ${filtered.length === 1 ? 'صنف' : 'أصناف'}`
+      : `Showing ${filtered.length} creation${filtered.length === 1 ? '' : 's'}`;
   }
 
   if (searchRowsList) {
     if (!filtered.length) {
       searchRowsList.innerHTML = `
         <div class="card empty-state" style="padding: 36px 20px; text-align: center;">
-          <p style="margin-bottom: 14px;">No creations match your current search or filter.</p>
-          <button type="button" class="btn btn-outline btn-sm" id="reset-empty-search">Show All Categories</button>
+          <p style="margin-bottom: 14px;">${esc(tr('No creations match your current search or filter.'))}</p>
+          <button type="button" class="btn btn-outline btn-sm" id="reset-empty-search">${esc(tr('Show All Categories'))}</button>
         </div>`;
       document.getElementById('reset-empty-search')?.addEventListener('click', resetSearchAndFilters);
     } else {
@@ -1753,7 +1779,7 @@ function renderBoxFlavors() {
   boxFlavors.innerHTML = TRUFFLES.map((t) => `
     <button type="button" class="truffle-pick" data-truffle="${esc(t.id)}">
       <span class="truffle-dot" style="background:${esc(t.color)};box-shadow:inset 0 0 0 2px ${esc(t.accent)}"></span>
-      <span class="truffle-name">${esc(t.name)}</span>
+      <span class="truffle-name">${esc(tr(t.name))}</span>
       <span class="truffle-add">+</span>
     </button>
   `).join('');
@@ -1762,18 +1788,24 @@ function renderBoxFlavors() {
 function renderBoxTray() {
   if (!boxTray) return;
   const tier = BOX_TIERS[activeBoxSize];
+  const ar = isAr();
   boxTray.dataset.cols = String(tier.cols);
   boxTray.innerHTML = Array.from({ length: activeBoxSize }, (_, i) => {
     const t = boxSlots[i];
     if (!t) {
       return `<button type="button" class="box-slot empty" data-slot="${i}" aria-label="Empty slot ${i + 1}"><span>+</span></button>`;
     }
+    const tName = tr(t.name);
     return `
-      <button type="button" class="box-slot filled" data-slot="${i}" title="${esc(t.name)} (tap to remove)" aria-label="Remove ${esc(t.name)}">
+      <button type="button" class="box-slot filled" data-slot="${i}" title="${esc(tName)}" aria-label="${esc(tName)}">
         <span class="bonbon" style="background:${esc(t.color)};border-color:${esc(t.accent)}"></span>
       </button>`;
   }).join('');
-  if (boxProgress) boxProgress.textContent = `${boxSlots.length} / ${activeBoxSize} pieces selected`;
+  if (boxProgress) {
+    boxProgress.textContent = ar
+      ? `تم اختيار ${boxSlots.length} / ${activeBoxSize} قطعة`
+      : `${boxSlots.length} / ${activeBoxSize} pieces selected`;
+  }
   if (boxPriceLabel) boxPriceLabel.textContent = money(tier.price_cents);
 }
 
@@ -1874,16 +1906,40 @@ const branchOf = await setupBranches(form);
 
 dataLoaded = true;
 renderCart();
-mountReelsStrip(menuReelsGrid, {
+const renderMenuReels = () => mountReelsStrip(menuReelsGrid, {
   menuItems: items,
   onOpenProduct: (id) => {
     window.location.hash = `#product/${id}`;
   },
 });
+renderMenuReels();
 if (userLeftOnboardingEarly && (!window.location.hash || window.location.hash === '#welcome')) {
   window.location.hash = '#menu';
 }
 handleHashRouting();
+
+window.addEventListener('savory:langchange', () => {
+  if (sliderTrack && sliderSlides.length) {
+    sliderTrack.innerHTML = sliderSlides.map(buildSliderCard).join('');
+    setSliderIndex(sliderIdx);
+  }
+  renderMenuReels();
+  renderBoxFlavors();
+  renderBoxTray();
+  renderCart();
+  const h = window.location.hash.trim();
+  if (h && h !== '#welcome') {
+    if ((activeSearchQuery || activeQuickFilter !== 'all') && (!h || h === '#menu')) {
+      renderSearchView();
+    } else if (h.startsWith('#category/') && currentCategory) {
+      showCategoryView(currentCategory);
+    } else if (h.startsWith('#product/') && currentProduct) {
+      showProductView(currentProduct.id);
+    } else if (h === '#menu') {
+      showMenuHomeView({ scrollTop: false });
+    }
+  }
+});
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -1902,7 +1958,7 @@ form.addEventListener('submit', async (event) => {
   ));
 
   submitBtn.disabled = true;
-  submitBtn.innerHTML = '<span class="spinner" aria-hidden="true"></span> Placing your order…';
+  submitBtn.innerHTML = `<span class="spinner" aria-hidden="true"></span> ${isAr() ? 'جاري إرسال طلبك…' : 'Placing your order…'}`;
   try {
     const order = await api('/api/orders/menu', { method: 'POST', body: data });
     cart = [];
@@ -1914,7 +1970,7 @@ form.addEventListener('submit', async (event) => {
     errorBox.hidden = false;
   } finally {
     submitBtn.disabled = !ordersOpen;
-    submitBtn.textContent = 'Place order';
+    submitBtn.textContent = tr('Place order');
   }
 });
 
@@ -1922,11 +1978,14 @@ function showConfirmation(order, name) {
   confetti();
   playCelebration();
   if (cartConfirmation) {
+    const ar = isAr();
     cartConfirmation.innerHTML = orderConfirmation(order, {
       name,
       title: 'your order is in!',
       shopName: settings.shop_name,
-      links: `<a class="btn btn-gold" href="/track?site=menu&code=${encodeURIComponent(order.order_code || order.code)}">Track order live</a><a class="btn btn-outline" href="#menu">Order more from menu</a>`,
+      links: ar
+        ? `<a class="btn btn-gold" href="/track?site=menu&code=${encodeURIComponent(order.order_code || order.code)}">تتبّع الطلب مباشرة</a><a class="btn btn-outline" href="#menu">اطلب المزيد من القائمة</a>`
+        : `<a class="btn btn-gold" href="/track?site=menu&code=${encodeURIComponent(order.order_code || order.code)}">Track order live</a><a class="btn btn-outline" href="#menu">Order more from menu</a>`,
     });
     cartConfirmation.hidden = false;
   }

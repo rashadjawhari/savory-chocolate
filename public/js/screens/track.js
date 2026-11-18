@@ -1,4 +1,5 @@
-import { api, esc, money, friendlyDate, getRecentOrders, rememberOrderCode } from '/js/common.js';
+import { api, esc, money, friendlyDate, getRecentOrders, rememberOrderCode, tr, isAr } from '/js/common.js';
+import { TRACK_STAGE_AR } from '/js/i18n-ar.js';
 
 const STAGES = [
   { key: 'new', label: 'Order received', desc: 'Your order is in our queue and awaiting confirmation from the branch.' },
@@ -49,7 +50,7 @@ function renderRecentOrders(activeCode = '') {
   }
   box.hidden = false;
   box.innerHTML = `
-    <span class="recent-orders-label">Recent orders on this device:</span>
+    <span class="recent-orders-label">${isAr() ? 'طلباتك الأخيرة على هذا الجهاز:' : 'Recent orders on this device:'}</span>
     <div class="recent-orders-pills">
       ${list.map((o) => `
         <button type="button" class="recent-order-chip ${o.code === activeCode ? 'active' : ''}" data-recent-code="${esc(o.code)}">
@@ -68,16 +69,27 @@ document.getElementById('recent-orders')?.addEventListener('click', (e) => {
   pollTimer = setInterval(() => lookup(code, { quiet: true }), 20000);
 });
 
+let lastTrackedOrder = null;
+
 function renderOrder(order) {
+  lastTrackedOrder = order;
+  const ar = isAr();
   rememberOrderCode(order.code, order.type === 'cake' ? '3D Cake' : 'Menu Order');
   renderRecentOrders(order.code);
   resultCard.hidden = false;
   document.getElementById('t-code').textContent = order.code;
-  document.getElementById('t-type').textContent = order.type === 'cake' ? '3D Custom Cake Order' : 'Patisserie Menu Order';
-  document.getElementById('t-greeting').textContent = `${order.customer_first_name}’s Order`;
+  document.getElementById('t-type').textContent = order.type === 'cake'
+    ? (ar ? 'طلب كيك مخصّص 3D' : '3D Custom Cake Order')
+    : (ar ? 'طلب من قائمة سافوري' : 'Patisserie Menu Order');
+  document.getElementById('t-greeting').textContent = ar
+    ? `طلب ${order.customer_first_name}`
+    : `${order.customer_first_name}’s Order`;
 
-  const mode = order.fulfillment === 'delivery' ? 'Delivery' : `Pickup${order.branch ? ` (${order.branch})` : ''}`;
-  document.getElementById('t-schedule').textContent = `${mode} · ${friendlyDate(order.pickup_date)} at ${friendlyTime(order.pickup_time)}`;
+  const branchLabel = order.branch ? tr(order.branch) : '';
+  const mode = order.fulfillment === 'delivery'
+    ? (ar ? 'توصيل' : 'Delivery')
+    : `${ar ? 'استلام من الفرع' : 'Pickup'}${branchLabel ? ` (${branchLabel})` : ''}`;
+  document.getElementById('t-schedule').textContent = `${mode} · ${friendlyDate(order.pickup_date)} ${ar ? 'الساعة' : 'at'} ${friendlyTime(order.pickup_time)}`;
 
   const stepsEl = document.getElementById('t-steps');
   const bannerEl = document.getElementById('t-banner');
@@ -85,39 +97,48 @@ function renderOrder(order) {
   if (order.status === 'cancelled') {
     stepsEl.innerHTML = '';
     bannerEl.className = 'alert alert-error';
-    bannerEl.textContent = 'This order was cancelled. Please contact our branch on WhatsApp if you need help.';
+    bannerEl.textContent = ar
+      ? 'تم إلغاء هذا الطلب. يرجى التواصل مع الفرع عبر واتساب لأي مساعدة.'
+      : 'This order was cancelled. Please contact our branch on WhatsApp if you need help.';
   } else {
     const activeIdx = Math.max(0, STAGES.findIndex((s) => s.key === order.status));
     stepsEl.innerHTML = STAGES.slice(0, 4).map((s, idx) => {
       const done = idx < activeIdx || order.status === 'completed';
       const current = idx === activeIdx && order.status !== 'completed';
+      const st = (ar && TRACK_STAGE_AR.get(s.key)) || s;
       return `
         <div class="track-step ${done ? 'done' : ''} ${current ? 'current' : ''}">
           <span class="track-dot">${done ? '✓' : idx + 1}</span>
-          <span class="track-label">${esc(s.label)}</span>
+          <span class="track-label">${esc(st.label)}</span>
         </div>`;
     }).join('');
     const currentStage = STAGES[activeIdx] || STAGES[0];
+    const st = (ar && TRACK_STAGE_AR.get(currentStage.key)) || currentStage;
     bannerEl.className = 'track-status-banner';
-    bannerEl.innerHTML = `<strong>${esc(currentStage.label)}:</strong> ${esc(currentStage.desc)}`;
+    bannerEl.innerHTML = `<strong>${esc(st.label)}:</strong> ${esc(st.desc)}`;
   }
 
   document.getElementById('t-items').innerHTML = (order.items || []).map((it) => {
     const details = Object.entries(it.details || {})
-      .map(([k, v]) => `${k}: ${v}`)
+      .map(([k, v]) => `${tr(k)}: ${tr(v)}`)
       .join(' · ');
     return `
       <li>
         <div>
-          <span class="k"><strong>${it.quantity} × ${esc(it.name)}</strong></span>
+          <span class="k"><strong>${it.quantity} × ${esc(tr(it.name))}</strong></span>
           ${details ? `<div class="muted small">${esc(details)}</div>` : ''}
         </div>
-        <span class="v">${money(it.unit_price_cents * it.quantity)}</span>
+        <span class="v" dir="ltr">${money(it.unit_price_cents * it.quantity)}</span>
       </li>`;
   }).join('');
 
   document.getElementById('t-total').textContent = money(order.total_cents);
 }
+
+window.addEventListener('savory:langchange', () => {
+  if (lastTrackedOrder) renderOrder(lastTrackedOrder);
+  else renderRecentOrders(input?.value?.trim().toUpperCase() || '');
+});
 
 form.addEventListener('submit', (e) => {
   e.preventDefault();

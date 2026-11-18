@@ -1290,6 +1290,7 @@ dialog[open] { animation: dialog-in 0.4s var(--ease); }
   flex-direction: column;
   gap: 2px;
   padding: 14px 16px;
+  padding-inline-end: 36px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.65);
@@ -1313,7 +1314,8 @@ dialog[open] { animation: dialog-in 0.4s var(--ease); }
 .choice:has(input:checked)::after {
   content: '✓';
   position: absolute;
-  top: 10px; right: 12px;
+  top: 10px;
+  inset-inline-end: 10px;
   width: 20px; height: 20px;
   border-radius: 50%;
   background: var(--gold-grad);
@@ -1686,27 +1688,26 @@ html { scrollbar-color: #845537 var(--bg); scrollbar-width: thin; }
   top: calc(var(--header-h) + 10px);
   z-index: 6;
   display: flex;
-  gap: 2px;
-  padding: 6px;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 8px;
   margin-bottom: 20px;
-  border-radius: 999px;
+  border-radius: 18px;
   background: rgba(252, 251, 247, 0.96);
   backdrop-filter: blur(8px);
   border: 1px solid var(--line-strong);
-  overflow-x: auto;
-  scrollbar-width: none;
   box-shadow: 0 14px 30px -18px rgba(76, 32, 7, 0.2);
 }
 .stepper::-webkit-scrollbar { display: none; }
 .stepper a {
-  flex: 1 0 auto;
+  flex: 0 1 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  padding: 7px 11px;
+  gap: 5px;
+  padding: 6px 8px;
   border-radius: 999px;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--muted);
   text-decoration: none;
@@ -3462,14 +3463,15 @@ textarea:focus-visible,
 
 .menu-search-icon {
   position: absolute;
-  left: 14px;
+  inset-inline-start: 14px;
   color: #6E462C;
   pointer-events: none;
 }
 
 #menu-search {
   width: 100%;
-  padding: 11px 38px 11px 42px;
+  padding-block: 11px;
+  padding-inline: 42px 38px;
   border-radius: 10px;
   border: 0;
   background: rgba(76, 32, 7, 0.06);
@@ -3477,9 +3479,15 @@ textarea:focus-visible,
   font-size: 1rem;
 }
 
+#menu-search::-webkit-search-cancel-button,
+#menu-search::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 .menu-search-clear {
   position: absolute;
-  right: 10px;
+  inset-inline-end: 10px;
   width: 26px;
   height: 26px;
   border-radius: 50%;
@@ -4847,6 +4855,10 @@ body.is-cart-page .bottom-bar {
   margin: 0;
   line-height: 0.98;
   letter-spacing: -0.02em;
+}
+html[dir="rtl"] .slider-editorial-title {
+  line-height: 1.24;
+  letter-spacing: 0;
 }
 
 .slider-editorial-sub {

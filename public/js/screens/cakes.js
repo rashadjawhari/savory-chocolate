@@ -1,7 +1,8 @@
 import {
   api, esc, money, isoDate, friendlyDate, loadSettings, setupFulfillment, deliveryFee,
-  setupBranches, orderConfirmation, openWhatsApp,
+  setupBranches, orderConfirmation, openWhatsApp, tr, isAr,
 } from '/js/common.js';
+import { trTastingNote } from '/js/i18n-ar.js';
 import { createCakeStage, renderCakeSnapshot, releaseSnapshots, drawSavoryPod } from '/js/cake3d.js';
 import { SIGNATURE_DESIGNS } from '/js/designs.js';
 import { confetti } from '/js/confetti.js';
@@ -81,48 +82,62 @@ function priceOf(o) {
 
 function cost(group, o) {
   if (group.key === 'size') return money(o.price_cents);
-  return o.price_cents ? `+ ${money(priceOf(o))}` : 'Included';
+  return o.price_cents ? `+ ${money(priceOf(o))}` : tr('Included');
 }
 
-function renderChoice(group, o, index) {
+function renderChoice(group, o, index, selectedIds = null) {
   const type = group.mode === 'multi' ? 'checkbox' : 'radio';
-  const checked = group.mode === 'single' && index === 0 ? 'checked' : '';
+  const checked = selectedIds
+    ? (selectedIds.has(String(o.id)) ? 'checked' : '')
+    : (group.mode === 'single' && index === 0 ? 'checked' : '');
   const input = `<input type="${type}" name="${group.key}" value="${o.id}" ${checked}>`;
+  const ar = isAr();
 
   if (group.key === 'color' || group.key === 'drip') {
     const dotClass = !o.color ? 'none' : o.visual === 'metallic' ? 'metallic' : '';
     return `
       <label class="choice swatch">${input}
         <span class="dot ${dotClass}" style="${o.color ? `background:${esc(o.color)}` : ''}"></span>
-        <span class="name">${esc(o.name)}</span>
-        <span class="cost" data-cost="${o.id}">${cost(group, o)}</span>
+        <span class="name">${esc(tr(o.name))}</span>
+        <span class="cost" data-cost="${o.id}" dir="ltr">${cost(group, o)}</span>
       </label>`;
   }
   const icon = group.key === 'shape' ? SHAPE_ICONS[o.visual] || '' : group.key === 'tiers' ? TIER_ICONS[o.visual] || '' : '';
+  const leadMeta = group.key === 'size' && o.lead_days
+    ? (ar ? `يحتاج حجز مسبق بـ ${o.lead_days} ${o.lead_days === 1 ? 'يوم' : 'أيام'}` : `Needs ${o.lead_days} extra day${o.lead_days === 1 ? '' : 's'} of notice`)
+    : '';
   return `
     <label class="choice">${input}
       ${icon}
-      <span class="name">${esc(o.name)}</span>
-      ${o.description ? `<span class="meta">${esc(o.description)}</span>` : ''}
-      ${group.key === 'size' && o.lead_days ? `<span class="meta">Needs ${o.lead_days} extra day${o.lead_days === 1 ? '' : 's'} of notice</span>` : ''}
-      <span class="cost" data-cost="${o.id}">${cost(group, o)}</span>
+      <span class="name">${esc(tr(o.name))}</span>
+      ${o.description ? `<span class="meta">${esc(tr(o.description))}</span>` : ''}
+      ${leadMeta ? `<span class="meta">${esc(leadMeta)}</span>` : ''}
+      <span class="cost" data-cost="${o.id}" dir="ltr">${cost(group, o)}</span>
     </label>`;
 }
 
-form.querySelectorAll('[data-groups]').forEach((container) => {
-  container.innerHTML = container.dataset.groups.split(',').map((key) => {
-    const group = byKey[key];
-    if (!group) return '';
-    const layout = key === 'color' || key === 'drip' ? 'swatches' : 'choices';
-    return `
-      <div class="group" role="${group.mode === 'single' ? 'radiogroup' : 'group'}" aria-label="${esc(group.label)}">
-        <div class="group-title"><span class="label">${esc(group.label)}</span><span class="chosen" data-chosen="${key}"></span></div>
-        <div class="${layout}">${group.options.map((o, i) => renderChoice(group, o, i)).join('')}</div>
-        ${key === 'size' && group.options.some((o) => Number(o.price_scale) !== 1)
-          ? '<p class="size-note">✦ Bigger cakes use more of everything, so toppings, fillings and finishes are priced for the size you choose.</p>' : ''}
-      </div>`;
-  }).join('') || '<p class="muted">No options available right now.</p>';
-});
+function renderOptionGroups(preserveChecked = false) {
+  const chosenIds = preserveChecked
+    ? new Set([...form.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked')].map((el) => String(el.value)))
+    : null;
+  const ar = isAr();
+
+  form.querySelectorAll('[data-groups]').forEach((container) => {
+    container.innerHTML = container.dataset.groups.split(',').map((key) => {
+      const group = byKey[key];
+      if (!group) return '';
+      const layout = key === 'color' || key === 'drip' ? 'swatches' : 'choices';
+      return `
+        <div class="group" role="${group.mode === 'single' ? 'radiogroup' : 'group'}" aria-label="${esc(tr(group.label))}">
+          <div class="group-title"><span class="label">${esc(tr(group.label))}</span><span class="chosen" data-chosen="${key}"></span></div>
+          <div class="${layout}">${group.options.map((o, i) => renderChoice(group, o, i, chosenIds)).join('')}</div>
+          ${key === 'size' && group.options.some((o) => Number(o.price_scale) !== 1)
+            ? `<p class="size-note">${ar ? '✦ القوالب الأكبر تحتاج كمية أكبر من الحشوات والزينة، لذا يتغيّر سعر الإضافات حسب الحجم المختار.' : '✦ Bigger cakes use more of everything, so toppings, fillings and finishes are priced for the size you choose.'}</p>` : ''}
+        </div>`;
+    }).join('') || `<p class="muted">${ar ? 'لا تتوفر خيارات حالياً.' : 'No options available right now.'}</p>`;
+  });
+}
+renderOptionGroups(false);
 
 if (!groups.length) ordersOpen = false;
 if (!ordersOpen) {
@@ -164,11 +179,14 @@ function getPortionRecommendation(guests) {
 }
 
 function updatePortionUI() {
+  const ar = isAr();
   const guests = Number(portionSlider.value);
-  portionGuests.textContent = `${guests} guests`;
+  portionGuests.textContent = ar ? `${guests} ضيف` : `${guests} guests`;
   const { sizeOpt, tierOpt, slices } = getPortionRecommendation(guests);
-  const label = [sizeOpt?.name, tierOpt?.name].filter(Boolean).join(' · ') || 'Standard';
-  portionRec.innerHTML = `Recommended: <strong>${esc(label)}</strong> (${slices} generous slices)`;
+  const label = [tr(sizeOpt?.name || ''), tr(tierOpt?.name || '')].filter(Boolean).join(' · ') || (ar ? 'قياسي' : 'Standard');
+  portionRec.innerHTML = ar
+    ? `المقترح: <strong>${esc(label)}</strong> (${slices} قطعة سخية)`
+    : `Recommended: <strong>${esc(label)}</strong> (${slices} generous slices)`;
 }
 
 portionSlider?.addEventListener('input', updatePortionUI);
@@ -230,20 +248,24 @@ function updateSliceLegend() {
   const sCol = inferSpongeColor(spongeOpt);
   const fCol = inferFillingColor(fillingOpt);
   const cCol = colorOpt?.color || '#f3e6d3';
+  const ar = isAr();
   legend.hidden = false;
   legend.innerHTML = `
-    <span class="legend-item"><i style="background:${esc(sCol)}"></i>Sponge: <strong>${esc(spongeOpt?.name || 'Chocolate')}</strong></span>
-    <span class="legend-item"><i style="background:${esc(fCol)}"></i>Filling: <strong>${esc(fillingOpt?.name || 'Ganache')}</strong></span>
-    <span class="legend-item"><i style="background:${esc(cCol)}"></i>Frosting: <strong>${esc(frostOpt?.name || 'Buttercream')}</strong></span>
+    <span class="legend-item"><i style="background:${esc(sCol)}"></i>${ar ? 'الكيك' : 'Sponge'}: <strong>${esc(tr(spongeOpt?.name || 'Dark chocolate'))}</strong></span>
+    <span class="legend-item"><i style="background:${esc(fCol)}"></i>${ar ? 'الحشوة' : 'Filling'}: <strong>${esc(tr(fillingOpt?.name || 'Chocolate ganache'))}</strong></span>
+    <span class="legend-item"><i style="background:${esc(cCol)}"></i>${ar ? 'التغطية' : 'Frosting'}: <strong>${esc(tr(frostOpt?.name || 'Chocolate buttercream'))}</strong></span>
   `;
 }
 
 let fulfillment = () => 'pickup';
 
 function update({ redraw = true, intro = false } = {}) {
+  const ar = isAr();
   if (redraw) stage?.setCake(cakeConfig(), { intro });
   updateSliceLegend();
-  document.getElementById('message-count').textContent = `${messageInput.value.length} / 60 · shown on a chocolate plaque`;
+  document.getElementById('message-count').textContent = ar
+    ? `${messageInput.value.length} / 60 · تُكتب على لوح شوكولاتة`
+    : `${messageInput.value.length} / 60 · shown on a chocolate plaque`;
 
   const size = selected('size')[0];
   const scale = Number(size?.price_scale) || 1;
@@ -262,33 +284,40 @@ function update({ redraw = true, intro = false } = {}) {
   form.pickup_date.min = earliest;
   if (form.pickup_date.value < earliest) form.pickup_date.value = earliest;
   document.getElementById('date-hint').textContent = leadDays > 0
-    ? `Earliest: ${friendlyDate(earliest)}${size?.lead_days ? ` (${size.name} cakes need ${leadDays} days)` : ''}.` : '';
+    ? (ar ? `أقرب موعد: ${friendlyDate(earliest)}.` : `Earliest: ${friendlyDate(earliest)}${size?.lead_days ? ` (${size.name} cakes need ${leadDays} days)` : ''}.`)
+    : '';
 
   let subtotal = 0;
   const rows = [];
   for (const group of groups) {
     const chosen = selected(group.key);
     const label = form.querySelector(`[data-chosen="${group.key}"]`);
-    if (label) label.textContent = group.mode === 'single' ? chosen[0]?.name || '' : chosen.length ? `${chosen.length} selected` : 'Optional';
+    if (label) {
+      label.textContent = group.mode === 'single'
+        ? tr(chosen[0]?.name || '')
+        : chosen.length
+          ? (ar ? `تم اختيار ${chosen.length}` : `${chosen.length} selected`)
+          : tr('Optional');
+    }
     for (const o of chosen) {
       subtotal += priceOf(o);
-      rows.push(`<li><span class="k">${esc(group.label)}: ${esc(o.name)}</span><span class="v">${group.key === 'size' ? money(o.price_cents) : o.price_cents ? `+ ${money(priceOf(o))}` : '—'}</span></li>`);
+      rows.push(`<li><span class="k">${esc(tr(group.label))}: ${esc(tr(o.name))}</span><span class="v" dir="ltr">${group.key === 'size' ? money(o.price_cents) : o.price_cents ? `+ ${money(priceOf(o))}` : '—'}</span></li>`);
     }
   }
   const message = messageInput.value.trim();
-  if (message) rows.push(`<li><span class="k">Message: “${esc(message)}”</span><span class="v">—</span></li>`);
+  if (message) rows.push(`<li><span class="k">${ar ? 'العبارة' : 'Message'}: “${esc(message)}”</span><span class="v">—</span></li>`);
 
   const fee = deliveryFee(settings, fulfillment());
   const total = subtotal + fee;
   document.getElementById('summary').innerHTML = rows.join('');
   document.getElementById('fee-rows').innerHTML = fee
-    ? `<div class="sum-row"><span>Delivery</span><span>${money(fee)}</span></div>` : '';
+    ? `<div class="sum-row"><span>${tr('Delivery')}</span><span dir="ltr">${money(fee)}</span></div>` : '';
   const sized = selected('size').length > 0 || !byKey.size;
   document.getElementById('total').textContent = sized ? money(total) : '—';
   document.getElementById('preview-total').textContent = sized ? money(total) : '—';
   document.getElementById('bar-total').textContent = sized ? money(total) : '';
   document.getElementById('preview-title').textContent = [selected('size')[0]?.name, selected('shape')[0]?.name, selected('tiers')[0]?.name]
-    .filter(Boolean).join(' · ') || 'Custom cake';
+    .filter(Boolean).map((n) => tr(n)).join(' · ') || (ar ? 'كيك مخصّص' : 'Custom cake');
 
   renderTastingProfile();
 }
@@ -296,8 +325,9 @@ function update({ redraw = true, intro = false } = {}) {
 function renderTastingProfile() {
   const box = document.getElementById('tasting-profile');
   if (!box) return;
-  const sponge = selected('flavor')[0]?.name || 'Chocolate Sponge';
-  const filling = selected('filling')[0]?.name || 'Dark Ganache';
+  const ar = isAr();
+  const sponge = selected('flavor')[0]?.name || 'Dark chocolate';
+  const filling = selected('filling')[0]?.name || 'Chocolate ganache';
   const combined = `${sponge} ${filling}`.toLowerCase();
 
   let richness = 78;
@@ -323,17 +353,17 @@ function renderTastingProfile() {
 
   box.innerHTML = `
     <div class="tasting-head">
-      <span class="portion-badge">Tasting Note</span>
-      <strong>${esc(sponge)} + ${esc(filling)}</strong>
+      <span class="portion-badge">${ar ? 'ملاحظة التذوّق' : 'Tasting Note'}</span>
+      <strong>${esc(tr(sponge))} + ${esc(tr(filling))}</strong>
     </div>
-    <p class="tasting-desc">${esc(note)}</p>
+    <p class="tasting-desc">${esc(trTastingNote(note))}</p>
     <div class="tasting-meters">
       <div class="tasting-meter">
-        <span>Richness</span>
+        <span>${ar ? 'كثافة النكهة' : 'Richness'}</span>
         <div class="tasting-bar"><i style="width:${richness}%"></i></div>
       </div>
       <div class="tasting-meter">
-        <span>Sweetness</span>
+        <span>${ar ? 'درجة الحلاوة' : 'Sweetness'}</span>
         <div class="tasting-bar"><i style="width:${sweetness}%"></i></div>
       </div>
     </div>`;
@@ -358,10 +388,15 @@ function applyDesign(design) {
 }
 
 const occasionPills = document.getElementById('occasion-pills');
-if (occasionPills && groups.length) {
+function renderOccasionPills() {
+  if (!occasionPills || !groups.length) return;
+  const activeId = occasionPills.querySelector('.active')?.dataset.presetId || '';
   occasionPills.innerHTML = SIGNATURE_DESIGNS.map((d) => `
-    <button type="button" class="menu-filter-pill" data-preset-id="${esc(d.id)}">${esc(d.name)}</button>
+    <button type="button" class="menu-filter-pill${d.id === activeId ? ' active' : ''}" data-preset-id="${esc(d.id)}">${esc(tr(d.name))}</button>
   `).join('');
+}
+if (occasionPills && groups.length) {
+  renderOccasionPills();
   occasionPills.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-preset-id]');
     if (!btn) return;
@@ -469,7 +504,19 @@ update({ intro: true });
 
 const stepper = document.getElementById('stepper');
 const sections = [...form.querySelectorAll('.builder-step')];
-stepper.innerHTML = sections.map((s, i) => `<a href="#${s.id}" data-for="${s.id}"><span class="dot">${i + 1}</span>${esc(s.dataset.step)}</a>`).join('');
+function renderStepperLinks() {
+  stepper.innerHTML = sections.map((s, i) => `<a href="#${s.id}" data-for="${s.id}"><span class="dot">${i + 1}</span>${esc(tr(s.dataset.step))}</a>`).join('');
+}
+renderStepperLinks();
+
+window.addEventListener('savory:langchange', () => {
+  renderOptionGroups(true);
+  renderOccasionPills();
+  renderStepperLinks();
+  if (portionSlider) updatePortionUI();
+  update({ redraw: false });
+  refreshStepper();
+});
 
 function stepDone(section) {
   if (section.querySelector('input[name="branch"]') && !section.querySelector('input[name="branch"]:checked')) return false;

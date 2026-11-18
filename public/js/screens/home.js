@@ -1,4 +1,4 @@
-import { api, esc, mediaSrc, money, storage, reveal, loadSettings } from '/js/common.js';
+import { api, esc, mediaSrc, money, storage, reveal, loadSettings, tr } from '/js/common.js';
 import { createCakeStage, renderCakeSnapshot, releaseSnapshots } from '/js/cake3d.js';
 import { SIGNATURE_DESIGNS } from '/js/designs.js';
 import { illustrationFor } from '/js/illustrations.js';
@@ -62,19 +62,37 @@ for (const item of ranked) {
   picks.push(item);
   if (picks.length === 4) break;
 }
-if (picks.length) {
-  document.getElementById('loved-grid').innerHTML = picks.map((item) => `
-    <a class="at-product" href="${esc(menuProductHref(item.id))}" data-reveal>
-      <div class="at-product-row">
-        <h3>${esc(item.name)}</h3>
-        <span class="at-price">${money(item.price_cents)}</span>
-      </div>
-      <div class="at-media at-media-dark at-product-media">${item.image
-        ? `<img src="${esc(mediaSrc(item.image))}" alt="${esc(item.name)}" decoding="async">`
-        : `<div class="at-art">${illustrationFor(item)}</div>`}</div>
-    </a>`).join('');
-  document.getElementById('loved').hidden = false;
+const designsEl = document.getElementById('designs');
+const DESIGNS = SIGNATURE_DESIGNS.slice(0, 3);
+
+function renderHomeCatalogBlocks() {
+  if (picks.length) {
+    document.getElementById('loved-grid').innerHTML = picks.map((item) => `
+      <a class="at-product" href="${esc(menuProductHref(item.id))}" data-reveal>
+        <div class="at-product-row">
+          <h3 dir="auto">${esc(tr(item.name))}</h3>
+          <span class="at-price" dir="ltr">${money(item.price_cents)}</span>
+        </div>
+        <div class="at-media at-media-dark at-product-media">${item.image
+          ? `<img src="${esc(mediaSrc(item.image))}" alt="${esc(tr(item.name))}" decoding="async">`
+          : `<div class="at-art">${illustrationFor(item)}</div>`}</div>
+      </a>`).join('');
+    document.getElementById('loved').hidden = false;
+  }
+
+  designsEl.querySelectorAll('.at-design').forEach((el, idx) => {
+    const labelEl = el.querySelector('span');
+    if (labelEl && DESIGNS[idx]) labelEl.textContent = tr(DESIGNS[idx].name);
+  });
+
+  mountReelsStrip(document.getElementById('reels-grid'), {
+    menuItems: menu,
+    menuBaseUrl: MENU_URL,
+  });
+  reveal();
 }
+
+renderHomeCatalogBlocks();
 
 // Without a photo, the chocolates tile shows an illustration the "Most loved" cards don't already use.
 if (gallery[2]) menuTile.innerHTML = photo(gallery[2]);
@@ -87,13 +105,13 @@ else {
 
 // ---------- Signature designs (rendered once, then cached in the browser) ----------
 
-const designsEl = document.getElementById('designs');
-const DESIGNS = SIGNATURE_DESIGNS.slice(0, 3);
 designsEl.innerHTML = DESIGNS.map((d) => `
   <a class="at-design" href="/cakes?design=${esc(d.id)}" data-reveal>
     <div class="at-design-render" data-render="${esc(d.id)}"></div>
-    <span>${esc(d.name)}</span>
+    <span>${esc(tr(d.name))}</span>
   </a>`).join('');
+
+window.addEventListener('savory:langchange', renderHomeCatalogBlocks);
 
 const RENDER_CACHE = 'sc_design_render_v2_';
 async function renderOne(design) {
@@ -158,10 +176,5 @@ if (recent.length) {
     <a href="/gallery" data-reveal>${photo(g)}</a>`).join('');
   document.getElementById('gallery-section').hidden = false;
 }
-
-mountReelsStrip(document.getElementById('reels-grid'), {
-  menuItems: menu,
-  menuBaseUrl: MENU_URL,
-});
 
 reveal();

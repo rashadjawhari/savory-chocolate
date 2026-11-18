@@ -1,6 +1,6 @@
 // Verified @savory.chocolate Instagram Reels extracted directly from SAVORY's public feed.
 // Shared between Cake Studio Home and Menu Storefront to keep video playback lazy & lightweight.
-import { esc, money } from '/js/common.js';
+import { esc, money, tr, isAr } from '/js/common.js';
 
 export const SOCIAL_REELS = [
   {
@@ -96,9 +96,9 @@ export function mountReelsStrip(container, { menuItems = [], menuBaseUrl = '', o
           </span>
         </div>
         <div class="reel-meta">
-          <h3>${esc(reel.title)}</h3>
+          <h3>${esc(tr(reel.title))}</h3>
           <a class="reel-order-link" href="${esc(orderHref)}"${match && onOpenProduct ? ` data-reel-product="${match.id}"` : ''}>
-            ${match ? `${money(match.price_cents)} →` : 'View →'}
+            ${match ? `${money(match.price_cents)} ${isAr() ? '←' : '→'}` : (isAr() ? 'عرض ←' : 'View →')}
           </a>
         </div>
       </article>`;

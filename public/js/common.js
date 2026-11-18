@@ -2,6 +2,9 @@
 // header (scroll state + mobile menu + bilingual AR/EN switcher) and scroll-reveal animations.
 
 import { serverlessApi } from '/js/serverless-api.js';
+import { tr, isAr } from '/js/i18n-ar.js';
+
+export { tr, isAr };
 
 let useServerlessFallback = false;
 
@@ -82,7 +85,7 @@ export function isoDate(daysAhead = 0) {
 
 export function friendlyDate(iso) {
   const [y, m, d] = iso.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+  return new Date(y, m - 1, d).toLocaleDateString(isAr() ? 'ar-LB' : undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 }
 
 export function friendlyTime(hhmm) {
@@ -111,23 +114,43 @@ export function setupFulfillment(root, settings, onChange = () => {}) {
     address.hidden = true;
     return () => 'pickup';
   }
-  root.querySelector('[data-delivery-area]').textContent = [
-    settings.delivery_area,
-    Number(settings.delivery_fee) ? `Delivery fee: ${money(Number(settings.delivery_fee))}.` : 'Free delivery.',
-    Number(settings.delivery_min) ? `Minimum order ${money(Number(settings.delivery_min))}.` : '',
-  ].filter(Boolean).join(' ');
+  const updateAreaHint = () => {
+    const ar = isAr();
+    const fee = Number(settings.delivery_fee);
+    const min = Number(settings.delivery_min);
+    root.querySelector('[data-delivery-area]').textContent = [
+      settings.delivery_area,
+      fee
+        ? (ar ? `رسوم التوصيل: ${money(fee)}.` : `Delivery fee: ${money(fee)}.`)
+        : (ar ? 'توصيل مجاني.' : 'Free delivery.'),
+      min
+        ? (ar ? `الحد الأدنى للطلب ${money(min)}.` : `Minimum order ${money(min)}.`)
+        : '',
+    ].filter(Boolean).join(' ');
+  };
+  updateAreaHint();
 
   const current = () => toggle.querySelector('input:checked')?.value || 'pickup';
   const apply = () => {
     const delivery = current() === 'delivery';
+    const ar = isAr();
     address.hidden = !delivery;
     addressInput.required = delivery;
     root.querySelectorAll('[data-when-label]').forEach((el) => {
-      el.textContent = `${delivery ? 'Delivery' : 'Pickup'} ${el.dataset.whenLabel}`;
+      const whenKey = el.dataset.whenLabel;
+      if (ar) {
+        el.textContent = whenKey === 'date'
+          ? (delivery ? 'تاريخ التوصيل' : 'تاريخ الاستلام')
+          : (delivery ? 'وقت التوصيل' : 'وقت الاستلام');
+      } else {
+        el.textContent = `${delivery ? 'Delivery' : 'Pickup'} ${whenKey}`;
+      }
     });
+    updateAreaHint();
     onChange(current());
   };
   toggle.addEventListener('change', apply);
+  window.addEventListener('savory:langchange', apply);
   apply();
   return current;
 }
@@ -146,11 +169,21 @@ export async function setupBranches(root, onChange = () => {}) {
     choices.innerHTML = branches.map((b) => `
       <label class="choice">
         <input type="radio" name="branch" value="${b.id}" required>
-        <span class="name">${esc(b.name)}</span>
-        ${b.address ? `<span class="meta">${esc(b.address)}</span>` : ''}
+        <span class="name">${esc(tr(b.name))}</span>
+        ${b.address ? `<span class="meta">${esc(tr(b.address))}</span>` : ''}
       </label>`).join('');
     field.hidden = false;
     choices.addEventListener('change', () => onChange());
+    window.addEventListener('savory:langchange', () => {
+      choices.querySelectorAll('.choice').forEach((lbl) => {
+        const val = lbl.querySelector('input')?.value;
+        const branch = byId.get(String(val));
+        const nameEl = lbl.querySelector('.name');
+        const metaEl = lbl.querySelector('.meta');
+        if (branch && nameEl) nameEl.textContent = tr(branch.name);
+        if (branch && metaEl && branch.address) metaEl.textContent = tr(branch.address);
+      });
+    });
   }
   return () => (branches.length === 1 ? branches[0] : byId.get(root.querySelector('input[name="branch"]:checked')?.value) || null);
 }
@@ -218,6 +251,7 @@ const I18N = {
     reels_kicker: 'Live from Instagram',
     reels_title: '@savory.chocolate Reels',
     reels_follow: 'Follow on Instagram',
+    hero_dream_sub: 'Every choice updates the live 3D preview. Drag or touch the cake to look around it.',
   },
   ar: {
     nav_home: 'استوديو الكيك',
@@ -268,6 +302,7 @@ const I18N = {
     reels_kicker: 'مباشرة من إنستغرام',
     reels_title: 'فيديوهات @savory.chocolate',
     reels_follow: 'تابعنا على إنستغرام',
+    hero_dream_sub: 'كل خيار يحدّث المعاينة ثلاثية الأبعاد مباشرة. اسحب القالب أو المس الشاشة لتدويره.',
   },
 };
 
@@ -336,18 +371,30 @@ const PHRASE_AR = new Map([
 ]);
 
 const origTextMap = new WeakMap();
+const origPlaceholderMap = new WeakMap();
+
+const origHtmlMap = new WeakMap();
 
 export function applyLanguage(lang = activeLang) {
-  const isAr = lang === 'ar';
-  document.documentElement.lang = isAr ? 'ar' : 'en';
-  document.documentElement.dir = isAr ? 'rtl' : 'ltr';
-  const nextLabel = isAr ? 'EN' : 'عربي';
+  const isArabic = lang === 'ar';
+  document.documentElement.lang = isArabic ? 'ar' : 'en';
+  document.documentElement.dir = isArabic ? 'rtl' : 'ltr';
+  const nextLabel = isArabic ? 'EN' : 'عربي';
   const langBtn = document.getElementById('lang-toggle');
   if (langBtn) langBtn.textContent = nextLabel;
   const onboardLangBtn = document.getElementById('onboard-lang-btn');
   if (onboardLangBtn) onboardLangBtn.textContent = nextLabel;
 
-  const dict = I18N[isAr ? 'ar' : 'en'];
+  const dict = I18N[isArabic ? 'ar' : 'en'];
+  const HTML_AR = {
+    hero_dream_cake: 'صمّم <em class="gold-text">قالب أحلامك</em>',
+  };
+  document.querySelectorAll('[data-i18n-html]').forEach((el) => {
+    if (!origHtmlMap.has(el)) origHtmlMap.set(el, el.innerHTML);
+    const k = el.dataset.i18nHtml;
+    el.innerHTML = isArabic && HTML_AR[k] ? HTML_AR[k] : origHtmlMap.get(el);
+  });
+
   document.querySelectorAll('[data-i18n]').forEach((el) => {
     const k = el.dataset.i18n;
     if (!dict[k]) return;
@@ -360,22 +407,58 @@ export function applyLanguage(lang = activeLang) {
   document.querySelectorAll('[data-lead-days]').forEach((el) => {
     if (!origTextMap.has(el)) origTextMap.set(el, el.textContent);
     const days = Number(el.dataset.leadDays) || 0;
-    if (!isAr) el.textContent = origTextMap.get(el);
+    if (!isArabic) el.textContent = origTextMap.get(el);
     else {
       const span = days === 1 ? 'يوم' : days === 2 ? 'يومين' : days <= 10 ? `${days} أيام` : `${days} يوماً`;
       el.textContent = days > 0 ? `اطلب قالب الكيك قبل ${span}` : 'اطلب الكيك في اليوم نفسه';
     }
   });
 
-  // Translate matching standalone phrases cleanly and reversibly
-  document.querySelectorAll('.eyebrow, .trust span, .step h3, .section-head h2, .card h2, .card h3, .btn, .cat-back-btn span, dt, .tool-btn span, .menu-filter-pill, .recent-orders-label, .portion-badge, .cart-upsell-head, .occasion-label').forEach((el) => {
+  // Placeholders on search boxes, notes, delivery addresses, and order code inputs
+  document.querySelectorAll('input[placeholder], textarea[placeholder]').forEach((el) => {
+    if (!origPlaceholderMap.has(el)) origPlaceholderMap.set(el, el.getAttribute('placeholder') || '');
+    const orig = origPlaceholderMap.get(el);
+    el.setAttribute('placeholder', isArabic ? tr(orig, true) : orig);
+  });
+
+  // Standalone phrase elements
+  document.querySelectorAll('.eyebrow, .trust span, .step h3, .section-head h2, .card h2, .card h3, .btn, .cat-back-btn span, dt, .tool-btn span, .menu-filter-pill, .recent-orders-label, .portion-badge, .cart-upsell-head, .occasion-label, #box-ribbon option, .folders-heading, .slider-editorial-sub, .box-banner-copy h2, #open-box-builder span:first-child, .pay-note, .empty-state p, .empty-state h2, .total-row > span:first-child, .optional, .hint, .drawer-hours span:last-child, .drawer-wa-btn span, .sister-sub, .sister-title, .sister-site-pill span, .nav-desc, .site-footer a, .site-footer p, .footer-bottom span, #closed-notice, .portion-calc-top strong, .luxury-badge span:last-child, .builder-step .step-intro, .pip-expand-btn, .stage-hint .drag, .box-flavors-label, .box-size-tab strong, .box-dialog h2, .box-dialog p, .footer-top h4, .luxury-funnel-step strong, .luxury-funnel-step small, .step-head h2, .bottom-bar span:first-child, .preview-meta .muted, #photo-empty strong, .visit .pre-line, .visit dd, .branch-links a, .info-list strong, .footer-branch strong, .footer-branch a, .wa-menu-title, .at-footer-brand p, .at-footer-col p, .at-footer-col a, .at-visit-intro .pre-line, .at-branch h3, .at-branch p, .at-branch a').forEach((el) => {
     if (el.hasAttribute('data-i18n') || el.children.length > 0) return;
-    if (!origTextMap.has(el)) origTextMap.set(el, el.textContent.trim());
-    const orig = origTextMap.get(el);
-    if (isAr && PHRASE_AR.has(orig)) {
-      el.textContent = PHRASE_AR.get(orig);
-    } else if (!isAr && orig) {
-      el.textContent = orig;
+    if (!origTextMap.has(el)) origTextMap.set(el, el.textContent);
+    const raw = origTextMap.get(el);
+    const trimmed = raw.trim();
+    if (!trimmed) return;
+    if (isArabic) {
+      if (/^©\s*\d{4}/.test(trimmed)) {
+        el.textContent = '© 2026 SAVORY · جميع الحقوق محفوظة · الدفع عند الاستلام أو التوصيل';
+      } else if (/^Website by\s+/i.test(trimmed)) {
+        el.textContent = `تصميم ${trimmed.replace(/^Website by\s+/i, '')}`;
+      } else {
+        const translated = PHRASE_AR.get(trimmed) || tr(trimmed, true);
+        if (translated !== trimmed) el.textContent = translated;
+      }
+    } else {
+      el.textContent = raw;
+    }
+  });
+
+  // Translate leading/inline TextNodes inside composite labels & buttons (e.g. `<label>Full name <span class="optional">(optional)</span></label>`)
+  document.querySelectorAll('.field > label, .field > .label, .segmented label, .cart-col-head h2, .box-size-tab, .total-row > span:first-child, .stage-hint, #photo-empty > span, a.credit, .at-footer-bottom a, .wa-menu a span').forEach((el) => {
+    if (el.hasAttribute('data-i18n')) return;
+    for (const node of el.childNodes) {
+      if (node.nodeType !== Node.TEXT_NODE) continue;
+      if (!origTextMap.has(node)) origTextMap.set(node, node.nodeValue);
+      const orig = origTextMap.get(node);
+      const trimmed = orig.trim();
+      if (!trimmed) continue;
+      if (isArabic) {
+        const translated = PHRASE_AR.get(trimmed) || tr(trimmed, true);
+        if (translated !== trimmed) {
+          node.nodeValue = orig.replace(trimmed, translated);
+        }
+      } else {
+        node.nodeValue = orig;
+      }
     }
   });
 }
@@ -387,6 +470,7 @@ function toggleLanguage() {
   activeLang = activeLang === 'ar' ? 'en' : 'ar';
   storage.set('sc_lang', activeLang);
   applyLanguage(activeLang);
+  window.dispatchEvent(new CustomEvent('savory:langchange', { detail: { lang: activeLang } }));
 }
 
 document.getElementById('lang-toggle')?.addEventListener('click', toggleLanguage);
@@ -550,7 +634,32 @@ export function orderConfirmation(order, { name, title, shopName, links = '' }) 
   rememberOrderCode(order.code || order.order_code, title);
   const firstName = name.trim().split(/\s+/)[0];
   const delivery = order.fulfillment === 'delivery';
-  const to = [shopName, order.branch].filter(Boolean).join(' ');
+  const ar = isAr();
+  const branchName = ar ? tr(order.branch, true) : order.branch;
+  const to = [shopName, branchName].filter(Boolean).join(' ');
+  const localizedTitle = ar ? (title.includes('cake') ? 'طلب الكيك الخاص بك جاهز للإرسال' : 'تم تسجيل طلبك بنجاح') : title;
+
+  if (ar) {
+    return `
+      <div class="card confirm">
+        <span class="script" style="font-size: 2.4rem;">شكراً لك</span>
+        <h1 style="font-size: 2.2rem;">${esc(firstName)}، ${esc(localizedTitle)}</h1>
+        ${order.whatsapp_url ? `
+          <div class="wa-step">
+            <span class="wa-step-label">الخطوة الأخيرة</span>
+            <p>أرسل طلبك إلى <strong>${esc(to || 'فرعنا')}</strong> عبر واتساب لنتمكن من تأكيده. الرسالة جاهزة بالفعل.</p>
+            <a class="btn btn-lg btn-block wa-send" href="${esc(order.whatsapp_url)}" target="_blank" rel="noopener">${WA_SVG} أرسل الطلب عبر واتساب</a>
+          </div>` : ''}
+        <p class="muted">رقم طلبك هو</p>
+        <div class="order-code" dir="ltr">${esc(order.code)}</div>
+        <p>${branchName ? `<strong>الفرع:</strong> ${esc(branchName)}<br>` : ''}
+          <strong>${delivery ? 'التوصيل' : 'الاستلام'}:</strong> ${esc(friendlyDate(order.pickup_date))} · ${esc(friendlyTime(order.pickup_time))}
+          ${delivery ? `<br><span class="muted">${esc(order.delivery_address)}</span>` : ''}<br>
+          <strong>الإجمالي المطلوب عند ${delivery ? 'التوصيل' : 'الاستلام'}:</strong> <span dir="ltr">${money(order.total_cents)}</span></p>
+        <div class="hero-actions" style="justify-content: center; margin-top: 24px;">${links}</div>
+      </div>`;
+  }
+
   return `
     <div class="card confirm">
       <span class="script" style="font-size: 2.4rem;">Thank you</span>

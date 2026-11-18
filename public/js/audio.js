@@ -29,17 +29,26 @@ export function isSoundEnabled() {
 export function setSoundEnabled(enabled) {
   try {
     localStorage.setItem(SOUND_STORAGE_KEY, String(Boolean(enabled)));
+    const ar = document.documentElement.lang === 'ar';
     document.querySelectorAll('[data-sound-toggle]').forEach((btn) => {
       btn.setAttribute('aria-pressed', String(enabled));
       btn.classList.toggle('muted', !enabled);
       const label = btn.querySelector('.sound-label');
       if (label) {
-        label.textContent = enabled
-          ? (btn.dataset.soundOn || 'Sound On')
-          : (btn.dataset.soundOff || 'Sound Off');
+        if (ar && !btn.dataset.soundOn) {
+          label.textContent = enabled ? 'الصوت' : 'مكتوم';
+        } else {
+          label.textContent = enabled
+            ? (btn.dataset.soundOn || 'Sound On')
+            : (btn.dataset.soundOff || 'Sound Off');
+        }
       }
     });
   } catch {}
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('savory:langchange', () => setSoundEnabled(isSoundEnabled()));
 }
 
 export function toggleSound() {
