@@ -5,6 +5,7 @@ import { CAKE_GROUPS, scaledPrice } from '../cake-groups.js';
 import { parseOptions, priceChoices } from '../menu-options.js';
 import { withImage } from '../uploads.js';
 import { orderMessage, whatsappLink } from '../whatsapp.js';
+import { evaluatePromo } from '../../public/js/promo.js';
 import {
   HttpError, bad, text, int, customer, pickupDate, pickupTime, fulfillment, email,
 } from '../validate.js';
@@ -18,7 +19,19 @@ const BOX_TIERS = {
 };
 
 router.get('/settings', (req, res) => {
-  res.json(getSettings());
+  const s = { ...getSettings() };
+  delete s.promo_codes;
+  res.json(s);
+});
+
+router.post('/promo/validate', (req, res) => {
+  const settings = getSettings();
+  const subtotal = Math.max(0, Number(req.body?.subtotal_cents) || 0);
+  const result = evaluatePromo(settings.promo_codes, req.body?.code, subtotal);
+  if (!result.valid) {
+    throw bad('Promo code is invalid or expired.');
+  }
+  res.json(result);
 });
 
 router.get('/menu', (req, res) => {
@@ -141,14 +154,16 @@ function limitOrders(req) {
 }
 
 // Sends the saved order back with a ready-made WhatsApp message to the branch.
-function respondWithOrder(req, res, { type, order, who, lines, notes, branch, photo, settings }) {
+function respondWithOrder(req, res, { type, order, who, lines, notes, branch, photo, settings, promo }) {
   const photoUrl = photo ? `${req.protocol}://${req.get('host')}/uploads/${photo}` : '';
-  const text = orderMessage({ type, order, who, lines, notes, branch, photoUrl, currency: settings.currency });
+  const text = orderMessage({ type, order, who, lines, notes, branch, photoUrl, currency: settings.currency, promo });
   res.status(201).json({
     ...order,
     order_code: order.code,
     currency: settings.currency,
     branch: branch?.name || '',
+    promo_code: promo?.valid ? promo.code : '',
+    discount_cents: promo?.valid ? promo.discountCents : 0,
     whatsapp_url: whatsappLink(branch?.whatsapp || settings.whatsapp, text),
   });
 }
@@ -193,8 +208,8 @@ router.post('/orders/menu', (req, res) => {
 
   const branch = pickBranch(body);
   limitOrders(req);
-  const order = saveOrder('menu', { who, date, time, notes, lines, settings, body, branch });
-  respondWithOrder(req, res, { type: 'menu', order, who, lines, notes, branch, settings });
+  const { order, promo } = saveOrder('menu', { who, date, time, notes, lines, settings, body, branch });
+  respondWithOrder(req, res, { type: 'menu', order, who, lines, notes, branch, settings, promo });
 });
 
 router.post('/orders/cake', ...withImage((req, res) => {
@@ -251,8 +266,8 @@ router.post('/orders/cake', ...withImage((req, res) => {
   const branch = pickBranch(body);
   limitOrders(req);
   const photo = req.file?.filename || '';
-  const order = saveOrder('cake', { who, date, time, notes, lines: [line], settings, body, branch, photo });
-  respondWithOrder(req, res, { type: 'cake', order, who, lines: [line], notes, branch, photo, settings });
+  const { order, promo } = saveOrder('cake', { who, date, time, notes, lines: [line], settings, body, branch, photo });
+  respondWithOrder(req, res, { type: 'cake', order, who, lines: [line], notes, branch, photo, settings, promo });
 }, 'photo'));
 
 function parseOrderBody(req) {
@@ -274,16 +289,23 @@ function assertOrdersOpen() {
 
 function saveOrder(type, { who, date, time, notes, lines, settings, body, branch = null, photo = '' }) {
   const subtotal = lines.reduce((sum, l) => sum + l.unit_price_cents * l.quantity, 0);
-  const delivery = fulfillment(body, settings, subtotal);
-  const total = subtotal + delivery.fee_cents;
+  const rawPromo = String(body.promo_code || '').trim();
+  const promo = rawPromo ? evaluatePromo(settings.promo_codes, rawPromo, subtotal) : { valid: false, code: '', percent: 0, discountCents: 0 };
+  if (rawPromo && !promo.valid) throw bad('Promo code is invalid or expired.');
 
-  return transaction(() => {
+  const delivery = fulfillment(body, settings, subtotal);
+  const total = Math.max(0, subtotal - promo.discountCents) + delivery.fee_cents;
+  const savedNotes = promo.valid && promo.discountCents > 0
+    ? [notes, `[Promo ${promo.code}: -${promo.percent}%]`].filter(Boolean).join('\n')
+    : notes;
+
+  const order = transaction(() => {
     const code = newOrderCode();
     const { lastInsertRowid: orderId } = db.prepare(`
       INSERT INTO orders (code, type, customer_name, customer_phone, customer_email, pickup_date, pickup_time, notes,
                           total_cents, fulfillment, delivery_address, delivery_fee_cents, branch, reference_image)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(code, type, who.name, who.phone, who.email, date, time, notes,
+    `).run(code, type, who.name, who.phone, who.email, date, time, savedNotes,
       total, delivery.fulfillment, delivery.address, delivery.fee_cents, branch?.name || '', photo);
 
     const insertLine = db.prepare(`
@@ -301,6 +323,7 @@ function saveOrder(type, { who, date, time, notes, lines, settings, body, branch
       pickup_time: time,
     };
   });
+  return { order, promo };
 }
 
 // Short, readable codes customers can say over the phone, e.g. SAV-7KX3QM.

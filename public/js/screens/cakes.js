@@ -1,6 +1,7 @@
 import {
   api, esc, money, isoDate, friendlyDate, loadSettings, setupFulfillment, deliveryFee,
   setupBranches, orderConfirmation, openWhatsApp, tr, isAr,
+  saveCustomerPrefs, restoreCustomerPrefs, setupPromoField,
 } from '/js/common.js';
 import { trTastingNote } from '/js/i18n-ar.js';
 import { createCakeStage, renderCakeSnapshot, releaseSnapshots, drawSavoryPod } from '/js/cake3d.js';
@@ -258,6 +259,20 @@ function updateSliceLegend() {
 }
 
 let fulfillment = () => 'pickup';
+let promo = null;
+let lastCakeSubtotal = 0;
+
+function estimateServingsLabel(sizeOpt, tierOpt) {
+  const ar = isAr();
+  const raw = String(sizeOpt?.description || '').match(/(\d+)\s*[–-]\s*(\d+)/);
+  const loBase = raw ? Number(raw[1]) : 10;
+  const hiBase = raw ? Number(raw[2]) : 14;
+  const tiers = Number(tierOpt?.visual) || 1;
+  const mult = tiers >= 3 ? 2.5 : tiers === 2 ? 1.75 : 1;
+  const lo = Math.round(loBase * mult);
+  const hi = Math.round(hiBase * mult);
+  return ar ? `يكفي ~${lo}–${hi} شخصاً` : `Serves ~${lo}–${hi} guests`;
+}
 
 function update({ redraw = true, intro = false } = {}) {
   const ar = isAr();
@@ -307,17 +322,24 @@ function update({ redraw = true, intro = false } = {}) {
   const message = messageInput.value.trim();
   if (message) rows.push(`<li><span class="k">${ar ? 'العبارة' : 'Message'}: “${esc(message)}”</span><span class="v">—</span></li>`);
 
+  lastCakeSubtotal = subtotal;
+  promo?.revalidate();
+  const discount = promo ? promo.getDiscountCents(subtotal) : 0;
   const fee = deliveryFee(settings, fulfillment());
-  const total = subtotal + fee;
+  const total = Math.max(0, subtotal - discount) + fee;
   document.getElementById('summary').innerHTML = rows.join('');
-  document.getElementById('fee-rows').innerHTML = fee
-    ? `<div class="sum-row"><span>${tr('Delivery')}</span><span dir="ltr">${money(fee)}</span></div>` : '';
+  const promoHtml = promo ? promo.rowHtml(subtotal) : '';
+  document.getElementById('fee-rows').innerHTML = (promoHtml || fee)
+    ? `${promoHtml}${fee ? `<div class="sum-row"><span>${tr('Delivery')}</span><span dir="ltr">${money(fee)}</span></div>` : ''}`
+    : '';
   const sized = selected('size').length > 0 || !byKey.size;
   document.getElementById('total').textContent = sized ? money(total) : '—';
   document.getElementById('preview-total').textContent = sized ? money(total) : '—';
   document.getElementById('bar-total').textContent = sized ? money(total) : '';
   document.getElementById('preview-title').textContent = [selected('size')[0]?.name, selected('shape')[0]?.name, selected('tiers')[0]?.name]
     .filter(Boolean).map((n) => tr(n)).join(' · ') || (ar ? 'كيك مخصّص' : 'Custom cake');
+  const servingsEl = document.getElementById('preview-servings');
+  if (servingsEl) servingsEl.textContent = estimateServingsLabel(selected('size')[0], selected('tiers')[0]);
 
   renderTastingProfile();
 }
@@ -445,6 +467,9 @@ if (sharedCustom && groups.length) {
 
 fulfillment = setupFulfillment(form, settings, () => update({ redraw: false }));
 const branchOf = await setupBranches(form, () => refreshStepper());
+restoreCustomerPrefs(form);
+promo = setupPromoField(form, { getSubtotal: () => lastCakeSubtotal, onChange: () => update({ redraw: false }) });
+update({ redraw: false });
 
 // ---------- inspiration photo ----------
 
@@ -596,15 +621,18 @@ document.getElementById('surprise-btn')?.addEventListener('click', () => {
 
 document.getElementById('sound-btn')?.addEventListener('click', toggleSound);
 
-document.getElementById('share-btn')?.addEventListener('click', async () => {
+function encodeShareUrl() {
   const state = {};
   for (const group of groups) {
     const ids = selected(group.key).map((o) => o.id);
     if (ids.length) state[group.key] = group.mode === 'single' ? ids[0] : ids;
   }
   if (messageInput.value.trim()) state.msg = messageInput.value.trim();
-  const encoded = btoa(JSON.stringify(state));
-  const url = `${location.origin}/cakes?custom=${encodeURIComponent(encoded)}`;
+  return `${location.origin}/cakes?custom=${encodeURIComponent(btoa(JSON.stringify(state)))}`;
+}
+
+document.getElementById('share-btn')?.addEventListener('click', async () => {
+  const url = encodeShareUrl();
   const labelEl = document.getElementById('share-label');
   try {
     if (navigator.share) {
@@ -725,34 +753,42 @@ form.addEventListener('submit', async (event) => {
   }
   data.fulfillment = fulfillment();
   data.branch = branchOf()?.id;
+  data.promo_code = promo?.getCode() || '';
+  saveCustomerPrefs(data);
+  const customUrl = encodeShareUrl();
 
   const payload = new FormData();
   payload.append('data', JSON.stringify(data));
   if (photoFile) payload.append('photo', photoFile);
 
   submitBtn.disabled = true;
-  submitBtn.innerHTML = `<span class="spinner" aria-hidden="true"></span> ${photoFile ? 'Uploading your photo…' : 'Placing your order…'}`;
+  submitBtn.innerHTML = `<span class="spinner" aria-hidden="true"></span> ${photoFile ? (isAr() ? 'جاري رفع الصورة…' : 'Uploading your photo…') : (isAr() ? 'جاري إرسال طلبك…' : 'Placing your order…')}`;
   try {
     const order = await api('/api/orders/cake', { method: 'POST', form: payload });
-    showConfirmation(order, data.customer_name);
+    promo?.clear();
+    showConfirmation(order, data.customer_name, customUrl);
     openWhatsApp(order.whatsapp_url);
   } catch (err) {
     errorBox.textContent = err.message;
     errorBox.hidden = false;
     submitBtn.disabled = false;
-    submitBtn.textContent = 'Place cake order';
+    submitBtn.textContent = tr('Place cake order');
   }
 });
 
-function showConfirmation(order, name) {
+function showConfirmation(order, name, customUrl = '') {
   bar.remove();
   confetti();
   playCelebration();
+  const ar = isAr();
   document.getElementById('builder-col').innerHTML = orderConfirmation(order, {
     name,
     title: 'your cake is ordered!',
     shopName: settings.shop_name,
-    links: `<a class="btn btn-gold" href="/track?code=${encodeURIComponent(order.order_code)}">Track order live</a><a class="btn btn-outline" href="/cakes">Design another cake</a>`,
+    recentMeta: { type: 'cake', customUrl, total_cents: order.total_cents },
+    links: ar
+      ? `<a class="btn btn-gold" href="/track?code=${encodeURIComponent(order.order_code)}">تتبّع الطلب مباشرة</a><a class="btn btn-outline" href="/cakes">صمّم قالب كيك آخر</a>`
+      : `<a class="btn btn-gold" href="/track?code=${encodeURIComponent(order.order_code)}">Track order live</a><a class="btn btn-outline" href="/cakes">Design another cake</a>`,
   });
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }

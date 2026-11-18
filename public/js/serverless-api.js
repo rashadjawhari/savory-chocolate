@@ -2,6 +2,7 @@
 // When the Express backend is not reachable at /api/*, this module serves and persists
 // the full SAVORY database (seeded from /seed.json + localStorage) so all 3 sites
 // (Cake Studio, Menu, and Admin) work out of the box on *.web.app.
+import { evaluatePromo, normalizePromoList } from './promo.js';
 
 const DB_KEY = 'savory_static_db_v7';
 const SESSION_KEY = 'savory_admin_session_v1';
@@ -32,6 +33,13 @@ async function getDb() {
         const seed = await loadSeed();
         if (seed?.admins?.length) {
           parsed.admins = seed.admins;
+          saveDb(parsed);
+        }
+      }
+      if (parsed.settings && parsed.settings.promo_codes === undefined) {
+        const seed = await loadSeed();
+        if (seed?.settings?.promo_codes !== undefined) {
+          parsed.settings.promo_codes = seed.settings.promo_codes;
           saveDb(parsed);
         }
       }
@@ -71,6 +79,11 @@ function parseBody(body, form) {
       if (v instanceof File) continue;
       obj[k] = v;
     }
+    if (typeof obj.data === 'string') {
+      try {
+        Object.assign(obj, JSON.parse(obj.data));
+      } catch { /* ignore */ }
+    }
     return obj;
   }
   return body || {};
@@ -83,7 +96,7 @@ function makeCode() {
   return code;
 }
 
-function buildWhatsAppUrl(state, order, itemsSummary) {
+function buildWhatsAppUrl(state, order, itemsSummary, promo = null) {
   const branchObj = (state.branches || []).find((b) => b.name === order.branch);
   const rawWa = branchObj?.whatsapp || state.settings?.whatsapp || '+96179167464';
   const digits = String(rawWa).replace(/\D/g, '');
@@ -94,6 +107,7 @@ function buildWhatsAppUrl(state, order, itemsSummary) {
     '',
     ...itemsSummary,
     '',
+    ...(promo?.valid && promo.discountCents > 0 ? [`*Promo ${promo.code} (-${promo.percent}%):* -$${(promo.discountCents / 100).toFixed(2)}`] : []),
     `Total: $${(order.total_cents / 100).toFixed(2)}`,
   ];
   if (order.notes) lines.push(`Notes: ${order.notes}`);
@@ -107,7 +121,16 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
   const data = parseBody(body, form);
 
   // ---------- Public Endpoints ----------
-  if (method === 'GET' && path === '/api/settings') return state.settings || {};
+  if (method === 'GET' && path === '/api/settings') {
+    const s = { ...(state.settings || {}) };
+    delete s.promo_codes;
+    return s;
+  }
+  if (method === 'POST' && path === '/api/promo/validate') {
+    const res = evaluatePromo(state.settings?.promo_codes, data.code, Number(data.subtotal_cents) || 0);
+    if (!res.valid) fail(400, 'Promo code is invalid or expired.');
+    return res;
+  }
   if (method === 'GET' && path === '/api/branches') return (state.branches || []).filter((b) => b.available !== 0);
   if (method === 'GET' && path === '/api/menu') {
     return (state.menu_items || [])
@@ -215,8 +238,12 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
     if (data.design_notes) details.design_notes = String(data.design_notes).trim();
 
     const qty = Math.max(1, Number(data.quantity) || 1);
+    const subtotal = unitPrice * qty;
+    const rawPromo = String(data.promo_code || '').trim();
+    const promo = rawPromo ? evaluatePromo(state.settings?.promo_codes, rawPromo, subtotal) : { valid: false, code: '', percent: 0, discountCents: 0 };
+    if (rawPromo && !promo.valid) fail(400, 'Promo code is invalid or expired.');
     const deliveryFee = data.fulfillment === 'delivery' ? Number(state.settings?.delivery_fee || 0) : 0;
-    const totalCents = unitPrice * qty + deliveryFee;
+    const totalCents = Math.max(0, subtotal - promo.discountCents) + deliveryFee;
     const branchObj = (state.branches || []).find((b) => String(b.id) === String(data.branch));
     const code = makeCode();
     const item = {
@@ -225,6 +252,9 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
       quantity: qty,
       details,
     };
+    const savedNotes = promo.valid && promo.discountCents > 0
+      ? [String(data.notes || '').trim(), `[Promo ${promo.code}: -${promo.percent}%]`].filter(Boolean).join('\n')
+      : String(data.notes || '').trim();
     const order = {
       id: Date.now(),
       code,
@@ -240,12 +270,14 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
       delivery_address: String(data.delivery_address || '').trim(),
       delivery_fee_cents: deliveryFee,
       branch: branchObj?.name || '',
-      notes: String(data.notes || '').trim(),
+      notes: savedNotes,
       total_cents: totalCents,
+      promo_code: promo.valid ? promo.code : '',
+      discount_cents: promo.valid ? promo.discountCents : 0,
       created_at: new Date().toISOString(),
       items: [item],
     };
-    order.whatsapp_url = buildWhatsAppUrl(state, order, [`${qty}x ${item.name} - $${((unitPrice * qty) / 100).toFixed(2)}`]);
+    order.whatsapp_url = buildWhatsAppUrl(state, order, [`${qty}x ${item.name} - $${((unitPrice * qty) / 100).toFixed(2)}`], promo);
     state.orders = [order, ...(state.orders || [])];
     saveDb(state);
     return order;
@@ -298,10 +330,17 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
       }
     }
 
+    const rawPromo = String(data.promo_code || '').trim();
+    const promo = rawPromo ? evaluatePromo(state.settings?.promo_codes, rawPromo, subtotal) : { valid: false, code: '', percent: 0, discountCents: 0 };
+    if (rawPromo && !promo.valid) fail(400, 'Promo code is invalid or expired.');
+
     const deliveryFee = data.fulfillment === 'delivery' ? Number(state.settings?.delivery_fee || 0) : 0;
-    const totalCents = subtotal + deliveryFee;
+    const totalCents = Math.max(0, subtotal - promo.discountCents) + deliveryFee;
     const branchObj = (state.branches || []).find((b) => String(b.id) === String(data.branch));
     const code = makeCode();
+    const savedNotes = promo.valid && promo.discountCents > 0
+      ? [String(data.notes || '').trim(), `[Promo ${promo.code}: -${promo.percent}%]`].filter(Boolean).join('\n')
+      : String(data.notes || '').trim();
     const order = {
       id: Date.now(),
       code,
@@ -317,8 +356,10 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
       delivery_address: String(data.delivery_address || '').trim(),
       delivery_fee_cents: deliveryFee,
       branch: branchObj?.name || '',
-      notes: String(data.notes || '').trim(),
+      notes: savedNotes,
       total_cents: totalCents,
+      promo_code: promo.valid ? promo.code : '',
+      discount_cents: promo.valid ? promo.discountCents : 0,
       created_at: new Date().toISOString(),
       items: orderItems,
     };
@@ -326,6 +367,7 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
       state,
       order,
       orderItems.map((i) => `${i.quantity}x ${i.name} - $${((i.unit_price_cents * i.quantity) / 100).toFixed(2)}`),
+      promo,
     );
     state.orders = [order, ...(state.orders || [])];
     saveDb(state);
@@ -631,6 +673,13 @@ function settingsFields(d) {
     if (['orders_open', 'delivery_enabled'].includes(k)) out[k] = bool(v) ? '1' : '0';
     else if (['delivery_fee', 'delivery_min'].includes(k)) out[k] = String(toCents(v));
     else if (k === 'currency') out[k] = str(v).toUpperCase();
+    else if (k === 'promo_codes') {
+      try {
+        out[k] = normalizePromoList(v);
+      } catch (err) {
+        fail(400, err.message);
+      }
+    }
     else out[k] = str(v);
   }
   return out;

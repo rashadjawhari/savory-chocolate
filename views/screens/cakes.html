@@ -62,6 +62,7 @@
               <div>
                 <div class="muted small">Your cake</div>
                 <div class="title" id="preview-title">Custom cake</div>
+                <div class="preview-servings" id="preview-servings"></div>
               </div>
               <div class="amount gold-text" id="preview-total">—</div>
             </div>
@@ -153,6 +154,14 @@
             <section class="card spotlight builder-step" id="summary-step" data-step="Order">
               <div class="step-head"><span class="n">08</span><h2>Review &amp; order</h2></div>
               <ul class="summary-list" id="summary" style="margin-top: 16px;"></ul>
+              <div class="promo-box" data-promo-box>
+                <div class="promo-row">
+                  <input type="text" data-promo-input maxlength="24" autocomplete="off" placeholder="Promo code (e.g. SAVORY10)" aria-label="Promo code">
+                  <button type="button" class="btn btn-outline btn-sm" data-promo-apply>Apply</button>
+                  <button type="button" class="btn btn-ghost btn-sm" data-promo-clear hidden>Remove</button>
+                </div>
+                <p class="promo-feedback" data-promo-msg hidden></p>
+              </div>
               <div class="sum-rows" id="fee-rows"></div>
               <div class="total-row"><span>Total</span><span class="amount" id="total">—</span></div>
               <div id="form-error" class="alert alert-error" role="alert" hidden></div>

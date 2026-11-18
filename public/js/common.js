@@ -596,16 +596,190 @@ if (waMenu) {
 const WA_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.47 14.38c-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.65.07-.3-.15-1.25-.46-2.38-1.47-.88-.79-1.47-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.06 2.88 1.21 3.08c.15.2 2.09 3.2 5.08 4.48.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.08 1.75-.72 2-1.41.25-.69.25-1.29.17-1.41-.07-.12-.27-.2-.57-.35zM12.04 21.5h-.01a9.45 9.45 0 0 1-4.82-1.32l-.35-.21-3.58.94.96-3.49-.23-.36a9.43 9.43 0 0 1-1.45-5.04c0-5.22 4.25-9.46 9.48-9.46a9.4 9.4 0 0 1 6.7 2.78 9.4 9.4 0 0 1 2.77 6.69c0 5.22-4.25 9.47-9.47 9.47zm8.06-17.53A11.33 11.33 0 0 0 12.04.62C5.76.62.65 5.73.65 12.01c0 2 .52 3.96 1.52 5.69L.55 23.6l6.03-1.58a11.36 11.36 0 0 0 5.45 1.39h.01c6.28 0 11.39-5.11 11.39-11.39 0-3.04-1.18-5.9-3.33-8.05z"/></svg>';
 
 const RECENT_ORDERS_KEY = 'sc_recent_orders_v1';
+const CUSTOMER_PREFS_KEY = 'sc_customer_prefs_v1';
+
+export function saveCustomerPrefs({ customer_name, customer_phone, customer_email, delivery_address, fulfillment, branch } = {}) {
+  const clean = {
+    name: String(customer_name || '').trim(),
+    phone: String(customer_phone || '').trim(),
+    email: String(customer_email || '').trim(),
+    address: String(delivery_address || '').trim(),
+    fulfillment: fulfillment === 'delivery' ? 'delivery' : 'pickup',
+    branch: branch ? String(branch) : '',
+  };
+  if (clean.name || clean.phone || clean.address) {
+    storage.set(CUSTOMER_PREFS_KEY, clean);
+  }
+}
+
+export function restoreCustomerPrefs(form) {
+  if (!form) return;
+  const prefs = storage.get(CUSTOMER_PREFS_KEY, null);
+  if (!prefs) return;
+  if (form.customer_name && !form.customer_name.value && prefs.name) form.customer_name.value = prefs.name;
+  if (form.customer_phone && !form.customer_phone.value && prefs.phone) form.customer_phone.value = prefs.phone;
+  if (form.customer_email && !form.customer_email.value && prefs.email) form.customer_email.value = prefs.email;
+  if (form.delivery_address && !form.delivery_address.value && prefs.address) form.delivery_address.value = prefs.address;
+  if (prefs.branch) {
+    const branchInput = form.querySelector(`input[name="branch"][value="${CSS.escape(prefs.branch)}"]`);
+    if (branchInput && !form.querySelector('input[name="branch"]:checked')) {
+      branchInput.checked = true;
+      branchInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+  if (prefs.fulfillment === 'delivery') {
+    const delRadio = form.querySelector('input[name="fulfillment"][value="delivery"]');
+    if (delRadio && !delRadio.closest('[data-fulfillment]')?.hidden && !delRadio.checked) {
+      delRadio.checked = true;
+      delRadio.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+}
+
+/** Wires an optional `[data-promo-box]` inside a checkout form via `/api/promo/validate`. */
+export function setupPromoField(form, { getSubtotal, onChange = () => {} }) {
+  const box = form?.querySelector('[data-promo-box]');
+  if (!box) {
+    return {
+      getCode: () => '',
+      getDiscountCents: () => 0,
+      revalidate: async () => {},
+      clear: () => {},
+      rowHtml: () => '',
+    };
+  }
+
+  const input = box.querySelector('[data-promo-input]');
+  const applyBtn = box.querySelector('[data-promo-apply]');
+  const clearBtn = box.querySelector('[data-promo-clear]');
+  const msgEl = box.querySelector('[data-promo-msg]');
+
+  let applied = null; // { code, percent, discountCents }
+
+  const showMsg = (text, isErr = false) => {
+    if (!msgEl) return;
+    msgEl.textContent = text || '';
+    msgEl.classList.toggle('is-error', Boolean(isErr));
+    msgEl.hidden = !text;
+  };
+
+  const syncButtons = () => {
+    const ar = isAr();
+    if (applyBtn) {
+      applyBtn.hidden = Boolean(applied);
+      applyBtn.textContent = ar ? 'تطبيق' : 'Apply';
+    }
+    if (clearBtn) {
+      clearBtn.hidden = !applied;
+      clearBtn.textContent = ar ? 'إزالة' : 'Remove';
+    }
+    if (input) {
+      input.readOnly = Boolean(applied);
+      input.setAttribute('placeholder', ar ? 'كود الخصم (مثال: SAVORY10)' : 'Promo code (e.g. SAVORY10)');
+    }
+    if (applied) {
+      const sub = getSubtotal();
+      const disc = Math.min(sub, Math.round((sub * applied.percent) / 100));
+      applied.discountCents = disc;
+      showMsg(
+        ar ? `✓ تم تطبيق كود ${applied.code} (خصم ${applied.percent}% · -${money(disc)})` : `✓ ${applied.code} applied (${applied.percent}% off · -${money(disc)})`,
+        false,
+      );
+    }
+  };
+
+  async function validateAndApply(rawCode) {
+    const code = String(rawCode || '').trim().toUpperCase();
+    const ar = isAr();
+    if (!code) {
+      showMsg(ar ? 'أدخل كود الخصم أولاً.' : 'Enter a promo code first.', true);
+      return;
+    }
+    const subtotal = getSubtotal();
+    if (applyBtn) applyBtn.disabled = true;
+    try {
+      const res = await api('/api/promo/validate', {
+        method: 'POST',
+        body: { code, subtotal_cents: subtotal },
+      });
+      applied = { code: res.code, percent: res.percent, discountCents: res.discountCents };
+      if (input) input.value = applied.code;
+      syncButtons();
+      onChange();
+    } catch {
+      applied = null;
+      syncButtons();
+      showMsg(ar ? 'كود الخصم غير صالح أو منتهي الصلاحية.' : 'Promo code is invalid or expired.', true);
+      onChange();
+    } finally {
+      if (applyBtn) applyBtn.disabled = false;
+    }
+  }
+
+  function clear() {
+    applied = null;
+    if (input) {
+      input.value = '';
+      input.readOnly = false;
+    }
+    showMsg('', false);
+    syncButtons();
+    onChange();
+  }
+
+  applyBtn?.addEventListener('click', () => validateAndApply(input?.value));
+  clearBtn?.addEventListener('click', clear);
+  input?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (!applied) validateAndApply(input.value);
+    }
+  });
+  window.addEventListener('savory:langchange', () => {
+    syncButtons();
+    if (!applied && msgEl && !msgEl.hidden) showMsg('', false);
+  });
+  syncButtons();
+
+  return {
+    getCode: () => applied?.code || '',
+    getPercent: () => applied?.percent || 0,
+    getDiscountCents: (subtotal = getSubtotal()) => (
+      applied ? Math.min(subtotal, Math.round((subtotal * applied.percent) / 100)) : 0
+    ),
+    revalidate: () => {
+      syncButtons();
+    },
+    clear,
+    rowHtml: (subtotal = getSubtotal()) => {
+      if (!applied) return '';
+      const disc = Math.min(subtotal, Math.round((subtotal * applied.percent) / 100));
+      if (disc <= 0) return '';
+      const label = isAr()
+        ? `خصم (${applied.code} · ${applied.percent}%)`
+        : `Promo (${applied.code} · ${applied.percent}% off)`;
+      return `<div class="sum-row sum-row-discount"><span>${esc(label)}</span><span dir="ltr">−${money(disc)}</span></div>`;
+    },
+  };
+}
 
 export function getRecentOrders() {
   return storage.get(RECENT_ORDERS_KEY, []);
 }
 
-export function rememberOrderCode(code, label = '') {
+export function rememberOrderCode(code, label = '', extra = {}) {
   const clean = String(code || '').trim().toUpperCase();
   if (!clean) return;
-  const list = getRecentOrders().filter((o) => o.code !== clean);
-  list.unshift({ code: clean, label: label || 'SAVORY Order', ts: Date.now() });
+  const currentList = getRecentOrders();
+  const prev = currentList.find((o) => o.code === clean);
+  const nextEntry = {
+    ...(prev || {}),
+    ...(extra && typeof extra === 'object' ? extra : {}),
+    code: clean,
+    label: label || prev?.label || 'SAVORY Order',
+    ts: Date.now(),
+  };
+  const list = [nextEntry, ...currentList.filter((o) => o.code !== clean)];
   storage.set(RECENT_ORDERS_KEY, list.slice(0, 5));
   syncHeaderOrderPill();
 }
@@ -630,14 +804,17 @@ syncHeaderOrderPill();
 
 // The screen after an order is placed. Its main action sends the order to the branch on WhatsApp
 // (the message is written by the server, with every detail of the order).
-export function orderConfirmation(order, { name, title, shopName, links = '' }) {
-  rememberOrderCode(order.code || order.order_code, title);
+export function orderConfirmation(order, { name, title, shopName, links = '', recentMeta = null }) {
+  rememberOrderCode(order.code || order.order_code, title, recentMeta || {});
   const firstName = name.trim().split(/\s+/)[0];
   const delivery = order.fulfillment === 'delivery';
   const ar = isAr();
   const branchName = ar ? tr(order.branch, true) : order.branch;
   const to = [shopName, branchName].filter(Boolean).join(' ');
   const localizedTitle = ar ? (title.includes('cake') ? 'طلب الكيك الخاص بك جاهز للإرسال' : 'تم تسجيل طلبك بنجاح') : title;
+  const promoLine = order.discount_cents > 0 && order.promo_code
+    ? (ar ? `<br><strong>الخصم (${esc(order.promo_code)}):</strong> <span dir="ltr">−${money(order.discount_cents)}</span>` : `<br><strong>Promo (${esc(order.promo_code)}):</strong> −${money(order.discount_cents)}`)
+    : '';
 
   if (ar) {
     return `
@@ -654,7 +831,7 @@ export function orderConfirmation(order, { name, title, shopName, links = '' }) 
         <div class="order-code" dir="ltr">${esc(order.code)}</div>
         <p>${branchName ? `<strong>الفرع:</strong> ${esc(branchName)}<br>` : ''}
           <strong>${delivery ? 'التوصيل' : 'الاستلام'}:</strong> ${esc(friendlyDate(order.pickup_date))} · ${esc(friendlyTime(order.pickup_time))}
-          ${delivery ? `<br><span class="muted">${esc(order.delivery_address)}</span>` : ''}<br>
+          ${delivery ? `<br><span class="muted">${esc(order.delivery_address)}</span>` : ''}${promoLine}<br>
           <strong>الإجمالي المطلوب عند ${delivery ? 'التوصيل' : 'الاستلام'}:</strong> <span dir="ltr">${money(order.total_cents)}</span></p>
         <div class="hero-actions" style="justify-content: center; margin-top: 24px;">${links}</div>
       </div>`;
@@ -674,7 +851,7 @@ export function orderConfirmation(order, { name, title, shopName, links = '' }) 
       <div class="order-code">${esc(order.code)}</div>
       <p>${order.branch ? `<strong>Branch:</strong> ${esc(order.branch)}<br>` : ''}
         <strong>${delivery ? 'Delivery' : 'Pickup'}:</strong> ${esc(friendlyDate(order.pickup_date))} at ${esc(friendlyTime(order.pickup_time))}
-        ${delivery ? `<br><span class="muted">${esc(order.delivery_address)}</span>` : ''}<br>
+        ${delivery ? `<br><span class="muted">${esc(order.delivery_address)}</span>` : ''}${promoLine}<br>
         <strong>Total due on ${delivery ? 'delivery' : 'pickup'}:</strong> ${money(order.total_cents)}</p>
       <div class="hero-actions" style="justify-content: center; margin-top: 24px;">${links}</div>
     </div>`;

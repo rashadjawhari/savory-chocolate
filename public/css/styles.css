@@ -5620,6 +5620,75 @@ html[dir="rtl"] .product-tasting-box {
   animation: savoryPageIn 0.55s var(--ease) both;
 }
 
+/* Promo codes, Allergen notes, 3D servings & 1-Tap Quick Reorder */
+.promo-box {
+  margin: 12px 0 14px;
+}
+.promo-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.promo-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-transform: uppercase;
+  font-size: 0.92rem;
+  letter-spacing: 0.04em;
+  padding: 9px 12px;
+}
+.promo-feedback {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ok);
+}
+.promo-feedback.is-error {
+  color: var(--error);
+}
+.sum-row-discount {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.product-meta-notes {
+  margin: 4px 0 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(76, 32, 7, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.product-meta-line {
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.product-meta-line strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.preview-servings {
+  margin-top: 3px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.cart-recent-reorder {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.track-reorder-row {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .is-stage-enter,
   .folder-card,

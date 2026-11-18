@@ -133,6 +133,22 @@ function renderOrder(order) {
   }).join('');
 
   document.getElementById('t-total').textContent = money(order.total_cents);
+
+  const reorderRow = document.getElementById('t-reorder-row');
+  if (reorderRow) {
+    const savedRec = getRecentOrders().find((o) => o.code === order.code);
+    if (order.type === 'menu' && savedRec?.items?.length) {
+      reorderRow.hidden = false;
+      reorderRow.innerHTML = `<a class="btn btn-gold" href="/#reorder=${encodeURIComponent(order.code)}">${ar ? 'إعادة طلب هذه الأصناف ←' : 'Order these items again →'}</a>`;
+    } else if (order.type === 'cake') {
+      reorderRow.hidden = false;
+      const href = savedRec?.customUrl || '/cakes';
+      reorderRow.innerHTML = `<a class="btn btn-outline" href="${esc(href)}">${ar ? 'طلب نفس القالب مجدداً ←' : 'Customize this cake again →'}</a>`;
+    } else {
+      reorderRow.hidden = true;
+      reorderRow.innerHTML = '';
+    }
+  }
 }
 
 window.addEventListener('savory:langchange', () => {

@@ -9,7 +9,7 @@ export function whatsappLink(number, text) {
   return digits ? `https://wa.me/${digits}?text=${encodeURIComponent(text)}` : '';
 }
 
-export function orderMessage({ type, order, who, lines, notes, branch, photoUrl, currency }) {
+export function orderMessage({ type, order, who, lines, notes, branch, photoUrl, currency, promo = null }) {
   const money = (cents) => {
     try {
       return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD' }).format(cents / 100);
@@ -47,6 +47,9 @@ export function orderMessage({ type, order, who, lines, notes, branch, photoUrl,
   if (notes) out.push('', `${type === 'cake' ? 'Design notes' : 'Notes'}: ${notes}`);
   if (photoUrl) out.push('', `Inspiration photo: ${photoUrl}`);
   out.push('');
+  if (promo?.valid && promo.discountCents > 0) {
+    out.push(`*Promo ${promo.code} (-${promo.percent}%):* -${money(promo.discountCents)}`);
+  }
   if (order.delivery_fee_cents) out.push(`Delivery fee: ${money(order.delivery_fee_cents)}`);
   out.push(`*Total: ${money(order.total_cents)}* (pay on ${delivery ? 'delivery' : 'pickup'})`);
   return out.join('\n');

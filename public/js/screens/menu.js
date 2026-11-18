@@ -1,8 +1,9 @@
 import {
   api, esc, mediaSrc, money, storage, isoDate, loadSettings, setupFulfillment, deliveryFee, reveal,
   setupBranches, orderConfirmation, openWhatsApp, applyLanguage, tr, isAr,
+  saveCustomerPrefs, restoreCustomerPrefs, setupPromoField, getRecentOrders,
 } from '/js/common.js';
-import { buildItemSearchIndex, normalizeSearchText } from '/js/i18n-ar.js';
+import { buildItemSearchIndex, normalizeSearchText, trPairNote } from '/js/i18n-ar.js';
 import { illustrationFor } from '/js/illustrations.js';
 import { confetti } from '/js/confetti.js';
 import { playClick, playPop, playCelebration } from '/js/audio.js';
@@ -266,6 +267,25 @@ function inferMenuBadges(item) {
     badges.push({ label: 'Chilled', cls: 'badge-chill' });
   }
   return badges.slice(0, 3);
+}
+
+function inferAllergens(item) {
+  const txt = `${item.name} ${item.description} ${item.category} ${(item.options || []).map((g) => g.choices.map((c) => c.name).join(' ')).join(' ')}`.toLowerCase();
+  const ar = isAr();
+  const list = [];
+  if (/cream|milk|cheese|butter|gelato|ice cream|flurry|shake|latte|hot chocolate|crepe|waffle|pancake|eclair|éclair|brioche|caramel|white chocolate|ganache/.test(txt)) {
+    list.push(ar ? 'الحليب' : 'Dairy');
+  }
+  if (/crepe|waffle|pancake|cake|brownie|cookie|roll|kataifi|kunafa|eclair|éclair|choux|biscoff|oreo/.test(txt)) {
+    list.push(ar ? 'القمح / الغلوتين' : 'Wheat / Gluten');
+  }
+  if (/pistachio|hazelnut|almond|praline|cashew|nut|ferrero/.test(txt)) {
+    list.push(ar ? 'المكسرات (فستق/بندق/لوز)' : 'Tree Nuts');
+  }
+  if (/crepe|waffle|pancake|cake|brownie|cookie|eclair|éclair/.test(txt)) {
+    list.push(ar ? 'البيض' : 'Egg');
+  }
+  return list;
 }
 
 function inferPairing(item) {
@@ -899,6 +919,64 @@ function stepper(key, qty, name) {
 // ---------- Cart Page & Chrome Rendering ----------
 
 let fulfillment = () => 'pickup';
+let promo = null;
+
+function cartSubtotalCents() {
+  return cart.reduce((sum, l) => sum + l.quantity * lineUnitPrice(l), 0);
+}
+
+function reorderFromHistory(orderCode) {
+  const rec = getRecentOrders().find((o) => o.code === String(orderCode || '').trim().toUpperCase());
+  if (!rec?.items?.length) return false;
+  let added = 0;
+  for (const line of rec.items) {
+    const qty = Math.max(1, Number(line.quantity) || 1);
+    if (line.custom_box && BOX_TIERS[Number(line.custom_box.size)]) {
+      addToCart(0, [], qty, null, line.custom_box, '');
+      added++;
+    } else if (line.id) {
+      const item = itemsById.get(Number(line.id));
+      const picks = Array.isArray(line.choices) ? line.choices : [];
+      if (item && picksValid(item, picks)) {
+        addToCart(item.id, picks, qty, null, null, line.note || '');
+        added++;
+      }
+    }
+  }
+  if (!added) return false;
+  playPop();
+  if (cartConfirmation) cartConfirmation.hidden = true;
+  renderCart();
+  return true;
+}
+
+function renderRecentReorderBar() {
+  const el = document.getElementById('cart-recent-reorder');
+  if (!el) return;
+  const recentMenu = getRecentOrders().filter((o) => o.type === 'menu' && Array.isArray(o.items) && o.items.length);
+  const confirmationVisible = Boolean(cartConfirmation && !cartConfirmation.hidden);
+  if (!recentMenu.length || confirmationVisible) {
+    el.hidden = true;
+    return;
+  }
+  const ar = isAr();
+  el.hidden = false;
+  el.innerHTML = `
+    <span class="recent-orders-label">${ar ? 'إعادة طلب سريعة من طلباتك السابقة:' : 'Quick reorder from your last orders:'}</span>
+    <div class="recent-orders-pills">
+      ${recentMenu.map((o) => {
+        const totalItems = o.items.reduce((s, it) => s + (Number(it.quantity) || 1), 0);
+        const suffix = ar ? `${totalItems} ${totalItems === 1 ? 'صنف' : 'أصناف'} · أعد الطلب ↻` : `${totalItems} item${totalItems === 1 ? '' : 's'} · Reorder ↻`;
+        return `<button type="button" class="recent-order-chip" data-reorder-code="${esc(o.code)}"><strong>${esc(o.code)}</strong> <span>${esc(suffix)}</span></button>`;
+      }).join('')}
+    </div>`;
+}
+
+document.getElementById('cart-recent-reorder')?.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-reorder-code]');
+  if (!btn) return;
+  reorderFromHistory(btn.dataset.reorderCode);
+});
 
 function renderCartThumb(line) {
   if (line.custom_box) {
@@ -919,9 +997,12 @@ function renderCartThumb(line) {
 function renderCart() {
   const ar = isAr();
   const count = cart.reduce((n, l) => n + l.quantity, 0);
-  const subtotal = cart.reduce((sum, l) => sum + l.quantity * lineUnitPrice(l), 0);
+  const subtotal = cartSubtotalCents();
+  const discount = promo ? promo.getDiscountCents(subtotal) : 0;
   const fee = deliveryFee(settings, fulfillment());
+  const finalTotal = Math.max(0, subtotal - discount) + fee;
   const confirmationVisible = Boolean(cartConfirmation && !cartConfirmation.hidden);
+  renderRecentReorderBar();
 
   // Sync header badge & onboarding utility cart pill
   if (headerCartCount) {
@@ -1007,15 +1088,19 @@ function renderCart() {
     }
   }
 
+  promo?.revalidate();
   const sumRows = document.getElementById('sum-rows');
   if (sumRows) {
-    sumRows.innerHTML = fee
+    const promoHtml = promo ? promo.rowHtml(subtotal) : '';
+    const needBreakdown = discount > 0 || fee > 0;
+    sumRows.innerHTML = needBreakdown
       ? `<div class="sum-row"><span>${ar ? 'المجموع الفرعي' : 'Subtotal'}</span><span dir="ltr">${money(subtotal)}</span></div>
-         <div class="sum-row"><span>${ar ? 'التوصيل' : 'Delivery'}</span><span dir="ltr">${money(fee)}</span></div>`
+         ${promoHtml}
+         ${fee ? `<div class="sum-row"><span>${ar ? 'التوصيل' : 'Delivery'}</span><span dir="ltr">${money(fee)}</span></div>` : ''}`
       : '';
   }
   const cartTotalEl = document.getElementById('cart-total');
-  if (cartTotalEl) cartTotalEl.textContent = money(subtotal + fee);
+  if (cartTotalEl) cartTotalEl.textContent = money(finalTotal);
 
   const bar = document.getElementById('cart-bar');
   if (bar) {
@@ -1027,7 +1112,7 @@ function renderCart() {
         ? `عرض السلّة · ${count} ${count === 1 ? 'صنف' : 'أصناف'}`
         : `View cart · ${count} item${count === 1 ? '' : 's'}`;
     }
-    if (barTotal) barTotal.textContent = money(subtotal + fee);
+    if (barTotal) barTotal.textContent = money(finalTotal);
   }
 }
 
@@ -1350,6 +1435,8 @@ function showProductView(productId) {
 
   const itemTitle = tr(item.name);
   const itemDesc = tr(item.description);
+  const allergens = inferAllergens(item);
+  const pairingText = trPairNote(inferPairing(item));
 
   productPageCard.innerHTML = `
     <div class="product-page-grid">
@@ -1367,6 +1454,11 @@ function showProductView(productId) {
         </div>
 
         ${item.description ? `<p class="product-page-desc" dir="auto">${esc(itemDesc)}</p>` : ''}
+
+        <div class="product-meta-notes">
+          ${allergens.length ? `<div class="product-meta-line"><strong>${ar ? 'مسبّبات الحساسية' : 'Contains'}:</strong> ${esc(allergens.join(ar ? '، ' : ', '))}</div>` : ''}
+          <div class="product-meta-line">${esc(pairingText)}</div>
+        </div>
 
         <div id="product-options-root">
           ${optionsHtml}
@@ -1609,6 +1701,15 @@ function handleHashRouting() {
     clearSearchSilent();
     if (cartConfirmation && !cartConfirmation.hidden) cartConfirmation.hidden = true;
     enterOnboardingScreen();
+    return;
+  }
+
+  if (hash.startsWith('#reorder=')) {
+    const code = decodeURIComponent(hash.slice('#reorder='.length));
+    reorderFromHistory(code);
+    history.replaceState(null, '', '#cart');
+    clearSearchSilent();
+    showCartView();
     return;
   }
 
@@ -1903,6 +2004,8 @@ document.getElementById('box-form')?.addEventListener('submit', (e) => {
 
 fulfillment = setupFulfillment(form, settings, renderCart);
 const branchOf = await setupBranches(form);
+restoreCustomerPrefs(form);
+promo = setupPromoField(form, { getSubtotal: cartSubtotalCents, onChange: renderCart });
 
 dataLoaded = true;
 renderCart();
@@ -1949,6 +2052,7 @@ form.addEventListener('submit', async (event) => {
   const data = Object.fromEntries(new FormData(form));
   data.fulfillment = fulfillment();
   data.branch = branchOf()?.id;
+  data.promo_code = promo?.getCode() || '';
   data.items = cart.map((l) => (
     l.custom_box
       ? { quantity: l.quantity, custom_box: l.custom_box }
@@ -1957,13 +2061,17 @@ form.addEventListener('submit', async (event) => {
         : { id: l.id, quantity: l.quantity, choices: l.picks }
   ));
 
+  const submittedItems = JSON.parse(JSON.stringify(data.items));
+  saveCustomerPrefs(data);
+
   submitBtn.disabled = true;
   submitBtn.innerHTML = `<span class="spinner" aria-hidden="true"></span> ${isAr() ? 'جاري إرسال طلبك…' : 'Placing your order…'}`;
   try {
     const order = await api('/api/orders/menu', { method: 'POST', body: data });
     cart = [];
     saveCart();
-    showConfirmation(order, data.customer_name);
+    promo?.clear();
+    showConfirmation(order, data.customer_name, submittedItems);
     openWhatsApp(order.whatsapp_url);
   } catch (err) {
     errorBox.textContent = err.message;
@@ -1974,7 +2082,7 @@ form.addEventListener('submit', async (event) => {
   }
 });
 
-function showConfirmation(order, name) {
+function showConfirmation(order, name, submittedItems = []) {
   confetti();
   playCelebration();
   if (cartConfirmation) {
@@ -1983,6 +2091,7 @@ function showConfirmation(order, name) {
       name,
       title: 'your order is in!',
       shopName: settings.shop_name,
+      recentMeta: { type: 'menu', items: submittedItems, total_cents: order.total_cents },
       links: ar
         ? `<a class="btn btn-gold" href="/track?site=menu&code=${encodeURIComponent(order.order_code || order.code)}">تتبّع الطلب مباشرة</a><a class="btn btn-outline" href="#menu">اطلب المزيد من القائمة</a>`
         : `<a class="btn btn-gold" href="/track?site=menu&code=${encodeURIComponent(order.order_code || order.code)}">Track order live</a><a class="btn btn-outline" href="#menu">Order more from menu</a>`,

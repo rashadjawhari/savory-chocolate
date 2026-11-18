@@ -1,4 +1,4 @@
-import { $, adminApi, toast, formError, busy, cents, loadSettings } from './core.js';
+import { $, adminApi, toast, formError, busy, cents } from './core.js';
 import { loadBranches } from './branches.js';
 
 const settingsForm = $('#settings-form');
@@ -6,10 +6,13 @@ const passwordForm = $('#password-form');
 const MONEY_FIELDS = ['delivery_fee', 'delivery_min'];
 let state = null;
 
-export function load(appState) {
+export async function load(appState) {
   state = appState;
   loadBranches();
-  const s = state.settings;
+  try {
+    state.settings = await adminApi('/settings');
+  } catch { /* fallback to existing state.settings */ }
+  const s = state.settings || {};
   for (const el of settingsForm.elements) {
     if (!el.name || !(el.name in s)) continue;
     if (el.type === 'checkbox') el.checked = s[el.name] === '1';
@@ -26,7 +29,7 @@ settingsForm.addEventListener('submit', async (e) => {
   body.delivery_enabled = $('#s-delivery_enabled').checked;
   try {
     await busy($('button[type="submit"]', settingsForm), () => adminApi('/settings', { method: 'PUT', body }));
-    state.settings = await loadSettings();
+    state.settings = await adminApi('/settings');
     load(state);
     toast('Settings saved.');
   } catch (err) {

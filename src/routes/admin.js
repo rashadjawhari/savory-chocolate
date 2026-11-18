@@ -7,6 +7,7 @@ import {
 } from '../auth.js';
 import { CAKE_GROUPS } from '../cake-groups.js';
 import { normalizeOptions, parseOptions } from '../menu-options.js';
+import { normalizePromoList } from '../../public/js/promo.js';
 import { HttpError, bad, text, int, money, bool, hexColor, url, email, whatsappNumber, mediaPathOrUrl } from '../validate.js';
 
 export const router = Router();
@@ -559,6 +560,10 @@ router.delete('/messages/:id', (req, res) => {
 
 // ---------- Settings ----------
 
+router.get('/settings', (req, res) => {
+  res.json(getSettings());
+});
+
 router.put('/settings', (req, res) => {
   const body = req.body ?? {};
   const limits = {
@@ -589,6 +594,13 @@ router.put('/settings', (req, res) => {
   }
   if ('cake_lead_days' in body) updates.cake_lead_days = String(int(body.cake_lead_days, 'Days of notice', { max: 60 }));
   if ('orders_open' in body) updates.orders_open = bool(body.orders_open) ? '1' : '0';
+  if ('promo_codes' in body) {
+    try {
+      updates.promo_codes = normalizePromoList(body.promo_codes);
+    } catch (err) {
+      throw bad(err.message);
+    }
+  }
   if ('delivery_enabled' in body) updates.delivery_enabled = bool(body.delivery_enabled) ? '1' : '0';
   if ('delivery_fee' in body) updates.delivery_fee = String(money(body.delivery_fee, 'Delivery fee'));
   if ('delivery_min' in body) updates.delivery_min = String(money(body.delivery_min === '' ? '0' : body.delivery_min, 'Minimum order for delivery'));

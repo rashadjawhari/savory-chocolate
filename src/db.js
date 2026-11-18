@@ -853,6 +853,7 @@ export const DEFAULT_SETTINGS = {
   currency: 'USD',
   cake_lead_days: '2',
   orders_open: '1',
+  promo_codes: 'SAVORY10:10, EID15:15',
   delivery_enabled: '1',
   delivery_fee: '500',
   delivery_min: '0',
