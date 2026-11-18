@@ -152,7 +152,7 @@ function printKitchenSheet(o) {
     .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #4C2007; padding-bottom: 14px; margin-bottom: 18px; }
     h1 { margin: 0; font-size: 26px; letter-spacing: 0.08em; color: #4C2007; }
     .code { font-family: monospace; font-size: 24px; font-weight: 800; border: 2px solid #4C2007; padding: 4px 12px; border-radius: 6px; }
-    .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; background: #F7F7D3; padding: 14px 18px; border-radius: 8px; margin-bottom: 18px; }
+    .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; background: #F9F6EE; padding: 14px 18px; border-radius: 8px; margin-bottom: 18px; }
     .meta strong { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: #6E462C; }
     .ticket-item { border: 1px solid #d8cfa8; border-radius: 8px; padding: 14px; margin-bottom: 12px; }
     .ticket-line { display: flex; justify-content: space-between; font-size: 17px; margin-bottom: 8px; }
@@ -184,7 +184,7 @@ function printKitchenSheet(o) {
     <span>Total Due: ${money(o.total_cents)}</span>
   </div>
   <p class="no-print" style="margin-top:20px;text-align:right">
-    <button onclick="window.print()" style="padding:8px 18px;font-weight:700;background:#4C2007;color:#F7F7D3;border:0;border-radius:6px;cursor:pointer">Print Sheet</button>
+    <button onclick="window.print()" style="padding:8px 18px;font-weight:700;background:#4C2007;color:#F9F6EE;border:0;border-radius:6px;cursor:pointer">Print Sheet</button>
   </p>
   <script>setTimeout(() => window.print(), 250);</script>
 </body>

@@ -34,7 +34,7 @@ const fullscreenBtn = document.getElementById('p-fullscreen-btn');
 const modeTabs = [...document.querySelectorAll('.p-tab')];
 
 const SPEAKER_NOTES = [
-  'Open on SAVORY’s Butter-Cream (#F7F7D3), Deep Cocoa (#4C2007), and clean Cabin typography. Point out the 3 live production properties ready today.',
+  'Open on SAVORY’s Warm Ivory (#F9F6EE), Deep Cocoa (#4C2007), and clean Cabin typography. Point out the 3 live production properties ready today.',
   'Demonstrate the looped video onboarding directly inside the live Phone/Laptop frame: swipe horizontally, tap ← / →, switch عربي / EN, and click ORDER NOW →.',
   'Highlight the magazine-style Featured split header, ← 01 02 03 → top index, search & filter pills, and horizontal Instagram Reels strip below.',
   'Show the redesigned Product Page cleanup: no white box cards, no floating stickers over photography, locked mobile zoom, solid header, and clean hairline options.',

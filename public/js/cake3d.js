@@ -1166,7 +1166,7 @@ function plaque(top, message, shape) {
     // Embossed SAVORY cocoa-pod seal at the top of the plaque
     drawSavoryPod(ctx, 0, -w * 0.28, 120, '#d9b066');
 
-    ctx.fillStyle = '#F7F7D3';
+    ctx.fillStyle = '#F9F6EE';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const lines = wrap(message, 18);

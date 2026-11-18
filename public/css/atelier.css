@@ -1,10 +1,10 @@
 /* SAVORY "Atelier" look: header, footer and home page.
-   Light butter cream, deep cocoa type, photography first, gold only as a small accent.
+   Warm ivory (#F9F6EE), deep cocoa type, photography first, gold only as a small accent.
    Loaded after styles.css. Classes start with "at-" so they never collide with older rules. */
 
 :root {
-  --at-cream: #F7F7D3;
-  --at-cream-2: #FBFBE6;
+  --at-cream: #F9F6EE;
+  --at-cream-2: #FDFBF7;
   --at-cocoa: #4C2007;
   --at-cocoa-mid: #6B3110;
   --at-cocoa-deep: #3B1704;
@@ -117,7 +117,7 @@
       radial-gradient(circle at 86% 8%, rgba(217, 176, 102, 0.2), transparent 48%),
       radial-gradient(circle at 12% 90%, rgba(217, 176, 102, 0.12), transparent 44%),
       linear-gradient(155deg, #3A1604 0%, #240D02 58%, #140600 100%);
-    color: #F7F7D3;
+    color: #F9F6EE;
     overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
     counter-reset: atnav;
     visibility: hidden; pointer-events: none; opacity: 0;
@@ -154,14 +154,14 @@
     border-bottom: 1px solid rgba(217, 176, 102, 0.22);
     position: sticky; top: 0; background: transparent; z-index: 5;
   }
-  .at-nav-title { display: inline-flex; align-items: center; gap: 10px; color: #F7F7D3; }
+  .at-nav-title { display: inline-flex; align-items: center; gap: 10px; color: #F9F6EE; }
   .at-nav-title .brand-mark,
-  .at-nav-title .brand-word { color: #F7F7D3; }
+  .at-nav-title .brand-word { color: #F9F6EE; }
   .at-nav-title .brand-mark { height: 30px; width: auto; display: block; }
   .at-nav-title .brand-word { height: 18px; width: auto; display: block; }
   .at-nav-close {
     width: 42px; height: 42px; border-radius: 50%;
-    background: transparent; border: 0; color: #F7F7D3;
+    background: transparent; border: 0; color: #F9F6EE;
     transition: transform 0.36s var(--at-ease), color 0.25s;
   }
   .at-nav-close:hover, .at-nav-close:focus-visible {
@@ -171,7 +171,7 @@
   .at-nav > a {
     display: flex; align-items: center; gap: 14px; counter-increment: atnav;
     font: 600 clamp(1.65rem, 6.2vw, 2.2rem)/1.12 var(--at-serif);
-    color: #F7F7D3; padding: 16px 14px; border-radius: 0;
+    color: #F9F6EE; padding: 16px 14px; border-radius: 0;
     border-bottom: 1px solid rgba(217, 176, 102, 0.16);
   }
   .at-nav > a::before {
@@ -198,7 +198,7 @@
     border-top: 1px solid rgba(217, 176, 102, 0.2);
   }
   .at-nav-extra a {
-    color: rgba(247, 247, 211, 0.78); text-decoration: none; font: 600 15px/1 var(--at-sans);
+    color: rgba(249, 246, 238, 0.78); text-decoration: none; font: 600 15px/1 var(--at-sans);
     padding: 12px 14px; border-radius: 10px; transition: color 0.2s, background-color 0.2s;
   }
   .at-nav-extra a:hover { color: var(--at-gold); background: rgba(217, 176, 102, 0.1); }
@@ -228,7 +228,7 @@
 .at-media-dark { background: var(--at-cocoa); }
 .at-media-deep { background: var(--at-cocoa-deep); }
 .at-media > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s var(--at-ease); }
-.at-art { position: absolute; inset: 0; display: grid; place-items: center; padding: 14%; background: #EFEBC4; }
+.at-art { position: absolute; inset: 0; display: grid; place-items: center; padding: 14%; background: #F1ECE0; }
 .at-art svg { width: 100%; height: 100%; max-width: 320px; }
 .at-render { position: absolute; inset: 0; display: grid; place-items: center; }
 .at-render img { width: 82%; height: auto; }
@@ -298,7 +298,7 @@
 .at-design { display: block; color: var(--at-cream); text-decoration: none; text-align: center; }
 .at-design-render {
   aspect-ratio: 4 / 5; border: 1px solid rgba(217, 176, 102, 0.3); border-radius: 4px;
-  display: grid; place-items: center; background: radial-gradient(closest-side, rgba(247, 247, 211, 0.08), transparent);
+  display: grid; place-items: center; background: radial-gradient(closest-side, rgba(249, 246, 238, 0.08), transparent);
   transition: border-color 0.25s var(--at-ease);
 }
 .at-design-render img { width: 92%; height: auto; }
@@ -339,7 +339,7 @@
 .at-footer a { color: var(--at-cream); }
 .at-footer-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr)); gap: 40px; padding-block: 72px 48px; }
 .at-footer-word { font: 600 28px/1 var(--at-serif); letter-spacing: 0.18em; text-decoration: none; }
-.at-footer-brand p { margin: 16px 0 20px; max-width: 24em; color: #E9DDB8; }
+.at-footer-brand p { margin: 16px 0 20px; max-width: 24em; color: #EBE3D3; }
 .at-social { display: flex; gap: 6px; }
 .at-social a {
   width: 44px; height: 44px; border: 1px solid rgba(217, 176, 102, 0.35); border-radius: 999px;
@@ -348,20 +348,20 @@
 .at-social a:hover { border-color: var(--at-gold); }
 .at-social svg { width: 18px; height: 18px; fill: currentColor; }
 .at-footer-col h2 { margin: 0 0 16px; font: 600 12px/1 var(--at-sans); letter-spacing: 0.18em; text-transform: uppercase; color: var(--at-gold); }
-.at-footer-col > a { display: block; padding: 6px 0; text-decoration: none; color: #E9DDB8; }
+.at-footer-col > a { display: block; padding: 6px 0; text-decoration: none; color: #EBE3D3; }
 .at-footer-col > a:hover { color: var(--at-cream); text-decoration: underline; text-underline-offset: 5px; }
-.at-footer-col p { margin: 0 0 14px; color: #E9DDB8; font-size: 14px; }
-.at-footer .footer-branch { display: flex; flex-direction: column; gap: 4px; margin-bottom: 18px; font-size: 14px; color: #E9DDB8; }
+.at-footer-col p { margin: 0 0 14px; color: #EBE3D3; font-size: 14px; }
+.at-footer .footer-branch { display: flex; flex-direction: column; gap: 4px; margin-bottom: 18px; font-size: 14px; color: #EBE3D3; }
 .at-footer .footer-branch strong { color: var(--at-cream); font-weight: 600; }
 .at-footer .footer-branch p { margin: 0; }
-.at-footer .footer-branch a { color: #E9DDB8; text-decoration: none; }
+.at-footer .footer-branch a { color: #EBE3D3; text-decoration: none; }
 .at-footer .footer-branch a:hover { color: var(--at-cream); text-decoration: underline; }
 .at-footer-bottom {
   display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px;
-  padding-block: 22px 28px; border-top: 1px solid rgba(217, 176, 102, 0.2); font-size: 13px; color: #E9DDB8;
+  padding-block: 22px 28px; border-top: 1px solid rgba(217, 176, 102, 0.2); font-size: 13px; color: #EBE3D3;
   padding-inline-end: 96px; /* room for the floating WhatsApp button */
 }
-.at-footer-bottom a { color: #E9DDB8; text-decoration: none; }
+.at-footer-bottom a { color: #EBE3D3; text-decoration: none; }
 .at-footer-bottom a:hover { color: var(--at-cream); text-decoration: underline; }
 
 /* ---------- Smaller screens ---------- */

@@ -1,7 +1,7 @@
 /* Admin dashboard: a light, calm workspace that shares the site's type and gold accents. */
 
 body.admin {
-  --bg: #f7f2ec;
+  --bg: #F9F6EE;
   --surface: #ffffff;
   --surface-2: #fbf7f2;
   --line: #ebdfd2;
@@ -64,7 +64,7 @@ body.admin a { color: var(--gold-light); }
 
 .admin-header {
   background: linear-gradient(180deg, #361403 0%, #4C2007 100%);
-  color: #F7F7D3;
+  color: #F9F6EE;
   position: sticky;
   top: 0;
   z-index: 20;
@@ -76,21 +76,21 @@ body.admin a { color: var(--gold-light); }
 .admin-header .brand,
 .admin-header .brand-mark,
 .admin-header .brand-word {
-  color: #F7F7D3;
+  color: #F9F6EE;
 }
 .admin-header .brand-name { font-size: 1.35rem; }
 
 .admin-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 62px; }
 .admin-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 body.admin .admin-header .btn-ghost {
-  color: #F7F7D3;
-  border-color: rgba(247, 247, 211, 0.18);
+  color: #F9F6EE;
+  border-color: rgba(249, 246, 238, 0.18);
   background: rgba(255, 255, 255, 0.06);
 }
 body.admin .admin-header .btn-ghost:hover:not(:disabled) {
-  background: rgba(247, 247, 211, 0.16);
+  background: rgba(249, 246, 238, 0.16);
   color: #f1d79c;
-  border-color: rgba(247, 247, 211, 0.38);
+  border-color: rgba(249, 246, 238, 0.38);
 }
 
 .admin-pill {
@@ -99,7 +99,7 @@ body.admin .admin-header .btn-ghost:hover:not(:disabled) {
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  background: #F7F7D3;
+  background: #F9F6EE;
   color: #4C2007;
   padding: 3px 9px;
   border-radius: 999px;
@@ -125,7 +125,7 @@ body.admin .admin-header .btn-ghost:hover:not(:disabled) {
 }
 
 .tabs button:hover { color: #f5ebde; }
-.tabs button[aria-selected='true'] { color: #F7F7D3; border-bottom-color: #F7F7D3; }
+.tabs button[aria-selected='true'] { color: #F9F6EE; border-bottom-color: #F9F6EE; }
 
 .badge {
   background: var(--berry);
@@ -440,7 +440,7 @@ body.admin ::-webkit-scrollbar-thumb { background: #d6c3ad; border-color: var(--
 @media (max-width: 760px) { .admin-kpi-grid { grid-template-columns: repeat(2, 1fr); } }
 
 /* Featured Offers & Onboarding Start Screen Media */
-.pill.featured { background: #3B1704; color: #F7F7D3; border: 1px solid rgba(217, 176, 102, 0.45); }
+.pill.featured { background: #3B1704; color: #F9F6EE; border: 1px solid rgba(217, 176, 102, 0.45); }
 .subpanel-heading { font-size: 1.35rem; margin: 0 0 10px; color: var(--text); }
 .preset-chips-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-top: 6px; border-top: 1px dashed var(--line); }
 .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }

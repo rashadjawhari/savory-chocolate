@@ -611,9 +611,9 @@ async function cakeCard() {
   c.height = 1350;
   const ctx = c.getContext('2d');
   const bg = ctx.createRadialGradient(540, 820, 60, 540, 700, 900);
-  bg.addColorStop(0, '#FFFDF3');
-  bg.addColorStop(0.55, '#F7F7D3');
-  bg.addColorStop(1, '#E8E4B5');
+  bg.addColorStop(0, '#FCFBF7');
+  bg.addColorStop(0.55, '#F9F6EE');
+  bg.addColorStop(1, '#EDE7D8');
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, c.width, c.height);
   ctx.drawImage(img, 40, 210, 1000, 1000);

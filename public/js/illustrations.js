@@ -178,7 +178,7 @@ const ART = {
   icecream: wrap(`
     <!-- SAVORY branded cup -->
     <path d="M62 84 H138 L128 144 H72 Z" fill="url(#gDarkChoc)"/>
-    <rect x="66" y="102" width="68" height="18" rx="3" fill="#F7F7D3"/>
+    <rect x="66" y="102" width="68" height="18" rx="3" fill="#F9F6EE"/>
     <text x="100" y="115" text-anchor="middle" fill="#4C2007" font-family="Cabin, sans-serif" font-weight="700" font-size="11" letter-spacing="2">SAVORY</text>
     <!-- Soft serve swirl -->
     <path d="M58 84 C58 64 142 64 142 84 Z" fill="url(#gCream)"/>
@@ -220,7 +220,7 @@ const ART = {
     <ellipse cx="100" cy="138" rx="58" ry="12" fill="#FFFDF5" stroke="#D5C8A0" stroke-width="2"/>
     <path d="M56 72 H136 V104 A36 34 0 0 1 100 136 H92 A36 34 0 0 1 56 104 Z" fill="url(#gDarkChoc)"/>
     <path d="M136 80 H146 A12 12 0 0 1 146 106 H134" stroke="#4C2007" stroke-width="6" stroke-linecap="round"/>
-    <ellipse cx="96" cy="72" rx="40" ry="10" fill="url(#gMilkGanache)" stroke="#F7F7D3" stroke-width="2"/>
+    <ellipse cx="96" cy="72" rx="40" ry="10" fill="url(#gMilkGanache)" stroke="#F9F6EE" stroke-width="2"/>
     <path d="M78 72 Q96 64 114 72" stroke="#FFFDF5" stroke-width="3" stroke-linecap="round"/>
     <path d="M82 48 C76 38 88 30 82 20 M100 44 C94 34 106 26 100 16 M116 48 C110 38 122 30 116 20" stroke="#8A4B24" stroke-width="2.5" stroke-linecap="round" opacity="0.55"/>
   `),

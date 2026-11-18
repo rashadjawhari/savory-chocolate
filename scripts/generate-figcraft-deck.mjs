@@ -19,17 +19,17 @@ const logoHtml = fs.readFileSync(path.join(ROOT, 'views', 'partials', 'brand-log
 const [POD_PATH, WORD_PATH] = [...logoHtml.matchAll(/d="([^"]+)"/g)].map((m) => m[1]);
 
 // SAVORY Design Tokens
-const CREAM = '#F7F7D3';
-const CREAM_SOFT = '#EFEFC2';
-const CREAM_CARD = '#E6E3B0';
-const CREAM_ALT = '#FBFBE6';
+const CREAM = '#F9F6EE';
+const CREAM_SOFT = '#F2EDE1';
+const CREAM_CARD = '#EAE4D4';
+const CREAM_ALT = '#FDFBF7';
 const COCOA = '#4C2007';
 const COCOA_SOFT = '#6E3310';
 const MUTED = '#845537';
 const ESPRESSO = '#220B03';
 const ESPRESSO_CARD = '#311206';
 const GOLD = '#D9B066';
-const BORDER_LINE = '#DDD8A6';
+const BORDER_LINE = '#E5DEC9';
 const WHATSAPP_GREEN = '#25D366';
 
 const commands = [];
@@ -195,7 +195,7 @@ function text({
   width = null,
   height = null,
   value = '',
-  fontFamily = 'Inter',
+  fontFamily = 'Cabin',
   fontStyle = 'Regular',
   fontSize = 18,
   fill = COCOA,
@@ -373,8 +373,8 @@ function addFixedMobileHeader(screenId, { showFloatingCart = false, cartTotal = 
       scrollPosition: 'fixed',
     });
     shadow(bottomCartBtn, { color: '#220B0355', offset: [0, 10], radius: 22, spread: -2 });
-    text({ name: 'Float Cart Left', parent: bottomCartBtn, x: 22, y: 17, value: 'View cart · 1 item', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, fill: CREAM });
-    text({ name: 'Float Cart Right', parent: bottomCartBtn, x: PW - 140, y: 17, width: 86, value: cartTotal, fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, textAlign: 'right', fill: GOLD });
+    text({ name: 'Float Cart Left', parent: bottomCartBtn, x: 22, y: 17, value: 'View cart · 1 item', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, fill: CREAM });
+    text({ name: 'Float Cart Right', parent: bottomCartBtn, x: PW - 140, y: 17, width: 86, value: cartTotal, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, textAlign: 'right', fill: GOLD });
   }
 
   // Fixed Top Header (pinned at y = 0 above all scrollable content!)
@@ -398,7 +398,7 @@ function addFixedMobileHeader(screenId, { showFloatingCart = false, cartTotal = 
   bindVar(langTxt, 'i18n_lang_btn');
 
   const cartBtn = frame({ name: 'Hdr Cart Hitbox', parent: hdr, x: 268, y: 14, width: 74, height: 36, fill: CREAM_CARD, radius: 999 });
-  text({ name: 'Hdr Cart Txt', parent: cartBtn, x: 0, y: 10, width: 74, value: 'Bag (1)', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 12, textAlign: 'center', fill: COCOA });
+  text({ name: 'Hdr Cart Txt', parent: cartBtn, x: 0, y: 10, width: 74, value: 'Bag (1)', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 12, textAlign: 'center', fill: COCOA });
 
   const menuBtn = frame({ name: 'Hdr Drawer Hitbox', parent: hdr, x: 350, y: 14, width: 38, height: 36, fill: CREAM, radius: 8 });
   rect({ name: 'B1', parent: menuBtn, x: 8, y: 10, width: 22, height: 2.2, fill: COCOA, radius: 2 });
@@ -446,10 +446,10 @@ const mOnboard = onboardMedia.map((om, si) => {
 
   // Borderless floating left & right arrows
   const prevArrow = frame({ name: 'Onboard Prev Hitbox', parent: fId, x: 8, y: 400, width: 48, height: 68, fill: '#00000000' });
-  text({ name: 'Onboard Prev Arrow', parent: prevArrow, x: 0, y: 18, width: 48, value: '←', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 26, textAlign: 'center', fill: CREAM });
+  text({ name: 'Onboard Prev Arrow', parent: prevArrow, x: 0, y: 18, width: 48, value: '←', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 26, textAlign: 'center', fill: CREAM });
 
   const nextArrow = frame({ name: 'Onboard Next Hitbox', parent: fId, x: PW - 56, y: 400, width: 48, height: 68, fill: '#00000000' });
-  text({ name: 'Onboard Next Arrow', parent: nextArrow, x: 0, y: 18, width: 48, value: '→', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 26, textAlign: 'center', fill: CREAM });
+  text({ name: 'Onboard Next Arrow', parent: nextArrow, x: 0, y: 18, width: 48, value: '→', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 26, textAlign: 'center', fill: CREAM });
 
   // Authentic Stacked SAVORY Cocoa Emblem + Wordmark in Cream
   addInlineLogo(fId, { x: PW / 2, y: 294, markHeight: 68, wordHeight: 28, color: CREAM, stacked: true });
@@ -457,7 +457,7 @@ const mOnboard = onboardMedia.map((om, si) => {
   // Soft Elevated Cream Pill CTA: ORDER NOW ->
   const orderBtn = frame({ name: 'Onboard Order CTA', parent: fId, x: 101, y: 432, width: 200, height: 50, fill: CREAM, radius: 999 });
   shadow(orderBtn, { color: '#00000066', offset: [0, 14], radius: 30, spread: -4 });
-  const orderTxt = text({ name: 'Onboard Order Txt', parent: orderBtn, x: 0, y: 15, width: 200, value: 'ORDER NOW  →', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, letterSpacing: '10%', textAlign: 'center', fill: COCOA });
+  const orderTxt = text({ name: 'Onboard Order Txt', parent: orderBtn, x: 0, y: 15, width: 200, value: 'ORDER NOW  →', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, letterSpacing: '10%', textAlign: 'center', fill: COCOA });
   bindVar(orderTxt, 'i18n_order_now');
 
   // Interactive Slide Caption Pill
@@ -467,7 +467,7 @@ const mOnboard = onboardMedia.map((om, si) => {
     'Strawberry Belgian Fondue · Aramoun & Aley',
     'London Melt Chocolate Cake · 70% Couverture',
   ];
-  text({ name: 'Video Caption', parent: fId, x: 32, y: 780, width: PW - 64, value: captions[si], fontFamily: 'Inter', fontStyle: 'Medium', fontSize: 12, textAlign: 'center', fill: CREAM, opacity: 0.78 });
+  text({ name: 'Video Caption', parent: fId, x: 32, y: 780, width: PW - 64, value: captions[si], fontFamily: 'Cabin', fontStyle: 'Medium', fontSize: 12, textAlign: 'center', fill: CREAM, opacity: 0.78 });
 
   // Morphing Progress Dots
   const dotXs = [154, 178, 202, 226];
@@ -498,24 +498,24 @@ function buildPhoneMenuHome(idx, { slideIndex = 0, filteredPistachio = false } =
   const fId = frame({ name: frameTitle, x: pos.x, y: pos.y, width: PW, height: PH, fill: CREAM, overflow: 'vertical' });
 
   // Editorial Split Section (y = 84..)
-  const featTitle = text({ name: 'Menu Featured Heading', parent: fId, x: 20, y: 84, width: 362, value: 'Featured', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 42, fill: COCOA });
+  const featTitle = text({ name: 'Menu Featured Heading', parent: fId, x: 20, y: 84, width: 362, value: 'Featured', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 42, fill: COCOA });
   bindVar(featTitle, 'i18n_featured');
-  const featSub = text({ name: 'Menu Featured Sub', parent: fId, x: 20, y: 134, width: 356, value: 'Discover our signature handcrafted chocolates, warm crepes, and seasonal specials.', fontFamily: 'Inter', fontStyle: 'Regular', fontSize: 13, lineHeight: 20, fill: COCOA_SOFT });
+  const featSub = text({ name: 'Menu Featured Sub', parent: fId, x: 20, y: 134, width: 356, value: 'Discover our signature handcrafted chocolates, warm crepes, and seasonal specials.', fontFamily: 'Cabin', fontStyle: 'Regular', fontSize: 13, lineHeight: 20, fill: COCOA_SOFT });
   bindVar(featSub, 'i18n_featured_sub');
 
   // Top borderless index bar: <- 01 02 03 ->
   const prevBtn = frame({ name: 'Slider Prev Btn', parent: fId, x: 20, y: 186, width: 36, height: 32, fill: CREAM, radius: 6 });
-  text({ name: 'Slider Prev Txt', parent: prevBtn, x: 0, y: 5, width: 36, value: '←', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 16, textAlign: 'center', fill: COCOA });
+  text({ name: 'Slider Prev Txt', parent: prevBtn, x: 0, y: 5, width: 36, value: '←', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 16, textAlign: 'center', fill: COCOA });
 
   const idxBtns = [0, 1, 2].map((ii) => {
     const active = ii === slideIndex;
     const b = frame({ name: `Slider Idx 0${ii + 1}`, parent: fId, x: 60 + ii * 44, y: 186, width: 40, height: 32, fill: active ? CREAM_CARD : CREAM, radius: 6 });
-    text({ name: `Slider Idx 0${ii + 1} Txt`, parent: b, x: 0, y: 7, width: 40, value: `0${ii + 1}`, fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: active ? COCOA : MUTED });
+    text({ name: `Slider Idx 0${ii + 1} Txt`, parent: b, x: 0, y: 7, width: 40, value: `0${ii + 1}`, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: active ? COCOA : MUTED });
     return b;
   });
 
   const nextBtn = frame({ name: 'Slider Next Btn', parent: fId, x: 196, y: 186, width: 36, height: 32, fill: CREAM, radius: 6 });
-  text({ name: 'Slider Next Txt', parent: nextBtn, x: 0, y: 5, width: 36, value: '→', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 16, textAlign: 'center', fill: COCOA });
+  text({ name: 'Slider Next Txt', parent: nextBtn, x: 0, y: 5, width: 36, value: '→', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 16, textAlign: 'center', fill: COCOA });
 
   // Horizontal Scrollable + Smart-Animate Carousel Viewport!
   const viewport = frame({ name: 'Featured Viewport Scroll', parent: fId, x: 20, y: 230, width: 382, height: 312, fill: CREAM, clip: true, overflow: 'horizontal' });
@@ -532,36 +532,36 @@ function buildPhoneMenuHome(idx, { slideIndex = 0, filteredPistachio = false } =
   featItems.forEach((it, i) => {
     const cf = frame({ name: `Featured Card ${i + 1}`, parent: track, x: i * 250, y: 0, width: 236, height: 306, fill: CREAM });
     imageBox({ name: `Featured Photo ${i + 1}`, parent: cf, x: 0, y: 0, width: 236, height: 236, file: it.img, radius: 10, withShadow: true });
-    text({ name: `Featured Name ${i + 1}`, parent: cf, x: 0, y: 248, width: 174, value: it.name, fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 17, lineHeight: 22, fill: COCOA });
-    text({ name: `Featured Price ${i + 1}`, parent: cf, x: 178, y: 250, width: 58, value: it.price, fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, textAlign: 'right', fill: COCOA_SOFT });
+    text({ name: `Featured Name ${i + 1}`, parent: cf, x: 0, y: 248, width: 174, value: it.name, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 17, lineHeight: 22, fill: COCOA });
+    text({ name: `Featured Price ${i + 1}`, parent: cf, x: 178, y: 250, width: 58, value: it.price, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, textAlign: 'right', fill: COCOA_SOFT });
     featCards.push({ cf, target: it.target });
   });
 
   // Search Input Underline + Interactive Filter Bar (y = 556)
   rect({ name: 'Search Top Divider', parent: fId, x: 20, y: 556, width: 362, height: 1, fill: BORDER_LINE });
-  const searchTxt = text({ name: 'Search Label', parent: fId, x: 20, y: 572, width: 362, value: '⌕   Search menu…', fontFamily: 'Inter', fontStyle: 'Regular', fontSize: 15, fill: MUTED });
+  const searchTxt = text({ name: 'Search Label', parent: fId, x: 20, y: 572, width: 362, value: '⌕   Search menu…', fontFamily: 'Cabin', fontStyle: 'Regular', fontSize: 15, fill: MUTED });
   bindVar(searchTxt, 'i18n_search');
   rect({ name: 'Search Underline', parent: fId, x: 20, y: 604, width: 362, height: 1, fill: COCOA });
 
   // Horizontal scrollable filter pills
   const pillAll = frame({ name: 'Filter Pill All', parent: fId, x: 20, y: 618, width: 46, height: 32, fill: filteredPistachio ? CREAM : CREAM_CARD, radius: 8 });
-  text({ name: 'Filter All Txt', parent: pillAll, x: 0, y: 7, width: 46, value: 'All', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: filteredPistachio ? COCOA_SOFT : COCOA });
+  text({ name: 'Filter All Txt', parent: pillAll, x: 0, y: 7, width: 46, value: 'All', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: filteredPistachio ? COCOA_SOFT : COCOA });
 
   const pillPop = frame({ name: 'Filter Pill Popular', parent: fId, x: 74, y: 618, width: 72, height: 32, fill: CREAM, radius: 8 });
-  text({ name: 'Filter Pop Txt', parent: pillPop, x: 0, y: 7, width: 72, value: 'Popular', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: COCOA_SOFT });
+  text({ name: 'Filter Pop Txt', parent: pillPop, x: 0, y: 7, width: 72, value: 'Popular', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: COCOA_SOFT });
 
   const pillPist = frame({ name: 'Filter Pill Pistachio', parent: fId, x: 154, y: 618, width: 82, height: 32, fill: filteredPistachio ? COCOA : CREAM, radius: 8 });
-  text({ name: 'Filter Pist Txt', parent: pillPist, x: 0, y: 7, width: 82, value: 'Pistachio', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: filteredPistachio ? CREAM : COCOA_SOFT });
+  text({ name: 'Filter Pist Txt', parent: pillPist, x: 0, y: 7, width: 82, value: 'Pistachio', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: filteredPistachio ? CREAM : COCOA_SOFT });
 
-  text({ name: 'Filter Dark', parent: fId, x: 244, y: 625, value: 'Dark', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, fill: COCOA_SOFT });
-  text({ name: 'Filter Under10', parent: fId, x: 294, y: 625, value: 'Under $10', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, fill: COCOA_SOFT });
+  text({ name: 'Filter Dark', parent: fId, x: 244, y: 625, value: 'Dark', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, fill: COCOA_SOFT });
+  text({ name: 'Filter Under10', parent: fId, x: 294, y: 625, value: 'Under $10', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, fill: COCOA_SOFT });
 
   const catCards = [];
   const filterProdCards = [];
 
   if (filteredPistachio) {
     // Filtered Pistachio View directly below toolbar!
-    text({ name: 'Filtered Results Title', parent: fId, x: 20, y: 676, value: 'Showing 4 Pistachio Creations', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 24, fill: COCOA });
+    text({ name: 'Filtered Results Title', parent: fId, x: 20, y: 676, value: 'Showing 4 Pistachio Creations', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 24, fill: COCOA });
     const pItems = [
       { name: 'Dubai Kunafa Crepe', price: '$9.50', img: IMG('reel-dubai-crepe.jpg'), target: 'crepe' },
       { name: 'Pistachio Kunafa Bar', price: '$14.00', img: IMG('ig-kunafa-cookie-drip.jpg'), target: 'bar' },
@@ -574,14 +574,14 @@ function buildPhoneMenuHome(idx, { slideIndex = 0, filteredPistachio = false } =
       const px = 20 + col * 187;
       const py = 720 + row * 246;
       const pc = frame({ name: `Filtered Card ${i + 1}`, parent: fId, x: px, y: py, width: 175, height: 228, fill: CREAM });
-      text({ name: `Filt Title ${i}`, parent: pc, x: 0, y: 0, width: 175, value: pi.name, fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 15, fill: COCOA });
-      text({ name: `Filt Price ${i}`, parent: pc, x: 0, y: 24, value: pi.price, fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, fill: COCOA_SOFT });
+      text({ name: `Filt Title ${i}`, parent: pc, x: 0, y: 0, width: 175, value: pi.name, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 15, fill: COCOA });
+      text({ name: `Filt Price ${i}`, parent: pc, x: 0, y: 24, value: pi.price, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, fill: COCOA_SOFT });
       imageBox({ name: `Filt Img ${i}`, parent: pc, x: 0, y: 50, width: 175, height: 170, file: pi.img, radius: 10 });
       filterProdCards.push({ cf: pc, target: pi.target });
     });
   } else {
     // Categories Section (6 Clean Image-Only Category Cards)
-    const catHead = text({ name: 'Categories Heading', parent: fId, x: 20, y: 674, value: 'Categories', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 28, fill: COCOA });
+    const catHead = text({ name: 'Categories Heading', parent: fId, x: 20, y: 674, value: 'Categories', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 28, fill: COCOA });
     bindVar(catHead, 'i18n_categories');
 
     const cats = [
@@ -599,7 +599,7 @@ function buildPhoneMenuHome(idx, { slideIndex = 0, filteredPistachio = false } =
       const cx = 20 + col * 187;
       const cy = 720 + row * 194;
       const card = frame({ name: `Cat Card ${ct.name}`, parent: fId, x: cx, y: cy, width: 175, height: 180, fill: CREAM });
-      text({ name: `Cat Label ${ct.name}`, parent: card, x: 0, y: 0, width: 175, value: ct.name, fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 17, fill: COCOA });
+      text({ name: `Cat Label ${ct.name}`, parent: card, x: 0, y: 0, width: 175, value: ct.name, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 17, fill: COCOA });
       imageBox({ name: `Cat Img ${ct.name}`, parent: card, x: 0, y: 30, width: 175, height: 142, file: ct.img, radius: 10, withShadow: true });
       catCards.push({ card, dest: ct.dest });
     });
@@ -607,7 +607,7 @@ function buildPhoneMenuHome(idx, { slideIndex = 0, filteredPistachio = false } =
 
   // Horizontal Scrollable Instagram Reels Strip (y = 1326)
   const reelsY = filteredPistachio ? 1236 : 1326;
-  const reelsHead = text({ name: 'Reels Title', parent: fId, x: 20, y: reelsY, value: '@savory.chocolate Reels', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 24, fill: COCOA });
+  const reelsHead = text({ name: 'Reels Title', parent: fId, x: 20, y: reelsY, value: '@savory.chocolate Reels', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 24, fill: COCOA });
   bindVar(reelsHead, 'i18n_reels');
 
   const reelsStrip = frame({ name: 'Reels Horizontal Strip', parent: fId, x: 20, y: reelsY + 42, width: 382, height: 292, fill: CREAM, clip: true, overflow: 'horizontal' });
@@ -625,19 +625,19 @@ function buildPhoneMenuHome(idx, { slideIndex = 0, filteredPistachio = false } =
     const rc = frame({ name: `Reel Card ${i + 1}`, parent: reelsStrip, x: rx, y: 0, width: 156, height: 286, fill: CREAM });
     imageBox({ name: `Reel Video ${i + 1}`, parent: rc, x: 0, y: 0, width: 156, height: 236, file: rl.img, radius: 10 });
     rect({ name: `Reel Views BG ${i + 1}`, parent: rc, x: 10, y: 10, width: 64, height: 22, fill: ESPRESSO, opacity: 0.78, radius: 999 });
-    text({ name: `Reel Views Txt ${i + 1}`, parent: rc, x: 10, y: 15, width: 64, value: rl.views, fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 10, textAlign: 'center', fill: CREAM });
+    text({ name: `Reel Views Txt ${i + 1}`, parent: rc, x: 10, y: 15, width: 64, value: rl.views, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 10, textAlign: 'center', fill: CREAM });
     circle({ name: `Reel Play Badge ${i + 1}`, parent: rc, x: 58, y: 98, size: 40, fill: CREAM, opacity: 0.92 });
-    text({ name: `Reel Play Tri ${i + 1}`, parent: rc, x: 58, y: 109, width: 40, value: '▶', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: COCOA });
-    text({ name: `Reel Name ${i + 1}`, parent: rc, x: 0, y: 244, width: 156, value: rl.name, fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 15, fill: COCOA });
-    text({ name: `Reel Link ${i + 1}`, parent: rc, x: 0, y: 266, value: 'Order →', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 12, fill: COCOA_SOFT });
+    text({ name: `Reel Play Tri ${i + 1}`, parent: rc, x: 58, y: 109, width: 40, value: '▶', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: COCOA });
+    text({ name: `Reel Name ${i + 1}`, parent: rc, x: 0, y: 244, width: 156, value: rl.name, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 15, fill: COCOA });
+    text({ name: `Reel Link ${i + 1}`, parent: rc, x: 0, y: 266, value: 'Order →', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 12, fill: COCOA_SOFT });
     reelCards.push({ rc, target: rl.target });
   });
 
   // Visit Our Branches Section at Bottom (+ bottom clearance for floating cart pill!)
   const branchY = reelsY + 360;
   rect({ name: 'Branch Divider', parent: fId, x: 20, y: branchY, width: 362, height: 1, fill: BORDER_LINE });
-  text({ name: 'Branch Title', parent: fId, x: 20, y: branchY + 22, value: 'Visit Our Branches', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 24, fill: COCOA });
-  text({ name: 'Branch Copy', parent: fId, x: 20, y: branchY + 58, width: 362, value: 'Open Daily · 10:00 AM – 11:30 PM\nAramoun Main Road  ·  +961 70 123 456\nAley Khoury Center  ·  +961 76 548 200', fontFamily: 'Inter', fontStyle: 'Regular', fontSize: 13, lineHeight: 22, fill: COCOA_SOFT });
+  text({ name: 'Branch Title', parent: fId, x: 20, y: branchY + 22, value: 'Visit Our Branches', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 24, fill: COCOA });
+  text({ name: 'Branch Copy', parent: fId, x: 20, y: branchY + 58, width: 362, value: 'Open Daily · 10:00 AM – 11:30 PM\nAramoun Main Road  ·  +961 70 123 456\nAley Khoury Center  ·  +961 76 548 200', fontFamily: 'Cabin', fontStyle: 'Regular', fontSize: 13, lineHeight: 22, fill: COCOA_SOFT });
   rect({ name: 'Bottom Scroll Pad', parent: fId, x: 0, y: branchY + 140, width: 10, height: 96, fill: CREAM, opacity: 0.01 });
 
   // Fixed Header & Fixed Bottom Cart Bar (added LAST so they stay pinned ON TOP during scroll!)
@@ -656,12 +656,12 @@ const posDrawer = pPos(8);
 const mDrawerOverlay = frame({ name: 'OVERLAY · Mobile Navigation Drawer', x: posDrawer.x, y: posDrawer.y, width: 332, height: PH, fill: ESPRESSO });
 addInlineLogo(mDrawerOverlay, { x: 24, y: 20, markHeight: 28, wordHeight: 16, color: CREAM });
 const drawerCloseBtn = frame({ name: 'Drawer Close Hitbox', parent: mDrawerOverlay, x: 274, y: 14, width: 42, height: 42, fill: ESPRESSO });
-text({ name: 'Drawer Close X', parent: drawerCloseBtn, x: 0, y: 7, width: 42, value: '✕', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 22, textAlign: 'center', fill: CREAM });
+text({ name: 'Drawer Close X', parent: drawerCloseBtn, x: 0, y: 7, width: 42, value: '✕', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 22, textAlign: 'center', fill: CREAM });
 rect({ name: 'Drawer Top Rule', parent: mDrawerOverlay, x: 24, y: 72, width: 284, height: 1, fill: '#4A2410' });
 
 const drawerStudioBtn = frame({ name: 'Drawer Studio Card', parent: mDrawerOverlay, x: 24, y: 92, width: 284, height: 74, fill: ESPRESSO_CARD, radius: 12 });
-text({ name: 'Drawer Studio Sub', parent: drawerStudioBtn, x: 16, y: 14, value: 'SAVORY 3D CUSTOM STUDIO', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 10, letterSpacing: '10%', fill: GOLD });
-text({ name: 'Drawer Studio Title', parent: drawerStudioBtn, x: 16, y: 34, value: '3D Cake Studio  ↗', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 21, fill: CREAM });
+text({ name: 'Drawer Studio Sub', parent: drawerStudioBtn, x: 16, y: 14, value: 'SAVORY 3D CUSTOM STUDIO', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 10, letterSpacing: '10%', fill: GOLD });
+text({ name: 'Drawer Studio Title', parent: drawerStudioBtn, x: 16, y: 34, value: '3D Cake Studio  ↗', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 21, fill: CREAM });
 
 const drawerItems = [
   { num: '01', name: 'Menu', desc: 'Featured & categories' },
@@ -672,33 +672,33 @@ const drawerItems = [
 ];
 const drawerRows = drawerItems.map((di, i) => {
   const row = frame({ name: `Drawer Row ${di.name}`, parent: mDrawerOverlay, x: 24, y: 188 + i * 86, width: 284, height: 76, fill: ESPRESSO });
-  text({ name: `DR Num ${i}`, parent: row, x: 0, y: 16, value: di.num, fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 11, fill: GOLD });
-  text({ name: `DR Name ${i}`, parent: row, x: 30, y: 8, value: di.name, fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 24, fill: CREAM });
-  text({ name: `DR Desc ${i}`, parent: row, x: 30, y: 42, value: di.desc, fontFamily: 'Inter', fontStyle: 'Regular', fontSize: 12, fill: GOLD, opacity: 0.75 });
-  text({ name: `DR Arr ${i}`, parent: row, x: 260, y: 16, value: '→', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 16, fill: GOLD });
+  text({ name: `DR Num ${i}`, parent: row, x: 0, y: 16, value: di.num, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 11, fill: GOLD });
+  text({ name: `DR Name ${i}`, parent: row, x: 30, y: 8, value: di.name, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 24, fill: CREAM });
+  text({ name: `DR Desc ${i}`, parent: row, x: 30, y: 42, value: di.desc, fontFamily: 'Cabin', fontStyle: 'Regular', fontSize: 12, fill: GOLD, opacity: 0.75 });
+  text({ name: `DR Arr ${i}`, parent: row, x: 260, y: 16, value: '→', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 16, fill: GOLD });
   rect({ name: `DR Line ${i}`, parent: row, x: 0, y: 74, width: 284, height: 1, fill: '#3E1C0B' });
   return row;
 });
 
 rect({ name: 'Drawer WA Btn', parent: mDrawerOverlay, x: 24, y: 786, width: 284, height: 48, fill: WHATSAPP_GREEN, radius: 999 });
-text({ name: 'Drawer WA Txt', parent: mDrawerOverlay, x: 24, y: 801, width: 284, value: 'WhatsApp Concierge', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, textAlign: 'center', fill: '#FFFFFF' });
+text({ name: 'Drawer WA Txt', parent: mDrawerOverlay, x: 24, y: 801, width: 284, value: 'WhatsApp Concierge', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, textAlign: 'center', fill: '#FFFFFF' });
 
 // --- Mobile Overlay 02G: Build Your Gift Box Studio Modal ---
 const posGift = pPos(9);
 const mGiftModal = frame({ name: 'OVERLAY · Luxury Gift Box Studio', x: posGift.x, y: posGift.y, width: 370, height: 610, fill: CREAM, radius: 22 });
 shadow(mGiftModal, { color: '#14070277', offset: [0, 20], radius: 44, spread: 0 });
-text({ name: 'Gift Eyebrow', parent: mGiftModal, x: 24, y: 24, value: 'SAVORY CHOCOLATIER', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 11, letterSpacing: '12%', fill: MUTED });
-text({ name: 'Gift Heading', parent: mGiftModal, x: 24, y: 44, value: 'Build Your Gift Box', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 28, fill: COCOA });
+text({ name: 'Gift Eyebrow', parent: mGiftModal, x: 24, y: 24, value: 'SAVORY CHOCOLATIER', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 11, letterSpacing: '12%', fill: MUTED });
+text({ name: 'Gift Heading', parent: mGiftModal, x: 24, y: 44, value: 'Build Your Gift Box', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 28, fill: COCOA });
 const giftCloseBtn = frame({ name: 'Gift Close Hitbox', parent: mGiftModal, x: 318, y: 20, width: 34, height: 34, fill: CREAM_CARD, radius: 999 });
-text({ name: 'Gift Close X', parent: giftCloseBtn, x: 0, y: 6, width: 34, value: '✕', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 15, textAlign: 'center', fill: COCOA });
+text({ name: 'Gift Close X', parent: giftCloseBtn, x: 0, y: 6, width: 34, value: '✕', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 15, textAlign: 'center', fill: COCOA });
 
 // Box Size Pills
 rect({ name: 'Size 9 Active', parent: mGiftModal, x: 24, y: 94, width: 102, height: 50, fill: COCOA, radius: 10 });
-text({ name: 'Size 9 Txt', parent: mGiftModal, x: 24, y: 104, width: 102, value: '9 Pieces\n$18.00 · 3×3', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 12, lineHeight: 16, textAlign: 'center', fill: CREAM });
+text({ name: 'Size 9 Txt', parent: mGiftModal, x: 24, y: 104, width: 102, value: '9 Pieces\n$18.00 · 3×3', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 12, lineHeight: 16, textAlign: 'center', fill: CREAM });
 rect({ name: 'Size 16', parent: mGiftModal, x: 134, y: 94, width: 102, height: 50, fill: CREAM_CARD, radius: 10 });
-text({ name: 'Size 16 Txt', parent: mGiftModal, x: 134, y: 104, width: 102, value: '16 Pieces\n$30.00 · 4×4', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 12, lineHeight: 16, textAlign: 'center', fill: COCOA });
+text({ name: 'Size 16 Txt', parent: mGiftModal, x: 134, y: 104, width: 102, value: '16 Pieces\n$30.00 · 4×4', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 12, lineHeight: 16, textAlign: 'center', fill: COCOA });
 rect({ name: 'Size 25', parent: mGiftModal, x: 244, y: 94, width: 102, height: 50, fill: CREAM_CARD, radius: 10 });
-text({ name: 'Size 25 Txt', parent: mGiftModal, x: 244, y: 104, width: 102, value: '25 Pieces\n$45.00 · 5×5', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 12, lineHeight: 16, textAlign: 'center', fill: COCOA });
+text({ name: 'Size 25 Txt', parent: mGiftModal, x: 244, y: 104, width: 102, value: '25 Pieces\n$45.00 · 5×5', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 12, lineHeight: 16, textAlign: 'center', fill: COCOA });
 
 // 3x3 Truffle Tray Visual
 rect({ name: 'Gift Tray Box', parent: mGiftModal, x: 65, y: 164, width: 240, height: 240, fill: ESPRESSO, radius: 16, stroke: GOLD, strokeWeight: 2 });
@@ -709,10 +709,10 @@ truffleColors.forEach((colHex, ti) => {
   circle({ name: `Truffle ${ti + 1}`, parent: mGiftModal, x: 93 + cCol * 66, y: 192 + cRow * 66, size: 52, fill: colHex, stroke: '#D9B06666', strokeWeight: 1.5 });
 });
 
-text({ name: 'Gift Flavors Note', parent: mGiftModal, x: 24, y: 422, width: 322, value: '✦  9 / 9 Signature Truffles Filled\nRibbon: Deep Cocoa Satin  ·  Optional Gift Card Note', fontFamily: 'Inter', fontStyle: 'Medium', fontSize: 13, lineHeight: 21, textAlign: 'center', fill: COCOA_SOFT });
+text({ name: 'Gift Flavors Note', parent: mGiftModal, x: 24, y: 422, width: 322, value: '✦  9 / 9 Signature Truffles Filled\nRibbon: Deep Cocoa Satin  ·  Optional Gift Card Note', fontFamily: 'Cabin', fontStyle: 'Medium', fontSize: 13, lineHeight: 21, textAlign: 'center', fill: COCOA_SOFT });
 
 const giftAddBtn = frame({ name: 'Gift Add CTA', parent: mGiftModal, x: 24, y: 536, width: 322, height: 50, fill: COCOA, radius: 10 });
-text({ name: 'Gift Add Txt', parent: giftAddBtn, x: 0, y: 15, width: 322, value: 'Add 9-Piece Gift Box  ·  $18.00  →', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 15, textAlign: 'center', fill: CREAM });
+text({ name: 'Gift Add Txt', parent: giftAddBtn, x: 0, y: 15, width: 322, value: 'Add 9-Piece Gift Box  ·  $18.00  →', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 15, textAlign: 'center', fill: CREAM });
 
 // --- Two Real Category Pages: 03A (Crepes & Waffles) & 03B (Chocolates & Bark) ---
 function buildPhoneCategoryPage(idx, { title, activeTab, productsList }) {
@@ -720,16 +720,16 @@ function buildPhoneCategoryPage(idx, { title, activeTab, productsList }) {
   const fId = frame({ name: `03 · Category — ${title} (Scrollable)`, x: pos.x, y: pos.y, width: PW, height: PH, fill: CREAM, overflow: 'vertical' });
 
   const backBtn = frame({ name: 'Cat Back Hitbox', parent: fId, x: 20, y: 82, width: 154, height: 30, fill: CREAM });
-  text({ name: 'Cat Back Txt', parent: backBtn, x: 0, y: 5, value: '←  All Categories', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, fill: COCOA_SOFT });
-  text({ name: 'Cat Heading', parent: fId, x: 20, y: 120, value: title, fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 34, fill: COCOA });
+  text({ name: 'Cat Back Txt', parent: backBtn, x: 0, y: 5, value: '←  All Categories', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, fill: COCOA_SOFT });
+  text({ name: 'Cat Heading', parent: fId, x: 20, y: 120, value: title, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 34, fill: COCOA });
 
   // Horizontal scrollable Category Switcher Pills
   const pillsBar = frame({ name: 'Cat Pills Switcher', parent: fId, x: 20, y: 170, width: 382, height: 36, fill: CREAM, overflow: 'horizontal' });
   const pillCrepes = frame({ name: 'Switch Pill Crepes', parent: pillsBar, x: 0, y: 0, width: 142, height: 32, fill: activeTab === 'crepes' ? CREAM_CARD : CREAM, radius: 8 });
-  text({ name: 'Switch Pill Crepes T', parent: pillCrepes, x: 0, y: 7, width: 142, value: 'Crepes & Waffles', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: activeTab === 'crepes' ? COCOA : MUTED });
+  text({ name: 'Switch Pill Crepes T', parent: pillCrepes, x: 0, y: 7, width: 142, value: 'Crepes & Waffles', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: activeTab === 'crepes' ? COCOA : MUTED });
   const pillChoco = frame({ name: 'Switch Pill Choco', parent: pillsBar, x: 150, y: 0, width: 146, height: 32, fill: activeTab === 'choco' ? CREAM_CARD : CREAM, radius: 8 });
-  text({ name: 'Switch Pill Choco T', parent: pillChoco, x: 0, y: 7, width: 146, value: 'Chocolates & Bark', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: activeTab === 'choco' ? COCOA : MUTED });
-  text({ name: 'Switch Pill Gateaux', parent: pillsBar, x: 308, y: 7, value: 'Gateaux     Shakes', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, fill: MUTED });
+  text({ name: 'Switch Pill Choco T', parent: pillChoco, x: 0, y: 7, width: 146, value: 'Chocolates & Bark', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: activeTab === 'choco' ? COCOA : MUTED });
+  text({ name: 'Switch Pill Gateaux', parent: pillsBar, x: 308, y: 7, value: 'Gateaux     Shakes', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, fill: MUTED });
 
   const prodCards = [];
   productsList.forEach((pr, i) => {
@@ -738,8 +738,8 @@ function buildPhoneCategoryPage(idx, { title, activeTab, productsList }) {
     const px = 20 + col * 187;
     const py = 224 + row * 268;
     const pc = frame({ name: `Cat Prod ${pr.name}`, parent: fId, x: px, y: py, width: 175, height: 250, fill: CREAM });
-    text({ name: `Cat Prod Name ${i}`, parent: pc, x: 0, y: 0, width: 175, value: pr.name, fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 15, lineHeight: 19, fill: COCOA });
-    text({ name: `Cat Prod Price ${i}`, parent: pc, x: 0, y: 42, value: pr.price, fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, fill: COCOA_SOFT });
+    text({ name: `Cat Prod Name ${i}`, parent: pc, x: 0, y: 0, width: 175, value: pr.name, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 15, lineHeight: 19, fill: COCOA });
+    text({ name: `Cat Prod Price ${i}`, parent: pc, x: 0, y: 42, value: pr.price, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, fill: COCOA_SOFT });
     imageBox({ name: `Cat Prod Img ${i}`, parent: pc, x: 0, y: 66, width: 175, height: 172, file: pr.img, radius: 10, withShadow: true });
     prodCards.push({ pc, target: pr.target });
   });
@@ -789,7 +789,7 @@ function buildPhoneProductPage(idx, { variant = 'crepe_default' } = {}) {
   const fId = frame({ name: frameTitle, x: pos.x, y: pos.y, width: PW, height: PH, fill: CREAM, overflow: 'vertical' });
 
   const backBtn = frame({ name: 'Prod Back Hitbox', parent: fId, x: 20, y: 82, width: 184, height: 30, fill: CREAM });
-  text({ name: 'Prod Back Txt', parent: backBtn, x: 0, y: 5, value: isBar ? '←  Chocolates & Bark' : '←  Crepes & Waffles', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, fill: COCOA_SOFT });
+  text({ name: 'Prod Back Txt', parent: backBtn, x: 0, y: 5, value: isBar ? '←  Chocolates & Bark' : '←  Crepes & Waffles', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, fill: COCOA_SOFT });
 
   imageBox({
     name: 'Prod Square Photo',
@@ -810,7 +810,7 @@ function buildPhoneProductPage(idx, { variant = 'crepe_default' } = {}) {
     y: 492,
     width: 362,
     value: isBar ? 'Signature Pistachio Kunafa Chocolate Bar' : 'Dubai Kunafa Chocolate Crepe',
-    fontFamily: 'Playfair Display',
+    fontFamily: 'Cabin',
     fontStyle: 'Bold',
     fontSize: 28,
     lineHeight: 34,
@@ -818,7 +818,7 @@ function buildPhoneProductPage(idx, { variant = 'crepe_default' } = {}) {
   });
 
   const livePriceText = isBar ? '$14.00' : customized ? '$12.00' : '$9.50';
-  text({ name: 'Prod Price Live', parent: fId, x: 20, y: 572, value: livePriceText, fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 22, fill: COCOA });
+  text({ name: 'Prod Price Live', parent: fId, x: 20, y: 572, value: livePriceText, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 22, fill: COCOA });
   rect({ name: 'Prod Header Line', parent: fId, x: 20, y: 608, width: 362, height: 1, fill: BORDER_LINE });
 
   text({
@@ -830,44 +830,44 @@ function buildPhoneProductPage(idx, { variant = 'crepe_default' } = {}) {
     value: isBar
       ? 'Thick tempered Belgian milk or dark shell hand-filled with toasted pistachio kataifi praline and roasted Aleppo pistachios.'
       : 'Hand-rolled warm crepe filled with crispy roasted kataifi pastry and Lebanese pistachio cream, drenched in Belgian milk, dark and white chocolate ribbons.',
-    fontFamily: 'Inter',
+    fontFamily: 'Cabin',
     fontStyle: 'Regular',
     fontSize: 14,
     lineHeight: 22,
     fill: COCOA_SOFT,
   });
 
-  text({ name: 'Prod Opt 1 Label', parent: fId, x: 20, y: 714, value: isBar ? 'COUVERTURE SHELL' : 'DRIZZLE STYLE', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 12, letterSpacing: '8%', fill: COCOA });
-  text({ name: 'Prod Opt 1 Req', parent: fId, x: 300, y: 714, width: 82, value: 'Required', fontFamily: 'Inter', fontStyle: 'Medium', fontSize: 12, textAlign: 'right', fill: MUTED });
+  text({ name: 'Prod Opt 1 Label', parent: fId, x: 20, y: 714, value: isBar ? 'COUVERTURE SHELL' : 'DRIZZLE STYLE', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 12, letterSpacing: '8%', fill: COCOA });
+  text({ name: 'Prod Opt 1 Req', parent: fId, x: 300, y: 714, width: 82, value: 'Required', fontFamily: 'Cabin', fontStyle: 'Medium', fontSize: 12, textAlign: 'right', fill: MUTED });
 
   const chip1 = frame({ name: 'Chip Drizzle 1', parent: fId, x: 20, y: 742, width: 226, height: 38, fill: customized ? CREAM_CARD : COCOA, radius: 8 });
-  text({ name: 'Chip Drizzle 1 T', parent: chip1, x: 0, y: 10, width: 226, value: isBar ? 'Belgian Milk Chocolate 38%' : 'Triple Chocolate & Pistachio', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: customized ? COCOA : CREAM });
+  text({ name: 'Chip Drizzle 1 T', parent: chip1, x: 0, y: 10, width: 226, value: isBar ? 'Belgian Milk Chocolate 38%' : 'Triple Chocolate & Pistachio', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: customized ? COCOA : CREAM });
 
   const chip2 = frame({ name: 'Chip Drizzle 2', parent: fId, x: 20, y: 790, width: 244, height: 38, fill: customized ? COCOA : CREAM_CARD, radius: 8 });
-  text({ name: 'Chip Drizzle 2 T', parent: chip2, x: 0, y: 10, width: 244, value: isBar ? 'Dark 70% Couverture' : 'Dark 70% & Pistachio (+$0.50)', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: customized ? CREAM : COCOA });
+  text({ name: 'Chip Drizzle 2 T', parent: chip2, x: 0, y: 10, width: 244, value: isBar ? 'Dark 70% Couverture' : 'Dark 70% & Pistachio (+$0.50)', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: customized ? CREAM : COCOA });
 
   rect({ name: 'Prod Opt 1 Line', parent: fId, x: 20, y: 846, width: 362, height: 1, fill: BORDER_LINE });
-  text({ name: 'Prod Opt 2 Label', parent: fId, x: 20, y: 864, value: 'EXTRAS', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 12, letterSpacing: '8%', fill: COCOA });
-  text({ name: 'Prod Opt 2 Req', parent: fId, x: 300, y: 864, width: 82, value: 'Optional', fontFamily: 'Inter', fontStyle: 'Medium', fontSize: 12, textAlign: 'right', fill: MUTED });
+  text({ name: 'Prod Opt 2 Label', parent: fId, x: 20, y: 864, value: 'EXTRAS', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 12, letterSpacing: '8%', fill: COCOA });
+  text({ name: 'Prod Opt 2 Req', parent: fId, x: 300, y: 864, width: 82, value: 'Optional', fontFamily: 'Cabin', fontStyle: 'Medium', fontSize: 12, textAlign: 'right', fill: MUTED });
 
   const extra1 = frame({ name: 'Extra Row 1 Hitbox', parent: fId, x: 20, y: 892, width: 362, height: 44, fill: CREAM });
-  text({ name: 'Extra 1 Txt', parent: extra1, x: 0, y: 12, value: customized ? '☑   Extra pistachio kunafa crunch' : '☐   Extra pistachio kunafa crunch', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, fill: COCOA });
-  text({ name: 'Extra 1 Price', parent: extra1, x: 292, y: 12, width: 70, value: '+$2.00', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, textAlign: 'right', fill: COCOA_SOFT });
+  text({ name: 'Extra 1 Txt', parent: extra1, x: 0, y: 12, value: customized ? '☑   Extra pistachio kunafa crunch' : '☐   Extra pistachio kunafa crunch', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, fill: COCOA });
+  text({ name: 'Extra 1 Price', parent: extra1, x: 292, y: 12, width: 70, value: '+$2.00', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, textAlign: 'right', fill: COCOA_SOFT });
   rect({ name: 'Extra 1 Hairline', parent: extra1, x: 0, y: 43, width: 362, height: 1, fill: BORDER_LINE });
 
-  text({ name: 'Extra 2 Txt', parent: fId, x: 20, y: 948, value: isBar ? '☐   Gold leaf gift sleeve' : '☐   Fresh strawberries', fontFamily: 'Inter', fontStyle: 'Medium', fontSize: 14, fill: COCOA });
-  text({ name: 'Extra 2 Price', parent: fId, x: 312, y: 948, width: 70, value: '+$1.50', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, textAlign: 'right', fill: COCOA_SOFT });
+  text({ name: 'Extra 2 Txt', parent: fId, x: 20, y: 948, value: isBar ? '☐   Gold leaf gift sleeve' : '☐   Fresh strawberries', fontFamily: 'Cabin', fontStyle: 'Medium', fontSize: 14, fill: COCOA });
+  text({ name: 'Extra 2 Price', parent: fId, x: 312, y: 948, width: 70, value: '+$1.50', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, textAlign: 'right', fill: COCOA_SOFT });
 
   rect({ name: 'Prod Opt 2 Line', parent: fId, x: 20, y: 992, width: 362, height: 1, fill: BORDER_LINE });
-  text({ name: 'Prod Note Title', parent: fId, x: 20, y: 1012, value: 'SPECIAL REQUESTS', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 12, letterSpacing: '8%', fill: COCOA });
-  text({ name: 'Prod Note Hint', parent: fId, x: 20, y: 1042, value: 'Allergies, packaging notes, or special requests…', fontFamily: 'Inter', fontStyle: 'Regular', fontSize: 14, fill: MUTED });
+  text({ name: 'Prod Note Title', parent: fId, x: 20, y: 1012, value: 'SPECIAL REQUESTS', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 12, letterSpacing: '8%', fill: COCOA });
+  text({ name: 'Prod Note Hint', parent: fId, x: 20, y: 1042, value: 'Allergies, packaging notes, or special requests…', fontFamily: 'Cabin', fontStyle: 'Regular', fontSize: 14, fill: MUTED });
   rect({ name: 'Prod Note Underline', parent: fId, x: 20, y: 1072, width: 362, height: 1, fill: COCOA });
 
   rect({ name: 'Prod Qty Box', parent: fId, x: 20, y: 1098, width: 106, height: 48, fill: CREAM_CARD, radius: 8 });
-  text({ name: 'Prod Qty Txt', parent: fId, x: 20, y: 1113, width: 106, value: '−   1   +', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 16, textAlign: 'center', fill: COCOA });
+  text({ name: 'Prod Qty Txt', parent: fId, x: 20, y: 1113, width: 106, value: '−   1   +', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 16, textAlign: 'center', fill: COCOA });
 
   const addBtn = frame({ name: 'Prod Add CTA', parent: fId, x: 138, y: 1098, width: 244, height: 48, fill: COCOA, radius: 8 });
-  text({ name: 'Prod Add Txt', parent: addBtn, x: 0, y: 14, width: 244, value: `Add to Order  ·  ${livePriceText}`, fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 15, textAlign: 'center', fill: CREAM });
+  text({ name: 'Prod Add Txt', parent: addBtn, x: 0, y: 14, width: 244, value: `Add to Order  ·  ${livePriceText}`, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 15, textAlign: 'center', fill: CREAM });
 
   rect({ name: 'Prod Bottom Pad', parent: fId, x: 0, y: 1156, width: 10, height: 70, fill: CREAM, opacity: 0.01 });
 
@@ -885,44 +885,44 @@ function buildPhoneCartPage(idx, { delivery = false } = {}) {
   const fId = frame({ name: delivery ? '05B · Cart — Delivery ($15.00)' : '05A · Cart — Pickup ($12.00)', x: pos.x, y: pos.y, width: PW, height: PH, fill: CREAM, overflow: 'vertical' });
 
   const backBtn = frame({ name: 'Cart Back Hitbox', parent: fId, x: 20, y: 82, width: 170, height: 30, fill: CREAM });
-  text({ name: 'Cart Back Txt', parent: backBtn, x: 0, y: 5, value: '←  Continue Shopping', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, fill: COCOA_SOFT });
-  const cartHead = text({ name: 'Cart Heading', parent: fId, x: 20, y: 120, value: 'Your Cart', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 34, fill: COCOA });
+  text({ name: 'Cart Back Txt', parent: backBtn, x: 0, y: 5, value: '←  Continue Shopping', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, fill: COCOA_SOFT });
+  const cartHead = text({ name: 'Cart Heading', parent: fId, x: 20, y: 120, value: 'Your Cart', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 34, fill: COCOA });
   bindVar(cartHead, 'i18n_cart');
 
   imageBox({ name: 'Cart Item Thumb', parent: fId, x: 20, y: 178, width: 72, height: 72, file: IMG('reel-dubai-crepe.jpg'), radius: 10 });
-  text({ name: 'Cart Item Name', parent: fId, x: 106, y: 180, width: 200, value: 'Dubai Kunafa Crepe', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 19, fill: COCOA });
-  text({ name: 'Cart Item Price', parent: fId, x: 312, y: 182, width: 70, value: '$12.00', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 16, textAlign: 'right', fill: COCOA });
-  text({ name: 'Cart Item Meta', parent: fId, x: 106, y: 206, width: 276, value: 'Dark 70% & Pistachio · Extra pistachio crunch', fontFamily: 'Inter', fontStyle: 'Regular', fontSize: 12, lineHeight: 18, fill: MUTED });
+  text({ name: 'Cart Item Name', parent: fId, x: 106, y: 180, width: 200, value: 'Dubai Kunafa Crepe', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 19, fill: COCOA });
+  text({ name: 'Cart Item Price', parent: fId, x: 312, y: 182, width: 70, value: '$12.00', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 16, textAlign: 'right', fill: COCOA });
+  text({ name: 'Cart Item Meta', parent: fId, x: 106, y: 206, width: 276, value: 'Dark 70% & Pistachio · Extra pistachio crunch', fontFamily: 'Cabin', fontStyle: 'Regular', fontSize: 12, lineHeight: 18, fill: MUTED });
   rect({ name: 'Cart Line Rule', parent: fId, x: 20, y: 270, width: 362, height: 1, fill: BORDER_LINE });
 
-  text({ name: 'Checkout Heading', parent: fId, x: 20, y: 292, value: 'Checkout Details', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 26, fill: COCOA });
+  text({ name: 'Checkout Heading', parent: fId, x: 20, y: 292, value: 'Checkout Details', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 26, fill: COCOA });
 
   // Segmented Pickup / Delivery Pill (identically named children for Smart Animate!)
   rect({ name: 'Segmented BG', parent: fId, x: 20, y: 338, width: 362, height: 42, fill: CREAM_CARD, radius: 999 });
   rect({ name: 'Segmented Thumb', parent: fId, x: delivery ? 201 : 24, y: 342, width: 177, height: 34, fill: COCOA, radius: 999 });
   const pickupHit = frame({ name: 'Pickup Hitbox', parent: fId, x: 24, y: 342, width: 177, height: 34, fill: '#00000000' });
-  text({ name: 'Pickup Label', parent: pickupHit, x: 0, y: 9, width: 177, value: 'Pickup', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: delivery ? COCOA_SOFT : CREAM });
+  text({ name: 'Pickup Label', parent: pickupHit, x: 0, y: 9, width: 177, value: 'Pickup', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: delivery ? COCOA_SOFT : CREAM });
   const deliveryHit = frame({ name: 'Delivery Hitbox', parent: fId, x: 201, y: 342, width: 177, height: 34, fill: '#00000000' });
-  text({ name: 'Delivery Label', parent: deliveryHit, x: 0, y: 9, width: 177, value: 'Delivery (+$3.00)', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: delivery ? CREAM : COCOA_SOFT });
+  text({ name: 'Delivery Label', parent: deliveryHit, x: 0, y: 9, width: 177, value: 'Delivery (+$3.00)', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: delivery ? CREAM : COCOA_SOFT });
 
-  text({ name: 'Branch Lbl', parent: fId, x: 20, y: 402, value: delivery ? 'DELIVERY ADDRESS' : 'BRANCH  ·  ARAMOUN  /  ALEY', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 12, letterSpacing: '8%', fill: COCOA });
+  text({ name: 'Branch Lbl', parent: fId, x: 20, y: 402, value: delivery ? 'DELIVERY ADDRESS' : 'BRANCH  ·  ARAMOUN  /  ALEY', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 12, letterSpacing: '8%', fill: COCOA });
   rect({ name: 'Branch Input', parent: fId, x: 20, y: 428, width: 362, height: 46, fill: CREAM_SOFT, radius: 8, stroke: COCOA, strokeWeight: 1 });
-  text({ name: 'Branch Val', parent: fId, x: 36, y: 442, value: delivery ? 'Aramoun · Facing Spinneys, Bldg 4' : '●   SAVORY Aramoun Boutique', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, fill: COCOA });
+  text({ name: 'Branch Val', parent: fId, x: 36, y: 442, value: delivery ? 'Aramoun · Facing Spinneys, Bldg 4' : '●   SAVORY Aramoun Boutique', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, fill: COCOA });
 
-  text({ name: 'Name Lbl', parent: fId, x: 20, y: 494, value: 'YOUR NAME', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 12, letterSpacing: '8%', fill: COCOA });
+  text({ name: 'Name Lbl', parent: fId, x: 20, y: 494, value: 'YOUR NAME', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 12, letterSpacing: '8%', fill: COCOA });
   rect({ name: 'Name Box', parent: fId, x: 20, y: 520, width: 362, height: 44, fill: CREAM_SOFT, radius: 8 });
-  text({ name: 'Name Val', parent: fId, x: 36, y: 533, value: 'Nour Haddad', fontFamily: 'Inter', fontStyle: 'Medium', fontSize: 14, fill: COCOA });
+  text({ name: 'Name Val', parent: fId, x: 36, y: 533, value: 'Nour Haddad', fontFamily: 'Cabin', fontStyle: 'Medium', fontSize: 14, fill: COCOA });
 
-  text({ name: 'Phone Lbl', parent: fId, x: 20, y: 582, value: 'WHATSAPP NUMBER', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 12, letterSpacing: '8%', fill: COCOA });
+  text({ name: 'Phone Lbl', parent: fId, x: 20, y: 582, value: 'WHATSAPP NUMBER', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 12, letterSpacing: '8%', fill: COCOA });
   rect({ name: 'Phone Box', parent: fId, x: 20, y: 608, width: 362, height: 44, fill: CREAM_SOFT, radius: 8 });
-  text({ name: 'Phone Val', parent: fId, x: 36, y: 621, value: '+961 70 123 456', fontFamily: 'Inter', fontStyle: 'Medium', fontSize: 14, fill: COCOA });
+  text({ name: 'Phone Val', parent: fId, x: 36, y: 621, value: '+961 70 123 456', fontFamily: 'Cabin', fontStyle: 'Medium', fontSize: 14, fill: COCOA });
 
   rect({ name: 'Total Rule', parent: fId, x: 20, y: 678, width: 362, height: 1, fill: BORDER_LINE });
-  text({ name: 'Total Label', parent: fId, x: 20, y: 698, value: delivery ? 'Total (Pay on delivery)' : 'Total (Pay on pickup)', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 22, fill: COCOA });
-  text({ name: 'Total Price', parent: fId, x: 262, y: 698, width: 120, value: delivery ? '$15.00' : '$12.00', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 22, textAlign: 'right', fill: COCOA });
+  text({ name: 'Total Label', parent: fId, x: 20, y: 698, value: delivery ? 'Total (Pay on delivery)' : 'Total (Pay on pickup)', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 22, fill: COCOA });
+  text({ name: 'Total Price', parent: fId, x: 262, y: 698, width: 120, value: delivery ? '$15.00' : '$12.00', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 22, textAlign: 'right', fill: COCOA });
 
   const submitBtn = frame({ name: 'Submit Order CTA', parent: fId, x: 20, y: 756, width: 362, height: 52, fill: COCOA, radius: 8 });
-  text({ name: 'Submit Order Txt', parent: submitBtn, x: 0, y: 16, width: 362, value: delivery ? 'Place Order  ·  $15.00' : 'Place Order  ·  $12.00', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 15, textAlign: 'center', fill: CREAM });
+  text({ name: 'Submit Order Txt', parent: submitBtn, x: 0, y: 16, width: 362, value: delivery ? 'Place Order  ·  $15.00' : 'Place Order  ·  $12.00', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 15, textAlign: 'center', fill: CREAM });
 
   rect({ name: 'Cart Pad', parent: fId, x: 0, y: 824, width: 10, height: 48, fill: CREAM, opacity: 0.01 });
   const fixedUi = addFixedMobileHeader(fId, { showFloatingCart: false });
@@ -935,16 +935,16 @@ const m05B = buildPhoneCartPage(16, { delivery: true });
 // --- Order Confirmed 06 ---
 const posConf = pPos(17);
 const m06 = frame({ name: '06 · Order Confirmed (#SAV-409)', x: posConf.x, y: posConf.y, width: PW, height: PH, fill: CREAM });
-text({ name: 'Conf Eyebrow', parent: m06, x: 20, y: 124, width: 362, value: 'THANK YOU, NOUR', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, letterSpacing: '12%', textAlign: 'center', fill: MUTED });
-text({ name: 'Conf Title', parent: m06, x: 20, y: 152, width: 362, value: 'Your Order is Confirmed', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 34, lineHeight: 40, textAlign: 'center', fill: COCOA });
+text({ name: 'Conf Eyebrow', parent: m06, x: 20, y: 124, width: 362, value: 'THANK YOU, NOUR', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, letterSpacing: '12%', textAlign: 'center', fill: MUTED });
+text({ name: 'Conf Title', parent: m06, x: 20, y: 152, width: 362, value: 'Your Order is Confirmed', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 34, lineHeight: 40, textAlign: 'center', fill: COCOA });
 rect({ name: 'Conf Code Box', parent: m06, x: 56, y: 248, width: 290, height: 92, fill: CREAM_CARD, radius: 14 });
-text({ name: 'Conf Code Lbl', parent: m06, x: 56, y: 266, width: 290, value: 'ORDER REFERENCE', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 11, letterSpacing: '12%', textAlign: 'center', fill: MUTED });
-text({ name: 'Conf Code Val', parent: m06, x: 56, y: 288, width: 290, value: '#SAV-409', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 36, textAlign: 'center', fill: COCOA });
+text({ name: 'Conf Code Lbl', parent: m06, x: 56, y: 266, width: 290, value: 'ORDER REFERENCE', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 11, letterSpacing: '12%', textAlign: 'center', fill: MUTED });
+text({ name: 'Conf Code Val', parent: m06, x: 56, y: 288, width: 290, value: '#SAV-409', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 36, textAlign: 'center', fill: COCOA });
 rect({ name: 'Conf WA Btn', parent: m06, x: 20, y: 374, width: 362, height: 54, fill: WHATSAPP_GREEN, radius: 10 });
-text({ name: 'Conf WA Txt', parent: m06, x: 20, y: 392, width: 362, value: 'Send Order on WhatsApp  ↗', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 15, textAlign: 'center', fill: '#FFFFFF' });
-text({ name: 'Conf Summary', parent: m06, x: 24, y: 462, width: 354, value: 'Branch: SAVORY Aramoun\nPickup: Today at 6:30 PM\nTotal due on pickup: $12.00', fontFamily: 'Inter', fontStyle: 'Medium', fontSize: 14, lineHeight: 24, textAlign: 'center', fill: COCOA_SOFT });
+text({ name: 'Conf WA Txt', parent: m06, x: 20, y: 392, width: 362, value: 'Send Order on WhatsApp  ↗', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 15, textAlign: 'center', fill: '#FFFFFF' });
+text({ name: 'Conf Summary', parent: m06, x: 24, y: 462, width: 354, value: 'Branch: SAVORY Aramoun\nPickup: Today at 6:30 PM\nTotal due on pickup: $12.00', fontFamily: 'Cabin', fontStyle: 'Medium', fontSize: 14, lineHeight: 24, textAlign: 'center', fill: COCOA_SOFT });
 const m06BackBtn = frame({ name: 'Conf Back Menu CTA', parent: m06, x: 56, y: 580, width: 290, height: 48, fill: CREAM_CARD, radius: 8 });
-text({ name: 'Conf Back Menu Txt', parent: m06BackBtn, x: 0, y: 15, width: 290, value: '←  Back to Menu', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, textAlign: 'center', fill: COCOA });
+text({ name: 'Conf Back Menu Txt', parent: m06BackBtn, x: 0, y: 15, width: 290, value: '←  Back to Menu', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, textAlign: 'center', fill: COCOA });
 const m06Hdr = addFixedMobileHeader(m06, { showFloatingCart: false });
 
 // --- Wire ALL Phone Interactive Flows ---
@@ -1079,20 +1079,20 @@ function addFixedDesktopHeader(screenId, { activeNav = 'menu' } = {}) {
   addInlineLogo(brandBtn, { x: 0, y: 4, markHeight: 32, wordHeight: 18, color: COCOA });
 
   const menuLink = frame({ name: 'DNav Menu', parent: hdr, x: 640, y: 20, width: 78, height: 36, fill: activeNav === 'menu' ? CREAM_CARD : CREAM, radius: 999 });
-  text({ name: 'DNav Menu T', parent: menuLink, x: 0, y: 9, width: 78, value: 'Menu', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, textAlign: 'center', fill: COCOA });
+  text({ name: 'DNav Menu T', parent: menuLink, x: 0, y: 9, width: 78, value: 'Menu', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, textAlign: 'center', fill: COCOA });
 
   const giftLink = frame({ name: 'DNav Gift Boxes', parent: hdr, x: 726, y: 20, width: 108, height: 36, fill: CREAM, radius: 999 });
-  text({ name: 'DNav Gift T', parent: giftLink, x: 0, y: 9, width: 108, value: 'Gift Boxes', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, textAlign: 'center', fill: COCOA_SOFT });
+  text({ name: 'DNav Gift T', parent: giftLink, x: 0, y: 9, width: 108, value: 'Gift Boxes', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, textAlign: 'center', fill: COCOA_SOFT });
 
   const studioBtn = frame({ name: 'DNav 3D Studio', parent: hdr, x: 842, y: 20, width: 164, height: 36, fill: activeNav === 'studio' ? CREAM_CARD : CREAM, radius: 999 });
-  text({ name: 'DNav Studio T', parent: studioBtn, x: 0, y: 9, width: 164, value: '3D Cake Studio  ↗', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: COCOA });
+  text({ name: 'DNav Studio T', parent: studioBtn, x: 0, y: 9, width: 164, value: '3D Cake Studio  ↗', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: COCOA });
 
   const langBtn = frame({ name: 'DHdr Lang Hitbox', parent: hdr, x: 1018, y: 20, width: 64, height: 36, fill: CREAM, radius: 999 });
   const langTxt = text({ name: 'DHdr Lang T', parent: langBtn, x: 0, y: 9, width: 64, value: 'عربي', fontFamily: 'Noto Sans Arabic', fontStyle: 'Bold', fontSize: 14, textAlign: 'center', fill: COCOA_SOFT });
   bindVar(langTxt, 'i18n_lang_btn');
 
   const cartBtn = frame({ name: 'DHdr Cart Hitbox', parent: hdr, x: 1094, y: 18, width: 138, height: 40, fill: COCOA, radius: 999 });
-  text({ name: 'DHdr Cart T', parent: cartBtn, x: 0, y: 11, width: 138, value: 'View Cart (1)', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: CREAM });
+  text({ name: 'DHdr Cart T', parent: cartBtn, x: 0, y: 11, width: 138, value: 'View Cart (1)', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: CREAM });
 
   return { hdr, brandBtn, menuLink, giftLink, studioBtn, langBtn, cartBtn };
 }
@@ -1118,16 +1118,16 @@ const dOnboard = dOnboardMedia.map((om, si) => {
   bindVar(lTxt, 'i18n_lang_btn');
 
   const prevArrow = frame({ name: 'D Onboard Prev', parent: fId, x: 24, y: 376, width: 56, height: 80, fill: '#00000000' });
-  text({ name: 'D Onboard Prev G', parent: prevArrow, x: 0, y: 20, width: 56, value: '←', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 32, textAlign: 'center', fill: CREAM });
+  text({ name: 'D Onboard Prev G', parent: prevArrow, x: 0, y: 20, width: 56, value: '←', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 32, textAlign: 'center', fill: CREAM });
 
   const nextArrow = frame({ name: 'D Onboard Next', parent: fId, x: LW - 80, y: 376, width: 56, height: 80, fill: '#00000000' });
-  text({ name: 'D Onboard Next G', parent: nextArrow, x: 0, y: 20, width: 56, value: '→', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 32, textAlign: 'center', fill: CREAM });
+  text({ name: 'D Onboard Next G', parent: nextArrow, x: 0, y: 20, width: 56, value: '→', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 32, textAlign: 'center', fill: CREAM });
 
   addInlineLogo(fId, { x: LW / 2, y: 262, markHeight: 78, wordHeight: 34, color: CREAM, stacked: true });
 
   const orderBtn = frame({ name: 'D Onboard OrderBtn', parent: fId, x: 520, y: 422, width: 240, height: 54, fill: CREAM, radius: 999 });
   shadow(orderBtn, { color: '#00000066', offset: [0, 14], radius: 30, spread: -4 });
-  const oTxt = text({ name: 'D Onboard OrderTxt', parent: orderBtn, x: 0, y: 17, width: 240, value: 'ORDER NOW  →', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 15, letterSpacing: '10%', textAlign: 'center', fill: COCOA });
+  const oTxt = text({ name: 'D Onboard OrderTxt', parent: orderBtn, x: 0, y: 17, width: 240, value: 'ORDER NOW  →', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 15, letterSpacing: '10%', textAlign: 'center', fill: COCOA });
   bindVar(oTxt, 'i18n_order_now');
 
   const dotXs = [604, 634, 664];
@@ -1147,23 +1147,23 @@ function buildDesktopMenuHome(idx, { slideIndex = 0, filteredPistachio = false }
     : `L02${['A', 'B', 'C'][slideIndex]} · Laptop Menu — Slide 0${slideIndex + 1} (Scrollable)`;
   const fId = frame({ name: fName, x: pos.x, y: pos.y, width: LW, height: LH, fill: CREAM, overflow: 'vertical' });
 
-  const fT = text({ name: 'D Featured Title', parent: fId, x: 48, y: 146, value: 'Featured', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 66, fill: COCOA });
+  const fT = text({ name: 'D Featured Title', parent: fId, x: 48, y: 146, value: 'Featured', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 66, fill: COCOA });
   bindVar(fT, 'i18n_featured');
-  const fS = text({ name: 'D Featured Sub', parent: fId, x: 48, y: 232, width: 340, value: 'Discover our signature handcrafted chocolates, warm crepes, and seasonal specials.', fontFamily: 'Inter', fontStyle: 'Regular', fontSize: 16, lineHeight: 26, fill: COCOA_SOFT });
+  const fS = text({ name: 'D Featured Sub', parent: fId, x: 48, y: 232, width: 340, value: 'Discover our signature handcrafted chocolates, warm crepes, and seasonal specials.', fontFamily: 'Cabin', fontStyle: 'Regular', fontSize: 16, lineHeight: 26, fill: COCOA_SOFT });
   bindVar(fS, 'i18n_featured_sub');
 
   const prevBtn = frame({ name: 'D Slider Prev', parent: fId, x: 430, y: 120, width: 38, height: 34, fill: CREAM });
-  text({ name: 'D Slider Prev T', parent: prevBtn, x: 0, y: 6, width: 38, value: '←', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 18, textAlign: 'center', fill: COCOA });
+  text({ name: 'D Slider Prev T', parent: prevBtn, x: 0, y: 6, width: 38, value: '←', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 18, textAlign: 'center', fill: COCOA });
 
   const idxBtns = [0, 1, 2].map((ii) => {
     const active = ii === slideIndex;
     const b = frame({ name: `D Slider 0${ii + 1}`, parent: fId, x: 474 + ii * 48, y: 120, width: 42, height: 34, fill: active ? CREAM_CARD : CREAM, radius: 6 });
-    text({ name: `D Slider 0${ii + 1} T`, parent: b, x: 0, y: 7, width: 42, value: `0${ii + 1}`, fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 15, textAlign: 'center', fill: active ? COCOA : MUTED });
+    text({ name: `D Slider 0${ii + 1} T`, parent: b, x: 0, y: 7, width: 42, value: `0${ii + 1}`, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 15, textAlign: 'center', fill: active ? COCOA : MUTED });
     return b;
   });
 
   const nextBtn = frame({ name: 'D Slider Next', parent: fId, x: 622, y: 120, width: 38, height: 34, fill: CREAM });
-  text({ name: 'D Slider Next T', parent: nextBtn, x: 0, y: 6, width: 38, value: '→', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 18, textAlign: 'center', fill: COCOA });
+  text({ name: 'D Slider Next T', parent: nextBtn, x: 0, y: 6, width: 38, value: '→', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 18, textAlign: 'center', fill: COCOA });
 
   const viewport = frame({ name: 'D Featured Viewport Scroll', parent: fId, x: 430, y: 170, width: 850, height: 326, fill: CREAM, clip: true, overflow: 'horizontal' });
   const track = frame({ name: 'D Featured Track', parent: viewport, x: -slideIndex * 274, y: 0, width: 1680, height: 326, fill: CREAM, clip: false });
@@ -1180,31 +1180,31 @@ function buildDesktopMenuHome(idx, { slideIndex = 0, filteredPistachio = false }
   featData.forEach((fd, i) => {
     const cf = frame({ name: `D Feat Card ${i + 1}`, parent: track, x: i * 274, y: 0, width: 254, height: 320, fill: CREAM });
     imageBox({ name: `D Feat Img ${i + 1}`, parent: cf, x: 0, y: 0, width: 254, height: 254, file: fd.img, radius: 10, withShadow: true });
-    text({ name: `D Feat Title ${i + 1}`, parent: cf, x: 0, y: 266, width: 194, value: fd.name, fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 17, fill: COCOA });
-    text({ name: `D Feat Price ${i + 1}`, parent: cf, x: 196, y: 268, width: 58, value: fd.price, fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 15, textAlign: 'right', fill: COCOA_SOFT });
+    text({ name: `D Feat Title ${i + 1}`, parent: cf, x: 0, y: 266, width: 194, value: fd.name, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 17, fill: COCOA });
+    text({ name: `D Feat Price ${i + 1}`, parent: cf, x: 196, y: 268, width: 58, value: fd.price, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 15, textAlign: 'right', fill: COCOA_SOFT });
     featCards.push({ cf, target: fd.target });
   });
 
   // Search + Interactive Filter Bar
   rect({ name: 'D Toolbar Rule', parent: fId, x: 48, y: 520, width: 1184, height: 1, fill: BORDER_LINE });
-  const dSearch = text({ name: 'D Search Mock', parent: fId, x: 48, y: 544, value: '⌕   Search menu…', fontFamily: 'Inter', fontStyle: 'Regular', fontSize: 16, fill: MUTED });
+  const dSearch = text({ name: 'D Search Mock', parent: fId, x: 48, y: 544, value: '⌕   Search menu…', fontFamily: 'Cabin', fontStyle: 'Regular', fontSize: 16, fill: MUTED });
   bindVar(dSearch, 'i18n_search');
   rect({ name: 'D Search Underline', parent: fId, x: 48, y: 576, width: 420, height: 1, fill: COCOA });
 
   const pillAll = frame({ name: 'D Filter All', parent: fId, x: 520, y: 538, width: 56, height: 34, fill: filteredPistachio ? CREAM : CREAM_CARD, radius: 6 });
-  text({ name: 'D Filter All T', parent: pillAll, x: 0, y: 8, width: 56, value: 'All', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, textAlign: 'center', fill: COCOA });
+  text({ name: 'D Filter All T', parent: pillAll, x: 0, y: 8, width: 56, value: 'All', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, textAlign: 'center', fill: COCOA });
 
-  text({ name: 'D Filter Pop T', parent: fId, x: 594, y: 546, value: 'Popular', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, fill: COCOA_SOFT });
+  text({ name: 'D Filter Pop T', parent: fId, x: 594, y: 546, value: 'Popular', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, fill: COCOA_SOFT });
 
   const pillPist = frame({ name: 'D Filter Pistachio', parent: fId, x: 676, y: 538, width: 92, height: 34, fill: filteredPistachio ? COCOA : CREAM, radius: 6 });
-  text({ name: 'D Filter Pist T', parent: pillPist, x: 0, y: 8, width: 92, value: 'Pistachio', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, textAlign: 'center', fill: filteredPistachio ? CREAM : COCOA_SOFT });
+  text({ name: 'D Filter Pist T', parent: pillPist, x: 0, y: 8, width: 92, value: 'Pistachio', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, textAlign: 'center', fill: filteredPistachio ? CREAM : COCOA_SOFT });
 
-  text({ name: 'D Filter Extra', parent: fId, x: 788, y: 546, value: 'Dark Chocolate          Under $10', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, fill: COCOA_SOFT });
+  text({ name: 'D Filter Extra', parent: fId, x: 788, y: 546, value: 'Dark Chocolate          Under $10', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, fill: COCOA_SOFT });
 
   const catCards = [];
   const filtCards = [];
   if (filteredPistachio) {
-    text({ name: 'D Filt Title', parent: fId, x: 48, y: 616, value: 'Showing 4 Pistachio Creations', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 34, fill: COCOA });
+    text({ name: 'D Filt Title', parent: fId, x: 48, y: 616, value: 'Showing 4 Pistachio Creations', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 34, fill: COCOA });
     const fItems = [
       { name: 'Dubai Kunafa Crepe', price: '$9.50', img: IMG('reel-dubai-crepe.jpg'), target: 'crepe' },
       { name: 'Pistachio Kunafa Bar', price: '$14.00', img: IMG('ig-kunafa-cookie-drip.jpg'), target: 'bar' },
@@ -1214,13 +1214,13 @@ function buildDesktopMenuHome(idx, { slideIndex = 0, filteredPistachio = false }
     fItems.forEach((fi, i) => {
       const fx = 48 + i * 302;
       const fc = frame({ name: `D Filt Card ${i}`, parent: fId, x: fx, y: 674, width: 280, height: 310, fill: CREAM });
-      text({ name: `D Filt Name ${i}`, parent: fc, x: 0, y: 0, width: 204, value: fi.name, fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 18, lineHeight: 23, fill: COCOA });
-      text({ name: `D Filt Price ${i}`, parent: fc, x: 214, y: 2, width: 66, value: fi.price, fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 16, textAlign: 'right', fill: COCOA_SOFT });
+      text({ name: `D Filt Name ${i}`, parent: fc, x: 0, y: 0, width: 204, value: fi.name, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 18, lineHeight: 23, fill: COCOA });
+      text({ name: `D Filt Price ${i}`, parent: fc, x: 214, y: 2, width: 66, value: fi.price, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 16, textAlign: 'right', fill: COCOA_SOFT });
       imageBox({ name: `D Filt Img ${i}`, parent: fc, x: 0, y: 58, width: 280, height: 236, file: fi.img, radius: 10, withShadow: true });
       filtCards.push({ cf: fc, target: fi.target });
     });
   } else {
-    const cHead = text({ name: 'D Cat Heading', parent: fId, x: 48, y: 616, value: 'Categories', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 34, fill: COCOA });
+    const cHead = text({ name: 'D Cat Heading', parent: fId, x: 48, y: 616, value: 'Categories', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 34, fill: COCOA });
     bindVar(cHead, 'i18n_categories');
     const cats = [
       { name: 'Crepes & Waffles', img: IMG('reel-strawberry-crepe.jpg'), dest: 'cat_crepes' },
@@ -1238,7 +1238,7 @@ function buildDesktopMenuHome(idx, { slideIndex = 0, filteredPistachio = false }
       const kx = 48 + col * 302;
       const ky = 674 + row * 246;
       const cCard = frame({ name: `D Cat Card ${ct.name}`, parent: fId, x: kx, y: ky, width: 280, height: 226, fill: CREAM });
-      text({ name: `D Cat Title ${i}`, parent: cCard, x: 0, y: 0, width: 280, value: ct.name, fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 20, fill: COCOA });
+      text({ name: `D Cat Title ${i}`, parent: cCard, x: 0, y: 0, width: 280, value: ct.name, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 20, fill: COCOA });
       imageBox({ name: `D Cat Img ${i}`, parent: cCard, x: 0, y: 34, width: 280, height: 184, file: ct.img, radius: 10, withShadow: true });
       catCards.push({ card: cCard, dest: ct.dest });
     });
@@ -1246,7 +1246,7 @@ function buildDesktopMenuHome(idx, { slideIndex = 0, filteredPistachio = false }
 
   // Horizontal Reels Strip below Categories (scrollable side to side!)
   const dReelsY = filteredPistachio ? 1000 : 1184;
-  const dReelsHead = text({ name: 'D Reels Title', parent: fId, x: 48, y: dReelsY, value: '@savory.chocolate Reels', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 32, fill: COCOA });
+  const dReelsHead = text({ name: 'D Reels Title', parent: fId, x: 48, y: dReelsY, value: '@savory.chocolate Reels', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 32, fill: COCOA });
   bindVar(dReelsHead, 'i18n_reels');
 
   const reelsStrip = frame({ name: 'D Reels Scroll Strip', parent: fId, x: 48, y: dReelsY + 52, width: 1232, height: 356, fill: CREAM, clip: true, overflow: 'horizontal' });
@@ -1263,16 +1263,16 @@ function buildDesktopMenuHome(idx, { slideIndex = 0, filteredPistachio = false }
     const rc = frame({ name: `D Reel Card ${i}`, parent: reelsStrip, x: i * 240, y: 0, width: 222, height: 346, fill: CREAM });
     imageBox({ name: `D Reel Img ${i}`, parent: rc, x: 0, y: 0, width: 222, height: 304, file: rl.img, radius: 10 });
     rect({ name: `D Reel Badge BG ${i}`, parent: rc, x: 12, y: 12, width: 70, height: 24, fill: ESPRESSO, opacity: 0.78, radius: 999 });
-    text({ name: `D Reel Badge T ${i}`, parent: rc, x: 12, y: 18, width: 70, value: rl.views, fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 11, textAlign: 'center', fill: CREAM });
+    text({ name: `D Reel Badge T ${i}`, parent: rc, x: 12, y: 18, width: 70, value: rl.views, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 11, textAlign: 'center', fill: CREAM });
     circle({ name: `D Reel Play C ${i}`, parent: rc, x: 89, y: 130, size: 44, fill: CREAM, opacity: 0.92 });
-    text({ name: `D Reel Play T ${i}`, parent: rc, x: 89, y: 142, width: 44, value: '▶', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, textAlign: 'center', fill: COCOA });
-    text({ name: `D Reel Name ${i}`, parent: rc, x: 0, y: 316, value: rl.name, fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 17, fill: COCOA });
+    text({ name: `D Reel Play T ${i}`, parent: rc, x: 89, y: 142, width: 44, value: '▶', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, textAlign: 'center', fill: COCOA });
+    text({ name: `D Reel Name ${i}`, parent: rc, x: 0, y: 316, value: rl.name, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 17, fill: COCOA });
     reelCards.push({ rc, target: rl.target });
   });
 
   rect({ name: 'D Branches Line', parent: fId, x: 48, y: dReelsY + 436, width: 1184, height: 1, fill: BORDER_LINE });
-  text({ name: 'D Branches T', parent: fId, x: 48, y: dReelsY + 462, value: 'Visit Our Branches  ·  Open Daily 10:00 AM – 11:30 PM', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 26, fill: COCOA });
-  text({ name: 'D Branches Copy', parent: fId, x: 48, y: dReelsY + 502, value: 'Aramoun Main Road  ·  Aley Khoury Center  ·  Pay on pickup or delivery', fontFamily: 'Inter', fontStyle: 'Regular', fontSize: 15, fill: COCOA_SOFT });
+  text({ name: 'D Branches T', parent: fId, x: 48, y: dReelsY + 462, value: 'Visit Our Branches  ·  Open Daily 10:00 AM – 11:30 PM', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 26, fill: COCOA });
+  text({ name: 'D Branches Copy', parent: fId, x: 48, y: dReelsY + 502, value: 'Aramoun Main Road  ·  Aley Khoury Center  ·  Pay on pickup or delivery', fontFamily: 'Cabin', fontStyle: 'Regular', fontSize: 15, fill: COCOA_SOFT });
   rect({ name: 'D Menu Pad', parent: fId, x: 0, y: dReelsY + 540, width: 10, height: 50, fill: CREAM, opacity: 0.01 });
 
   const fixedHdr = addFixedDesktopHeader(fId, { activeNav: 'menu' });
@@ -1288,8 +1288,8 @@ const l02F = buildDesktopMenuHome(6, { slideIndex: 0, filteredPistachio: true })
 const l03Pos = lPos(7);
 const l03 = frame({ name: 'L03 · Laptop Category — Crepes & Waffles', x: l03Pos.x, y: l03Pos.y, width: LW, height: LH, fill: CREAM, overflow: 'vertical' });
 const l03Back = frame({ name: 'D Cat Back Hitbox', parent: l03, x: 48, y: 102, width: 170, height: 32, fill: CREAM });
-text({ name: 'D Cat Back Txt', parent: l03Back, x: 0, y: 6, value: '←  All Categories', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 15, fill: COCOA_SOFT });
-text({ name: 'D Cat Title', parent: l03, x: 48, y: 146, value: 'Crepes & Waffles', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 52, fill: COCOA });
+text({ name: 'D Cat Back Txt', parent: l03Back, x: 0, y: 6, value: '←  All Categories', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 15, fill: COCOA_SOFT });
+text({ name: 'D Cat Title', parent: l03, x: 48, y: 146, value: 'Crepes & Waffles', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 52, fill: COCOA });
 
 const lCatProds = [
   { name: 'Dubai Kunafa Chocolate Crepe', price: '$9.50', img: IMG('reel-dubai-crepe.jpg') },
@@ -1305,8 +1305,8 @@ const l03Cards = lCatProds.map((pr, i) => {
   const col = i % 4;
   const row = Math.floor(i / 4);
   const c = frame({ name: `D Cat Prod ${i}`, parent: l03, x: 48 + col * 302, y: 236 + row * 356, width: 280, height: 336, fill: CREAM });
-  text({ name: `D Cat P Title ${i}`, parent: c, x: 0, y: 0, width: 204, value: pr.name, fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 18, lineHeight: 23, fill: COCOA });
-  text({ name: `D Cat P Price ${i}`, parent: c, x: 214, y: 2, width: 66, value: pr.price, fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 16, textAlign: 'right', fill: COCOA_SOFT });
+  text({ name: `D Cat P Title ${i}`, parent: c, x: 0, y: 0, width: 204, value: pr.name, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 18, lineHeight: 23, fill: COCOA });
+  text({ name: `D Cat P Price ${i}`, parent: c, x: 214, y: 2, width: 66, value: pr.price, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 16, textAlign: 'right', fill: COCOA_SOFT });
   imageBox({ name: `D Cat P Img ${i}`, parent: c, x: 0, y: 58, width: 280, height: 266, file: pr.img, radius: 10, withShadow: true });
   return c;
 });
@@ -1318,39 +1318,39 @@ function buildDesktopProductPage(idx, customized) {
   const pos = lPos(idx);
   const fId = frame({ name: customized ? 'L04B · Laptop Product — Customized ($12.00)' : 'L04A · Laptop Product — Default ($9.50)', x: pos.x, y: pos.y, width: LW, height: LH, fill: CREAM, overflow: 'vertical' });
   const backBtn = frame({ name: 'D Prod Back', parent: fId, x: 48, y: 102, width: 190, height: 32, fill: CREAM });
-  text({ name: 'D Prod Back T', parent: backBtn, x: 0, y: 6, value: '←  Crepes & Waffles', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 15, fill: COCOA_SOFT });
+  text({ name: 'D Prod Back T', parent: backBtn, x: 0, y: 6, value: '←  Crepes & Waffles', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 15, fill: COCOA_SOFT });
 
   imageBox({ name: 'D Prod Photo', parent: fId, x: 48, y: 152, width: 520, height: 520, file: IMG('reel-dubai-crepe.jpg'), radius: 12, withShadow: true });
-  text({ name: 'D Prod Title', parent: fId, x: 616, y: 150, width: 492, value: 'Dubai Kunafa Chocolate Crepe', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 36, lineHeight: 42, fill: COCOA });
-  text({ name: 'D Prod Price', parent: fId, x: 1120, y: 156, width: 112, value: customized ? '$12.00' : '$9.50', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 28, textAlign: 'right', fill: COCOA });
+  text({ name: 'D Prod Title', parent: fId, x: 616, y: 150, width: 492, value: 'Dubai Kunafa Chocolate Crepe', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 36, lineHeight: 42, fill: COCOA });
+  text({ name: 'D Prod Price', parent: fId, x: 1120, y: 156, width: 112, value: customized ? '$12.00' : '$9.50', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 28, textAlign: 'right', fill: COCOA });
   rect({ name: 'D Prod Rule', parent: fId, x: 616, y: 248, width: 616, height: 1, fill: BORDER_LINE });
-  text({ name: 'D Prod Desc', parent: fId, x: 616, y: 268, width: 616, value: 'Hand-rolled warm crepe filled with crispy roasted kataifi pastry and Lebanese pistachio cream, drenched in Belgian milk, dark and white chocolate ribbons.', fontFamily: 'Inter', fontStyle: 'Regular', fontSize: 16, lineHeight: 26, fill: COCOA_SOFT });
+  text({ name: 'D Prod Desc', parent: fId, x: 616, y: 268, width: 616, value: 'Hand-rolled warm crepe filled with crispy roasted kataifi pastry and Lebanese pistachio cream, drenched in Belgian milk, dark and white chocolate ribbons.', fontFamily: 'Cabin', fontStyle: 'Regular', fontSize: 16, lineHeight: 26, fill: COCOA_SOFT });
 
-  text({ name: 'D Opt 1', parent: fId, x: 616, y: 352, value: 'DRIZZLE STYLE', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, letterSpacing: '8%', fill: COCOA });
+  text({ name: 'D Opt 1', parent: fId, x: 616, y: 352, value: 'DRIZZLE STYLE', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, letterSpacing: '8%', fill: COCOA });
   const chip1 = frame({ name: 'D Chip 1', parent: fId, x: 616, y: 382, width: 256, height: 42, fill: customized ? CREAM_CARD : COCOA, radius: 8 });
-  text({ name: 'D Chip 1 T', parent: chip1, x: 0, y: 12, width: 256, value: 'Triple Chocolate & Pistachio', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, textAlign: 'center', fill: customized ? COCOA : CREAM });
+  text({ name: 'D Chip 1 T', parent: chip1, x: 0, y: 12, width: 256, value: 'Triple Chocolate & Pistachio', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, textAlign: 'center', fill: customized ? COCOA : CREAM });
 
   const chip2 = frame({ name: 'D Chip 2', parent: fId, x: 884, y: 382, width: 264, height: 42, fill: customized ? COCOA : CREAM_CARD, radius: 8 });
-  text({ name: 'D Chip 2 T', parent: chip2, x: 0, y: 12, width: 264, value: 'Dark 70% & Pistachio (+$0.50)', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, textAlign: 'center', fill: customized ? CREAM : COCOA });
+  text({ name: 'D Chip 2 T', parent: chip2, x: 0, y: 12, width: 264, value: 'Dark 70% & Pistachio (+$0.50)', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, textAlign: 'center', fill: customized ? CREAM : COCOA });
 
-  text({ name: 'D Opt 2', parent: fId, x: 616, y: 452, value: 'EXTRAS', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, letterSpacing: '8%', fill: COCOA });
+  text({ name: 'D Opt 2', parent: fId, x: 616, y: 452, value: 'EXTRAS', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, letterSpacing: '8%', fill: COCOA });
   const extra1 = frame({ name: 'D Extra 1 Hitbox', parent: fId, x: 616, y: 480, width: 616, height: 42, fill: CREAM });
-  text({ name: 'D Extra 1 T', parent: extra1, x: 0, y: 10, value: customized ? '☑   Extra pistachio kunafa crunch' : '☐   Extra pistachio kunafa crunch', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 15, fill: COCOA });
-  text({ name: 'D Extra 1 P', parent: extra1, x: 504, y: 10, width: 112, value: '+$2.00', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 15, textAlign: 'right', fill: COCOA_SOFT });
+  text({ name: 'D Extra 1 T', parent: extra1, x: 0, y: 10, value: customized ? '☑   Extra pistachio kunafa crunch' : '☐   Extra pistachio kunafa crunch', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 15, fill: COCOA });
+  text({ name: 'D Extra 1 P', parent: extra1, x: 504, y: 10, width: 112, value: '+$2.00', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 15, textAlign: 'right', fill: COCOA_SOFT });
   rect({ name: 'D Extra 1 Rule', parent: extra1, x: 0, y: 41, width: 616, height: 1, fill: BORDER_LINE });
 
-  text({ name: 'D Extra 2', parent: fId, x: 616, y: 534, value: '☐   Fresh strawberries', fontFamily: 'Inter', fontStyle: 'Medium', fontSize: 15, fill: COCOA });
-  text({ name: 'D Extra 2 P', parent: fId, x: 1120, y: 534, width: 112, value: '+$1.50', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 15, textAlign: 'right', fill: COCOA_SOFT });
+  text({ name: 'D Extra 2', parent: fId, x: 616, y: 534, value: '☐   Fresh strawberries', fontFamily: 'Cabin', fontStyle: 'Medium', fontSize: 15, fill: COCOA });
+  text({ name: 'D Extra 2 P', parent: fId, x: 1120, y: 534, width: 112, value: '+$1.50', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 15, textAlign: 'right', fill: COCOA_SOFT });
 
-  text({ name: 'D Req Lbl', parent: fId, x: 616, y: 590, value: 'SPECIAL REQUESTS', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, letterSpacing: '8%', fill: COCOA });
-  text({ name: 'D Req Hint', parent: fId, x: 616, y: 620, value: 'Allergies, packaging notes, or special requests…', fontFamily: 'Inter', fontStyle: 'Regular', fontSize: 15, fill: MUTED });
+  text({ name: 'D Req Lbl', parent: fId, x: 616, y: 590, value: 'SPECIAL REQUESTS', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, letterSpacing: '8%', fill: COCOA });
+  text({ name: 'D Req Hint', parent: fId, x: 616, y: 620, value: 'Allergies, packaging notes, or special requests…', fontFamily: 'Cabin', fontStyle: 'Regular', fontSize: 15, fill: MUTED });
   rect({ name: 'D Req Rule', parent: fId, x: 616, y: 652, width: 616, height: 1, fill: COCOA });
 
   rect({ name: 'D Prod Qty', parent: fId, x: 616, y: 682, width: 124, height: 52, fill: CREAM_CARD, radius: 8 });
-  text({ name: 'D Prod Qty T', parent: fId, x: 616, y: 698, width: 124, value: '−   1   +', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 18, textAlign: 'center', fill: COCOA });
+  text({ name: 'D Prod Qty T', parent: fId, x: 616, y: 698, width: 124, value: '−   1   +', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 18, textAlign: 'center', fill: COCOA });
 
   const addBtn = frame({ name: 'D Prod Add CTA', parent: fId, x: 756, y: 682, width: 476, height: 52, fill: COCOA, radius: 8 });
-  text({ name: 'D Prod Add T', parent: addBtn, x: 0, y: 16, width: 476, value: customized ? 'Add to Order  ·  $12.00' : 'Add to Order  ·  $9.50', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 16, textAlign: 'center', fill: CREAM });
+  text({ name: 'D Prod Add T', parent: addBtn, x: 0, y: 16, width: 476, value: customized ? 'Add to Order  ·  $12.00' : 'Add to Order  ·  $9.50', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 16, textAlign: 'center', fill: CREAM });
 
   const hdr = addFixedDesktopHeader(fId, { activeNav: 'menu' });
   return { fId, hdr, backBtn, chip1, chip2, extra1, addBtn };
@@ -1363,27 +1363,27 @@ const l04B = buildDesktopProductPage(9, true);
 const l05Pos = lPos(10);
 const l05 = frame({ name: 'L05 · Laptop Cart & Checkout', x: l05Pos.x, y: l05Pos.y, width: LW, height: LH, fill: CREAM, overflow: 'vertical' });
 const l05Back = frame({ name: 'D Cart Back', parent: l05, x: 48, y: 102, width: 190, height: 32, fill: CREAM });
-text({ name: 'D Cart Back T', parent: l05Back, x: 0, y: 6, value: '←  Continue Shopping', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 15, fill: COCOA_SOFT });
-const l05Head = text({ name: 'D Cart Title', parent: l05, x: 48, y: 146, value: 'Your Cart', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 48, fill: COCOA });
+text({ name: 'D Cart Back T', parent: l05Back, x: 0, y: 6, value: '←  Continue Shopping', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 15, fill: COCOA_SOFT });
+const l05Head = text({ name: 'D Cart Title', parent: l05, x: 48, y: 146, value: 'Your Cart', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 48, fill: COCOA });
 bindVar(l05Head, 'i18n_cart');
 
 imageBox({ name: 'D Cart Item Img', parent: l05, x: 48, y: 230, width: 92, height: 92, file: IMG('reel-dubai-crepe.jpg'), radius: 10 });
-text({ name: 'D Cart Item T', parent: l05, x: 160, y: 234, value: 'Dubai Kunafa Chocolate Crepe', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 22, fill: COCOA });
-text({ name: 'D Cart Item Meta', parent: l05, x: 160, y: 266, value: 'Dark 70% & Pistachio · Extra pistachio crunch · Qty 1', fontFamily: 'Inter', fontStyle: 'Regular', fontSize: 14, fill: MUTED });
-text({ name: 'D Cart Item Total', parent: l05, x: 560, y: 236, width: 100, value: '$12.00', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 20, textAlign: 'right', fill: COCOA });
+text({ name: 'D Cart Item T', parent: l05, x: 160, y: 234, value: 'Dubai Kunafa Chocolate Crepe', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 22, fill: COCOA });
+text({ name: 'D Cart Item Meta', parent: l05, x: 160, y: 266, value: 'Dark 70% & Pistachio · Extra pistachio crunch · Qty 1', fontFamily: 'Cabin', fontStyle: 'Regular', fontSize: 14, fill: MUTED });
+text({ name: 'D Cart Item Total', parent: l05, x: 560, y: 236, width: 100, value: '$12.00', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 20, textAlign: 'right', fill: COCOA });
 rect({ name: 'D Cart Divider', parent: l05, x: 48, y: 348, width: 612, height: 1, fill: BORDER_LINE });
 
 rect({ name: 'D Checkout Panel', parent: l05, x: 720, y: 152, width: 512, height: 596, fill: CREAM_SOFT, radius: 18 });
-text({ name: 'D Checkout Title', parent: l05, x: 760, y: 192, value: 'Checkout Details', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 32, fill: COCOA });
+text({ name: 'D Checkout Title', parent: l05, x: 760, y: 192, value: 'Checkout Details', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 32, fill: COCOA });
 rect({ name: 'D Checkout Line', parent: l05, x: 760, y: 248, width: 432, height: 1, fill: BORDER_LINE });
-text({ name: 'D Checkout Total L', parent: l05, x: 760, y: 272, value: 'Total (Pay on pickup)', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 24, fill: COCOA });
-text({ name: 'D Checkout Total V', parent: l05, x: 1080, y: 272, width: 112, value: '$12.00', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 24, textAlign: 'right', fill: COCOA });
+text({ name: 'D Checkout Total L', parent: l05, x: 760, y: 272, value: 'Total (Pay on pickup)', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 24, fill: COCOA });
+text({ name: 'D Checkout Total V', parent: l05, x: 1080, y: 272, width: 112, value: '$12.00', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 24, textAlign: 'right', fill: COCOA });
 rect({ name: 'D Checkout F1', parent: l05, x: 760, y: 338, width: 432, height: 48, fill: CREAM, radius: 8 });
-text({ name: 'D Checkout F1 T', parent: l05, x: 780, y: 353, value: 'Branch: SAVORY Aramoun  ·  Pickup Today 6:30 PM', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, fill: COCOA });
+text({ name: 'D Checkout F1 T', parent: l05, x: 780, y: 353, value: 'Branch: SAVORY Aramoun  ·  Pickup Today 6:30 PM', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, fill: COCOA });
 rect({ name: 'D Checkout F2', parent: l05, x: 760, y: 404, width: 432, height: 48, fill: CREAM, radius: 8 });
-text({ name: 'D Checkout F2 T', parent: l05, x: 780, y: 419, value: 'Name: Nour Haddad   ·   +961 70 123 456', fontFamily: 'Inter', fontStyle: 'Medium', fontSize: 14, fill: COCOA });
+text({ name: 'D Checkout F2 T', parent: l05, x: 780, y: 419, value: 'Name: Nour Haddad   ·   +961 70 123 456', fontFamily: 'Cabin', fontStyle: 'Medium', fontSize: 14, fill: COCOA });
 rect({ name: 'D Checkout Submit', parent: l05, x: 760, y: 494, width: 432, height: 54, fill: COCOA, radius: 8 });
-text({ name: 'D Checkout Submit T', parent: l05, x: 760, y: 511, width: 432, value: 'Place Order & Open WhatsApp  →', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 15, textAlign: 'center', fill: CREAM });
+text({ name: 'D Checkout Submit T', parent: l05, x: 760, y: 511, width: 432, value: 'Place Order & Open WhatsApp  →', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 15, textAlign: 'center', fill: CREAM });
 const l05Hdr = addFixedDesktopHeader(l05, { activeNav: 'menu' });
 
 // Desktop 3D Custom Cake Studio (L06A <-> L06B interactive states!)
@@ -1402,17 +1402,17 @@ function buildDesktopCakeStudio(idx, stateIdx) {
     radius: 18,
   });
   rect({ name: '3D Stage Pill BG', parent: fId, x: 68, y: 132, width: 320, height: 32, fill: ESPRESSO, opacity: 0.88, radius: 999 });
-  text({ name: '3D Stage Pill T', parent: fId, x: 68, y: 140, width: 320, value: '●   LIVE WEBGL 3D PREVIEW  ·  DRAG TO ORBIT', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 11, letterSpacing: '8%', textAlign: 'center', fill: GOLD });
+  text({ name: '3D Stage Pill T', parent: fId, x: 68, y: 140, width: 320, value: '●   LIVE WEBGL 3D PREVIEW  ·  DRAG TO ORBIT', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 11, letterSpacing: '8%', textAlign: 'center', fill: GOLD });
 
-  text({ name: '3D Kicker', parent: fId, x: 736, y: 118, value: 'SAVORY 3D CAKE STUDIO', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, letterSpacing: '12%', fill: GOLD });
-  text({ name: '3D Title', parent: fId, x: 736, y: 152, width: 496, value: 'See Your Cake Before We Bake It', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 44, lineHeight: 50, fill: CREAM });
+  text({ name: '3D Kicker', parent: fId, x: 736, y: 118, value: 'SAVORY 3D CAKE STUDIO', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, letterSpacing: '12%', fill: GOLD });
+  text({ name: '3D Title', parent: fId, x: 736, y: 152, width: 496, value: 'See Your Cake Before We Bake It', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 44, lineHeight: 50, fill: CREAM });
 
   // Interactive Shape / Preset Tabs
   const tabHeart = frame({ name: '3D Tab Heart', parent: fId, x: 736, y: 274, width: 240, height: 44, fill: stateIdx === 0 ? GOLD : ESPRESSO_CARD, radius: 10 });
-  text({ name: '3D Tab Heart T', parent: tabHeart, x: 0, y: 13, width: 240, value: 'Dark Belgian Heart ($68)', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: stateIdx === 0 ? ESPRESSO : CREAM });
+  text({ name: '3D Tab Heart T', parent: tabHeart, x: 0, y: 13, width: 240, value: 'Dark Belgian Heart ($68)', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: stateIdx === 0 ? ESPRESSO : CREAM });
 
   const tabRibbon = frame({ name: '3D Tab Ribbon', parent: fId, x: 992, y: 274, width: 240, height: 44, fill: stateIdx === 1 ? GOLD : ESPRESSO_CARD, radius: 10 });
-  text({ name: '3D Tab Ribbon T', parent: tabRibbon, x: 0, y: 13, width: 240, value: 'Velvet Ribbon Cake ($82)', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: stateIdx === 1 ? ESPRESSO : CREAM });
+  text({ name: '3D Tab Ribbon T', parent: tabRibbon, x: 0, y: 13, width: 240, value: 'Velvet Ribbon Cake ($82)', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, textAlign: 'center', fill: stateIdx === 1 ? ESPRESSO : CREAM });
 
   rect({ name: '3D Details Box', parent: fId, x: 736, y: 342, width: 496, height: 340, fill: ESPRESSO_CARD, radius: 16 });
   text({
@@ -1424,7 +1424,7 @@ function buildDesktopCakeStudio(idx, stateIdx) {
     value: stateIdx === 0
       ? 'Shape: Heart Celebration Cake (8")\nSponge: Dark 70% Belgian Cocoa\nFilling: Roasted Pistachio Kunafa\nGlaze: Mirror Dark Ganache Drip\nFeature: Click "Cut a Slice" to preview layers'
       : 'Shape: Classic Tall Tier (9")\nSponge: Madagascar Vanilla Bean\nFilling: Strawberry Compote & Cream\nFinish: Hand-tied Silk Ribbons & Pearls\nFeature: Custom 3D Shareable Link',
-    fontFamily: 'Inter',
+    fontFamily: 'Cabin',
     fontStyle: 'Medium',
     fontSize: 16,
     lineHeight: 36,
@@ -1432,7 +1432,7 @@ function buildDesktopCakeStudio(idx, stateIdx) {
   });
 
   const orderCakeBtn = frame({ name: '3D Place CakeBtn', parent: fId, x: 736, y: 706, width: 496, height: 54, fill: GOLD, radius: 999 });
-  text({ name: '3D Place CakeTxt', parent: orderCakeBtn, x: 0, y: 17, width: 496, value: stateIdx === 0 ? 'Place Custom Cake Order  ·  $68.00  →' : 'Place Custom Cake Order  ·  $82.00  →', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 15, textAlign: 'center', fill: ESPRESSO });
+  text({ name: '3D Place CakeTxt', parent: orderCakeBtn, x: 0, y: 17, width: 496, value: stateIdx === 0 ? 'Place Custom Cake Order  ·  $68.00  →' : 'Place Custom Cake Order  ·  $82.00  →', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 15, textAlign: 'center', fill: ESPRESSO });
 
   const hdr = addFixedDesktopHeader(fId, { activeNav: 'studio' });
   return { fId, hdr, tabHeart, tabRibbon, orderCakeBtn };
@@ -1445,17 +1445,17 @@ const l06B = buildDesktopCakeStudio(12, 1);
 const dGiftPos = lPos(13);
 const dGiftModal = frame({ name: 'OVERLAY · Desktop Luxury Gift Box Studio', x: dGiftPos.x, y: dGiftPos.y, width: 520, height: 640, fill: CREAM, radius: 24 });
 shadow(dGiftModal, { color: '#14070277', offset: [0, 24], radius: 48, spread: 0 });
-text({ name: 'DGift Eyebrow', parent: dGiftModal, x: 32, y: 28, value: 'SAVORY CHOCOLATIER', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 12, letterSpacing: '12%', fill: MUTED });
-text({ name: 'DGift Title', parent: dGiftModal, x: 32, y: 50, value: 'Build Your Gift Box', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 34, fill: COCOA });
+text({ name: 'DGift Eyebrow', parent: dGiftModal, x: 32, y: 28, value: 'SAVORY CHOCOLATIER', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 12, letterSpacing: '12%', fill: MUTED });
+text({ name: 'DGift Title', parent: dGiftModal, x: 32, y: 50, value: 'Build Your Gift Box', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 34, fill: COCOA });
 const dGiftClose = frame({ name: 'DGift Close', parent: dGiftModal, x: 454, y: 26, width: 38, height: 38, fill: CREAM_CARD, radius: 999 });
-text({ name: 'DGift Close X', parent: dGiftClose, x: 0, y: 8, width: 38, value: '✕', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 16, textAlign: 'center', fill: COCOA });
+text({ name: 'DGift Close X', parent: dGiftClose, x: 0, y: 8, width: 38, value: '✕', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 16, textAlign: 'center', fill: COCOA });
 
 rect({ name: 'DSize 9', parent: dGiftModal, x: 32, y: 108, width: 144, height: 52, fill: COCOA, radius: 10 });
-text({ name: 'DSize 9 T', parent: dGiftModal, x: 32, y: 118, width: 144, value: '9 Pieces\n$18.00 · 3×3', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, lineHeight: 17, textAlign: 'center', fill: CREAM });
+text({ name: 'DSize 9 T', parent: dGiftModal, x: 32, y: 118, width: 144, value: '9 Pieces\n$18.00 · 3×3', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, lineHeight: 17, textAlign: 'center', fill: CREAM });
 rect({ name: 'DSize 16', parent: dGiftModal, x: 188, y: 108, width: 144, height: 52, fill: CREAM_CARD, radius: 10 });
-text({ name: 'DSize 16 T', parent: dGiftModal, x: 188, y: 118, width: 144, value: '16 Pieces\n$30.00 · 4×4', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, lineHeight: 17, textAlign: 'center', fill: COCOA });
+text({ name: 'DSize 16 T', parent: dGiftModal, x: 188, y: 118, width: 144, value: '16 Pieces\n$30.00 · 4×4', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, lineHeight: 17, textAlign: 'center', fill: COCOA });
 rect({ name: 'DSize 25', parent: dGiftModal, x: 344, y: 108, width: 144, height: 52, fill: CREAM_CARD, radius: 10 });
-text({ name: 'DSize 25 T', parent: dGiftModal, x: 344, y: 118, width: 144, value: '25 Pieces\n$45.00 · 5×5', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 13, lineHeight: 17, textAlign: 'center', fill: COCOA });
+text({ name: 'DSize 25 T', parent: dGiftModal, x: 344, y: 118, width: 144, value: '25 Pieces\n$45.00 · 5×5', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 13, lineHeight: 17, textAlign: 'center', fill: COCOA });
 
 rect({ name: 'DGift Tray', parent: dGiftModal, x: 135, y: 182, width: 250, height: 250, fill: ESPRESSO, radius: 16, stroke: GOLD, strokeWeight: 2 });
 truffleColors.forEach((colHex, ti) => {
@@ -1463,9 +1463,9 @@ truffleColors.forEach((colHex, ti) => {
   const cRow = Math.floor(ti / 3);
   circle({ name: `D Truffle ${ti + 1}`, parent: dGiftModal, x: 165 + cCol * 68, y: 212 + cRow * 68, size: 54, fill: colHex, stroke: '#D9B06666', strokeWeight: 1.5 });
 });
-text({ name: 'DGift Summary', parent: dGiftModal, x: 32, y: 454, width: 456, value: '✦  9 / 9 Artisan Truffles Selected\nPistachio Kunafa, Dark 70%, Salted Caramel & Hazelnut Praline', fontFamily: 'Inter', fontStyle: 'Medium', fontSize: 14, lineHeight: 22, textAlign: 'center', fill: COCOA_SOFT });
+text({ name: 'DGift Summary', parent: dGiftModal, x: 32, y: 454, width: 456, value: '✦  9 / 9 Artisan Truffles Selected\nPistachio Kunafa, Dark 70%, Salted Caramel & Hazelnut Praline', fontFamily: 'Cabin', fontStyle: 'Medium', fontSize: 14, lineHeight: 22, textAlign: 'center', fill: COCOA_SOFT });
 const dGiftAdd = frame({ name: 'DGift Add', parent: dGiftModal, x: 32, y: 556, width: 456, height: 54, fill: COCOA, radius: 10 });
-text({ name: 'DGift Add T', parent: dGiftAdd, x: 0, y: 17, width: 456, value: 'Add 9-Piece Gift Box  ·  $18.00  →', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 16, textAlign: 'center', fill: CREAM });
+text({ name: 'DGift Add T', parent: dGiftAdd, x: 0, y: 17, width: 456, value: 'Add 9-Piece Gift Box  ·  $18.00  →', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 16, textAlign: 'center', fill: CREAM });
 closeOverlayNav(dGiftClose);
 clickNav(dGiftAdd, l05, { type: 'push', direction: 'left' });
 
@@ -1566,35 +1566,35 @@ function addSlideHeader(slideId, numStr, secLabel, dark) {
   const fg = dark ? CREAM : COCOA;
   const sub = dark ? GOLD : MUTED;
   addInlineLogo(slideId, { x: 96, y: 36, markHeight: 34, wordHeight: 19, color: fg });
-  text({ name: 'S Section', parent: slideId, x: 640, y: 50, width: 640, value: secLabel, fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 14, letterSpacing: '10%', textAlign: 'center', fill: sub });
-  text({ name: 'S Num', parent: slideId, x: 1620, y: 48, width: 204, value: `←   ${numStr} / 06   →`, fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 16, textAlign: 'right', fill: fg });
+  text({ name: 'S Section', parent: slideId, x: 640, y: 50, width: 640, value: secLabel, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 14, letterSpacing: '10%', textAlign: 'center', fill: sub });
+  text({ name: 'S Num', parent: slideId, x: 1620, y: 48, width: 204, value: `←   ${numStr} / 06   →`, fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 16, textAlign: 'right', fill: fg });
   rect({ name: 'S Top Line', parent: slideId, x: 96, y: 92, width: 1728, height: 1, fill: dark ? '#4A2410' : BORDER_LINE });
 }
 
 const s1 = frame({ name: 'Slide 01 — SAVORY Overview', ...sCoords(0), width: SW, height: SH, fill: ESPRESSO });
 addSlideHeader(s1, '01', 'CLIENT PRESENTATION & INTERACTIVE PROTOTYPE', true);
-text({ name: 'S1 Eye', parent: s1, x: 96, y: 158, value: 'ARAMOUN & ALEY  ·  DIGITAL STOREFRONT & 3D STUDIO', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 15, letterSpacing: '14%', fill: GOLD });
-text({ name: 'S1 Title', parent: s1, x: 96, y: 196, value: 'SAVORY', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 112, fill: CREAM });
-text({ name: 'S1 Sub', parent: s1, x: 96, y: 334, width: 880, value: 'Editorial E-Commerce Menu, Fullscreen Video Onboarding & Interactive 3D Cake Studio.', fontFamily: 'Playfair Display', fontStyle: 'Regular', fontSize: 38, lineHeight: 50, fill: GOLD });
-text({ name: 'S1 Body', parent: s1, x: 96, y: 465, width: 840, value: 'Switch to Page 01 (iPhone 17 Pro) or Page 02 (MacBook Air) and press Alt+Ctrl+Enter for the live interactive prototype: fixed headers, horizontal reels & carousel scroll, slide-over drawer, gift box modal, bilingual AR/EN toggle, and interactive 3D studio.', fontFamily: 'Inter', fontStyle: 'Regular', fontSize: 20, lineHeight: 33, fill: CREAM, opacity: 0.9 });
+text({ name: 'S1 Eye', parent: s1, x: 96, y: 158, value: 'ARAMOUN & ALEY  ·  DIGITAL STOREFRONT & 3D STUDIO', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 15, letterSpacing: '14%', fill: GOLD });
+text({ name: 'S1 Title', parent: s1, x: 96, y: 196, value: 'SAVORY', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 112, fill: CREAM });
+text({ name: 'S1 Sub', parent: s1, x: 96, y: 334, width: 880, value: 'Editorial E-Commerce Menu, Fullscreen Video Onboarding & Interactive 3D Cake Studio.', fontFamily: 'Cabin', fontStyle: 'Regular', fontSize: 38, lineHeight: 50, fill: GOLD });
+text({ name: 'S1 Body', parent: s1, x: 96, y: 465, width: 840, value: 'Switch to Page 01 (iPhone 17 Pro) or Page 02 (MacBook Air) and press Alt+Ctrl+Enter for the live interactive prototype: fixed headers, horizontal reels & carousel scroll, slide-over drawer, gift box modal, bilingual AR/EN toggle, and interactive 3D studio.', fontFamily: 'Cabin', fontStyle: 'Regular', fontSize: 20, lineHeight: 33, fill: CREAM, opacity: 0.9 });
 imageBox({ name: 'S1 P1', parent: s1, x: 1030, y: 150, width: 440, height: 540, file: IMG('reel-dubai-crepe.jpg'), radius: 18 });
 imageBox({ name: 'S1 P2', parent: s1, x: 1494, y: 150, width: 330, height: 390, file: IMG('shop-aley-boutique.jpg'), radius: 18 });
 imageBox({ name: 'S1 P3', parent: s1, x: 1494, y: 564, width: 330, height: 420, file: IMG('cake-heart-chocolate.jpg'), radius: 18 });
 rect({ name: 'S1 Card', parent: s1, x: 1030, y: 714, width: 440, height: 270, fill: COCOA, radius: 18 });
-text({ name: 'S1 Card T', parent: s1, x: 1066, y: 774, width: 372, value: 'Borderless UI on Butter-Cream (#F7F7D3), fixed navigation & locked mobile ergonomics.', fontFamily: 'Playfair Display', fontStyle: 'Regular', fontSize: 28, lineHeight: 40, fill: CREAM });
+text({ name: 'S1 Card T', parent: s1, x: 1066, y: 774, width: 372, value: 'Borderless UI on Warm Ivory (#F9F6EE), fixed navigation & locked mobile ergonomics.', fontFamily: 'Cabin', fontStyle: 'Regular', fontSize: 28, lineHeight: 40, fill: CREAM });
 
 const s2 = frame({ name: 'Slide 02 — Onboarding Video Experience', ...sCoords(1), width: SW, height: SH, fill: CREAM });
 addSlideHeader(s2, '02', 'SCREEN 0 · FULLSCREEN VIDEO ONBOARDING', false);
-text({ name: 'S2 Title', parent: s2, x: 96, y: 168, width: 800, value: 'Touch-Swipe Looped Video Onboarding', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 64, lineHeight: 72, fill: COCOA });
-text({ name: 'S2 Body', parent: s2, x: 96, y: 344, width: 700, value: 'Responsive finger swipe physics, silent borderless ← / → arrows, authentic Cocoa Pod lockup, and instant entry into the storefront.', fontFamily: 'Inter', fontStyle: 'Regular', fontSize: 21, lineHeight: 34, fill: COCOA_SOFT });
+text({ name: 'S2 Title', parent: s2, x: 96, y: 168, width: 800, value: 'Touch-Swipe Looped Video Onboarding', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 64, lineHeight: 72, fill: COCOA });
+text({ name: 'S2 Body', parent: s2, x: 96, y: 344, width: 700, value: 'Responsive finger swipe physics, silent borderless ← / → arrows, authentic Cocoa Pod lockup, and instant entry into the storefront.', fontFamily: 'Cabin', fontStyle: 'Regular', fontSize: 21, lineHeight: 34, fill: COCOA_SOFT });
 imageBox({ name: 'S2 M1', parent: s2, x: 896, y: 168, width: 290, height: 760, file: IMG('reel-dubai-crepe.jpg'), radius: 28, withShadow: true });
 imageBox({ name: 'S2 M2', parent: s2, x: 1214, y: 168, width: 290, height: 760, file: IMG('reel-cinnamon-rolls.jpg'), radius: 28, withShadow: true });
 imageBox({ name: 'S2 M3', parent: s2, x: 1532, y: 168, width: 290, height: 760, file: IMG('reel-strawberry-crepe.jpg'), radius: 28, withShadow: true });
 
 const s3 = frame({ name: 'Slide 03 — Editorial Carousel & Categories', ...sCoords(2), width: SW, height: SH, fill: CREAM });
 addSlideHeader(s3, '03', 'SCREEN 1 · EDITORIAL SPLIT SLIDER', false);
-text({ name: 'S3 Title', parent: s3, x: 96, y: 196, value: 'Featured', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 88, fill: COCOA });
-text({ name: 'S3 Body', parent: s3, x: 96, y: 320, width: 460, value: 'Multi-card 1:1 square carousel with borderless ← 01 02 03 → top navigation and borderless category grid below.', fontFamily: 'Inter', fontStyle: 'Regular', fontSize: 19, lineHeight: 31, fill: COCOA_SOFT });
+text({ name: 'S3 Title', parent: s3, x: 96, y: 196, value: 'Featured', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 88, fill: COCOA });
+text({ name: 'S3 Body', parent: s3, x: 96, y: 320, width: 460, value: 'Multi-card 1:1 square carousel with borderless ← 01 02 03 → top navigation and borderless category grid below.', fontFamily: 'Cabin', fontStyle: 'Regular', fontSize: 19, lineHeight: 31, fill: COCOA_SOFT });
 imageBox({ name: 'S3 C1', parent: s3, x: 640, y: 204, width: 370, height: 370, file: IMG('reel-dubai-crepe.jpg'), radius: 10, withShadow: true });
 imageBox({ name: 'S3 C2', parent: s3, x: 1040, y: 204, width: 370, height: 370, file: IMG('reel-cinnamon-rolls.jpg'), radius: 10, withShadow: true });
 imageBox({ name: 'S3 C3', parent: s3, x: 1440, y: 204, width: 370, height: 370, file: IMG('menu-pistachio-waffle.jpg'), radius: 10, withShadow: true });
@@ -1602,19 +1602,19 @@ imageBox({ name: 'S3 C3', parent: s3, x: 1440, y: 204, width: 370, height: 370, 
 const s4 = frame({ name: 'Slide 04 — Clean Product Page Architecture', ...sCoords(3), width: SW, height: SH, fill: CREAM });
 addSlideHeader(s4, '04', 'SCREEN 3 · BORDERLESS PRODUCT CUSTOMIZATION', false);
 imageBox({ name: 'S4 Photo', parent: s4, x: 96, y: 176, width: 520, height: 520, file: IMG('reel-dubai-crepe.jpg'), radius: 12, withShadow: true });
-text({ name: 'S4 Title', parent: s4, x: 668, y: 184, width: 1000, value: 'Dubai Kunafa Chocolate Crepe', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 52, fill: COCOA });
-text({ name: 'S4 Sub', parent: s4, x: 668, y: 266, width: 960, value: 'All boxed white cards, floating price stickers, pill clutter, and pinch-zoom glitches removed. Sits cleanly on the Butter-Cream canvas with RTL-safe dir="auto" labels.', fontFamily: 'Inter', fontStyle: 'Regular', fontSize: 20, lineHeight: 32, fill: COCOA_SOFT });
+text({ name: 'S4 Title', parent: s4, x: 668, y: 184, width: 1000, value: 'Dubai Kunafa Chocolate Crepe', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 52, fill: COCOA });
+text({ name: 'S4 Sub', parent: s4, x: 668, y: 266, width: 960, value: 'All boxed white cards, floating price stickers, pill clutter, and pinch-zoom glitches removed. Sits cleanly on the Warm Ivory canvas with RTL-safe dir="auto" labels.', fontFamily: 'Cabin', fontStyle: 'Regular', fontSize: 20, lineHeight: 32, fill: COCOA_SOFT });
 
 const s5 = frame({ name: 'Slide 05 — 3D Custom Cake Studio', ...sCoords(4), width: SW, height: SH, fill: ESPRESSO });
 addSlideHeader(s5, '05', 'SISTER SITE · INTERACTIVE WEBGL 3D STUDIO', true);
-text({ name: 'S5 Title', parent: s5, x: 96, y: 186, width: 780, value: 'See Your Cake in 3D Before We Bake It', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 64, lineHeight: 72, fill: CREAM });
+text({ name: 'S5 Title', parent: s5, x: 96, y: 186, width: 780, value: 'See Your Cake in 3D Before We Bake It', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 64, lineHeight: 72, fill: CREAM });
 imageBox({ name: 'S5 Cake 1', parent: s5, x: 940, y: 164, width: 420, height: 420, file: IMG('cake-heart-chocolate.jpg'), radius: 16 });
 imageBox({ name: 'S5 Cake 2', parent: s5, x: 1392, y: 164, width: 420, height: 420, file: IMG('cake-valentine-ribbons.jpg'), radius: 16 });
 
 const s6 = frame({ name: 'Slide 06 — Admin Studio & Live Production URLs', ...sCoords(5), width: SW, height: SH, fill: CREAM });
 addSlideHeader(s6, '06', 'ADMIN CMS & MULTI-SITE FIREBASE HOSTING', false);
-text({ name: 'S6 Title', parent: s6, x: 96, y: 184, width: 1200, value: 'Live Across 3 Production URLs', fontFamily: 'Playfair Display', fontStyle: 'Bold', fontSize: 64, fill: COCOA });
-text({ name: 'S6 URLs', parent: s6, x: 96, y: 316, width: 1600, value: '1. Menu Storefront: https://savory-962f3-menu.web.app\n2. 3D Custom Cake Studio: https://savory-962f3-cakes.web.app\n3. Admin Studio: https://savory-962f3-admin.web.app', fontFamily: 'Inter', fontStyle: 'Bold', fontSize: 28, lineHeight: 54, fill: COCOA_SOFT });
+text({ name: 'S6 Title', parent: s6, x: 96, y: 184, width: 1200, value: 'Live Across 3 Production URLs', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 64, fill: COCOA });
+text({ name: 'S6 URLs', parent: s6, x: 96, y: 316, width: 1600, value: '1. Menu Storefront: https://savory-962f3-menu.web.app\n2. 3D Custom Cake Studio: https://savory-962f3-cakes.web.app\n3. Admin Studio: https://savory-962f3-admin.web.app', fontFamily: 'Cabin', fontStyle: 'Bold', fontSize: 28, lineHeight: 54, fill: COCOA_SOFT });
 
 const slideArr = [s1, s2, s3, s4, s5, s6];
 cmd('proto.flow.add', { start: s1, name: 'Client Presentation Slides' });

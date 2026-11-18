@@ -4,7 +4,7 @@
   "description": "Custom 3D cakes, Belgian chocolates, crepes, Savory Flurry and daily patisserie treats.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F7F7D3",
+  "background_color": "#F9F6EE",
   "theme_color": "#4C2007",
   "orientation": "portrait-primary",
   "icons": [
