@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <title>{{shop_name}} · Chocolate, Crepes &amp; Atelier Menu</title>
-  <meta name="description" content="Order fine Belgian chocolates, luxury gift boxes, warm crepes, Savory Flurry, shakes and bakes ahead for pickup or delivery.">
+  <meta name="description" content="Order fine Belgian chocolates, warm crepes, Savory Flurry, shakes and bakes ahead for pickup or delivery.">
   {{> head}}
 </head>
 <body class="is-onboarding">
@@ -60,6 +60,11 @@
          ================================================================ -->
     <div id="storefront-shell" hidden>
       <div class="container storefront-container" id="page">
+        <!-- Which branch the customer orders from; the menu shows only that branch's products -->
+        <div class="branch-bar" id="branch-bar" hidden>
+          <span class="branch-bar-label" id="branch-bar-label">Ordering from</span>
+          <div class="branch-bar-options" id="branch-bar-options" role="group" aria-labelledby="branch-bar-label"></div>
+        </div>
         <div id="closed-notice" class="alert alert-info" hidden>We're not taking online orders right now. Please give us a call instead.</div>
 
         <!-- Stage Breadcrumb -->
@@ -131,17 +136,6 @@
               <h2 class="folders-heading" data-i18n="categories_heading">Categories</h2>
             </div>
             <div class="menu-folders-grid" id="folders-grid"></div>
-          </section>
-
-          <!-- Bespoke Gift Box Studio Banner -->
-          <section class="card spotlight box-banner luxury-box-banner" id="box-banner" hidden>
-            <div class="box-banner-copy">
-              <h2>Build Your Own <em class="gold-text">SAVORY</em> Chocolate Box</h2>
-              <button type="button" class="btn btn-gold btn-lg" id="open-box-builder">
-                <span>Curate a Gift Box</span>
-                <span class="arrow" aria-hidden="true">→</span>
-              </button>
-            </div>
           </section>
 
           <!-- Instagram Reels Showcase -->
@@ -284,61 +278,6 @@
     <span id="cart-bar-count"></span>
     <span id="cart-bar-total"></span>
   </a>
-
-  <dialog id="box-dialog" class="box-dialog" aria-labelledby="box-title">
-    <form class="dialog-body" id="box-form">
-      <div class="dialog-head">
-        <div>
-          <span class="eyebrow left" style="margin-bottom:4px">SAVORY Chocolatier</span>
-          <h2 id="box-title">Build Your Gift Box</h2>
-          <p class="muted small" style="margin:0">Tap truffles below to fill your box, or let our chef fill the remaining slots.</p>
-        </div>
-        <button type="button" class="dialog-close" data-box-close aria-label="Close">✕</button>
-      </div>
-
-      <div class="box-size-tabs" role="radiogroup" aria-label="Box size">
-        <button type="button" class="box-size-tab active" data-box-size="9"><strong>9 Pieces</strong><span>$18.00 · 3×3</span></button>
-        <button type="button" class="box-size-tab" data-box-size="16"><strong>16 Pieces</strong><span>$30.00 · 4×4</span></button>
-        <button type="button" class="box-size-tab" data-box-size="25"><strong>25 Pieces</strong><span>$45.00 · 5×5</span></button>
-      </div>
-
-      <div class="box-stage-wrap">
-        <div class="box-tray" id="box-tray" data-cols="3"></div>
-        <div class="box-tray-actions">
-          <span class="muted small" id="box-progress">0 / 9 pieces selected</span>
-          <div>
-            <button type="button" class="btn btn-ghost btn-sm" id="box-autofill">✦ Chef's assortment</button>
-            <button type="button" class="btn btn-ghost btn-sm" id="box-clear">Clear</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="box-flavors-label">Tap a chocolate to add it to your box:</div>
-      <div class="box-flavors" id="box-flavors"></div>
-
-      <div class="field-row" style="margin-top:16px">
-        <div class="field">
-          <label for="box-ribbon">Satin ribbon</label>
-          <select id="box-ribbon">
-            <option value="Deep Cocoa Satin">Deep Cocoa Satin (#4C2007)</option>
-            <option value="Champagne Gold">Champagne Gold</option>
-            <option value="Butter Cream Silk">Warm Ivory Silk (#F9F6EE)</option>
-            <option value="Berry Velvet">Berry Velvet</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="box-note">Gift card note <span class="optional">(optional)</span></label>
-          <input type="text" id="box-note" maxlength="100" placeholder="Eid Mubarak / Happy Birthday!">
-        </div>
-      </div>
-
-      <div id="box-error" class="alert alert-error" role="alert" hidden></div>
-      <div class="dialog-actions">
-        <span class="price" id="box-price-label" style="font-size:1.3rem">$18.00</span>
-        <button type="submit" class="btn btn-gold" id="box-submit">Add gift box to order</button>
-      </div>
-    </form>
-  </dialog>
 
   {{> footer-menu}}
   <script type="module" src="/js/screens/menu.js"></script>

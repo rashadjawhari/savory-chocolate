@@ -11,23 +11,6 @@ import { mountReelsStrip } from '/js/social-reels.js';
 
 const CART_KEY = 'sc_cart_v2';
 
-const BOX_TIERS = {
-  9: { size: 9, cols: 3, name: 'SAVORY 9-Piece Assorted Gift Box', price_cents: 1800 },
-  16: { size: 16, cols: 4, name: 'SAVORY 16-Piece Luxury Gift Box', price_cents: 3000 },
-  25: { size: 25, cols: 5, name: 'SAVORY 25-Piece Grand Selection Box', price_cents: 4500 },
-};
-
-const TRUFFLES = [
-  { id: 'pistachio', name: 'Pistachio Kunafa', color: '#96bc61', accent: '#d9b066' },
-  { id: 'hazelnut', name: 'Hazelnut Praline', color: '#5c2c12', accent: '#e3c184' },
-  { id: 'caramel', name: 'Salted Caramel', color: '#c67d2d', accent: '#4C2007' },
-  { id: 'dark70', name: '70% Dark Ganache', color: '#2b1206', accent: '#d9b066' },
-  { id: 'lotus', name: 'Lotus Speculoos', color: '#b56e33', accent: '#f6ead8' },
-  { id: 'raspberry', name: 'Raspberry Velvet', color: '#8c1832', accent: '#f4b6c2' },
-  { id: 'espresso', name: 'Arabic Coffee Roast', color: '#3b1c0c', accent: '#c9a063' },
-  { id: 'white', name: 'Almond Blanc', color: '#f3dfba', accent: '#7A3912' },
-];
-
 const CATEGORY_META = {
   'Signature Gateaux & Bakes': {
     desc: 'Hand-finished whole tortes, molten lava bakes, and signature chocolate creations.',
@@ -93,7 +76,6 @@ const sliderNext = document.getElementById('slider-next');
 const sliderDots = document.getElementById('slider-dots');
 
 const categoriesSection = document.getElementById('categories-section');
-const boxBanner = document.getElementById('box-banner');
 const menuReelsSection = document.getElementById('menu-reels-section');
 const menuReelsGrid = document.getElementById('menu-reels-grid');
 
@@ -204,7 +186,7 @@ if (initialHash && initialHash !== '#welcome') {
 }
 
 // ---------- Parallel Data Fetch ----------
-const [settings, loadedItems, loadedOffers, loadedSlides] = await Promise.all([
+const [settings, loadedItems, loadedOffers, loadedSlides, loadedBranches] = await Promise.all([
   loadSettings(),
   api('/api/menu').catch((err) => {
     if (foldersGrid) foldersGrid.innerHTML = `<p class="alert alert-error">${esc(err.message)}</p>`;
@@ -212,13 +194,31 @@ const [settings, loadedItems, loadedOffers, loadedSlides] = await Promise.all([
   }),
   api('/api/offers').catch(() => []),
   api('/api/onboarding').catch(() => []),
+  api('/api/branches').catch(() => []),
 ]);
 
-const items = Array.isArray(loadedItems) ? loadedItems : [];
-items.forEach((it) => { it._searchIdx = buildItemSearchIndex(it); });
+const allItems = Array.isArray(loadedItems) ? loadedItems : [];
+allItems.forEach((it) => { it._searchIdx = buildItemSearchIndex(it); });
+const shopBranches = Array.isArray(loadedBranches) ? loadedBranches : [];
+
+// ---------- Branch the customer orders from ----------
+// Items list the branches that sell them (an empty list means every branch). Once the customer picks
+// a branch, `items` holds only what that branch sells; `itemsById` keeps everything for the cart.
+const BRANCH_KEY = 'sc_branch_v1';
+let selectedBranchId = null;
+try {
+  const saved = Number(localStorage.getItem(BRANCH_KEY));
+  if (shopBranches.some((b) => b.id === saved)) selectedBranchId = saved;
+} catch { /* private mode: start with no branch */ }
+if (shopBranches.length === 1) selectedBranchId = shopBranches[0].id;
+
+const soldAtBranch = (item, branchId = selectedBranchId) => Boolean(item)
+  && (!branchId || !item.branch_ids?.length || item.branch_ids.includes(branchId));
+const branchName = (id) => tr(shopBranches.find((b) => b.id === id)?.name || '');
+let items = allItems.filter((i) => soldAtBranch(i));
 const offers = Array.isArray(loadedOffers) ? loadedOffers : [];
 const onboardingSlides = Array.isArray(loadedSlides) ? loadedSlides : [];
-const itemsById = new Map(items.map((i) => [i.id, i]));
+const itemsById = new Map(allItems.map((i) => [i.id, i]));
 
 const ordersOpen = settings.orders_open !== '0';
 if (!ordersOpen) {
@@ -746,10 +746,18 @@ setupOnboardingMedia();
 
 // ---------- Screen 1: Featured Items & Admin Offers Carousel Slider ----------
 
-const sliderSlides = [
-  ...offers.map((offer) => ({ kind: 'offer', data: offer })),
+// Offers pointing at a product or category the chosen branch doesn't sell are left out.
+const offerShownHere = (o) => {
+  if (o.target_type === 'box') return false;
+  if (o.target_type === 'product') return items.some((i) => String(i.id) === String(o.target_value));
+  if (o.target_type === 'category' && o.target_value) return items.some((i) => i.category === o.target_value);
+  return true;
+};
+const buildSliderSlides = () => [
+  ...offers.filter(offerShownHere).map((offer) => ({ kind: 'offer', data: offer })),
   ...items.filter((m) => Number(m.featured) === 1).map((item) => ({ kind: 'item', data: item })),
 ];
+let sliderSlides = buildSliderSlides();
 
 let sliderIdx = 0;
 let sliderTimer = null;
@@ -765,8 +773,6 @@ function buildSliderCard(entry) {
       actionAttr = `data-open-product="${targetProduct.id}"`;
     } else if (o.target_type === 'category' && o.target_value) {
       actionAttr = `data-slider-href="#category/${encodeURIComponent(o.target_value)}"`;
-    } else if (o.target_type === 'box') {
-      actionAttr = `data-open-offer-box="${esc(o.target_value || '9')}"`;
     }
 
     const label = tr(o.title);
@@ -971,44 +977,27 @@ document.addEventListener('visibilitychange', () => {
 
 // ---------- Cart State & Persistence ----------
 
-const lineKey = (id, picks, customBox = null, note = '') => (
-  customBox ? `box:${JSON.stringify(customBox)}` : `${id}:${JSON.stringify(picks)}:${note}`
-);
+const lineKey = (id, picks, note = '') => `${id}:${JSON.stringify(picks)}:${note}`;
 
 let cart = storage.get(CART_KEY, [])
-  .filter((l) => {
-    if (l.custom_box) return Boolean(BOX_TIERS[Number(l.custom_box.size)]) && l.quantity > 0;
-    return itemsById.has(l.id) && l.quantity > 0 && picksValid(itemsById.get(l.id), l.picks);
-  })
+  .filter((l) => !l.custom_box && itemsById.has(l.id) && l.quantity > 0 && picksValid(itemsById.get(l.id), l.picks))
   .map((l) => {
-    const cleanNote = l.custom_box ? '' : String(l.note || '').trim();
-    return { ...l, note: cleanNote, key: lineKey(l.id, l.picks, l.custom_box, cleanNote) };
+    const cleanNote = String(l.note || '').trim();
+    return { ...l, note: cleanNote, key: lineKey(l.id, l.picks, cleanNote) };
   });
 
 function saveCart() {
-  storage.set(CART_KEY, cart.map(({ id, quantity, picks, custom_box, note }) => {
-    if (custom_box) return { quantity, custom_box };
+  storage.set(CART_KEY, cart.map(({ id, quantity, picks, note }) => {
     return note ? { id, quantity, picks, note } : { id, quantity, picks };
   }));
 }
 
 function lineUnitPrice(line) {
-  if (line.custom_box) return BOX_TIERS[Number(line.custom_box.size)]?.price_cents || 1800;
   return unitPrice(itemsById.get(line.id), line.picks);
 }
 
 function lineDisplay(line) {
   const ar = isAr();
-  if (line.custom_box) {
-    const tier = BOX_TIERS[Number(line.custom_box.size)] || BOX_TIERS[9];
-    const counts = new Map();
-    for (const p of line.custom_box.pieces || []) counts.set(p, (counts.get(p) || 0) + 1);
-    const summary = [...counts.entries()].map(([n, c]) => `${c}× ${tr(n)}`).join(ar ? '، ' : ', ');
-    const parts = [summary];
-    if (line.custom_box.ribbon) parts.push(`${ar ? 'الشريط' : 'Ribbon'}: ${tr(line.custom_box.ribbon)}`);
-    if (line.custom_box.note) parts.push(`${ar ? 'البطاقة' : 'Card'}: “${line.custom_box.note}”`);
-    return { name: tr(tier.name), extras: parts.filter(Boolean).join(' · ') };
-  }
   const item = itemsById.get(line.id);
   return { name: tr(item.name), extras: picksText(item, line.picks) };
 }
@@ -1043,13 +1032,13 @@ function flyToCart(from) {
   setTimeout(() => dot.remove(), 1400);
 }
 
-function addToCart(id, picks, quantity, from = null, customBox = null, note = '') {
+function addToCart(id, picks, quantity, from = null, note = '') {
   playPop();
-  const cleanNote = customBox ? '' : String(note || '').trim();
-  const key = lineKey(id, picks, customBox, cleanNote);
+  const cleanNote = String(note || '').trim();
+  const key = lineKey(id, picks, cleanNote);
   const line = cart.find((l) => l.key === key);
   if (line) line.quantity = Math.min(99, line.quantity + quantity);
-  else cart.push({ key, id, picks, quantity, custom_box: customBox, note: cleanNote });
+  else cart.push({ key, id, picks, quantity, note: cleanNote });
   if (cartConfirmation) {
     cartConfirmation.hidden = true;
     cartConfirmation.innerHTML = '';
@@ -1100,14 +1089,11 @@ function reorderFromHistory(orderCode) {
   let added = 0;
   for (const line of rec.items) {
     const qty = Math.max(1, Number(line.quantity) || 1);
-    if (line.custom_box && BOX_TIERS[Number(line.custom_box.size)]) {
-      addToCart(0, [], qty, null, line.custom_box, '');
-      added++;
-    } else if (line.id) {
+    if (line.id) {
       const item = itemsById.get(Number(line.id));
       const picks = Array.isArray(line.choices) ? line.choices : [];
       if (item && picksValid(item, picks)) {
-        addToCart(item.id, picks, qty, null, null, line.note || '');
+        addToCart(item.id, picks, qty, null, line.note || '');
         added++;
       }
     }
@@ -1148,15 +1134,6 @@ document.getElementById('cart-recent-reorder')?.addEventListener('click', (e) =>
 });
 
 function renderCartThumb(line) {
-  if (line.custom_box) {
-    return `
-      <div class="cart-box-mini" aria-hidden="true">
-        <span style="background:#4C2007"></span>
-        <span style="background:#96bc61"></span>
-        <span style="background:#d9b066"></span>
-        <span style="background:#c67d2d"></span>
-      </div>`;
-  }
   const item = itemsById.get(line.id);
   if (!item) return '';
   if (item.image) return `<img src="${esc(mediaSrc(item.image))}" alt="${esc(item.name)}" loading="lazy" decoding="async">`;
@@ -1213,8 +1190,9 @@ function renderCart() {
   if (cartLinesEl) {
     cartLinesEl.innerHTML = cart.map((l) => {
       const { name, extras } = lineDisplay(l);
+      const notHere = !soldAtBranch(itemsById.get(l.id));
       return `
-        <li class="cart-line-item">
+        <li class="cart-line-item${notHere ? ' is-unavailable' : ''}">
           <div class="cart-line-thumb">
             ${renderCartThumb(l)}
           </div>
@@ -1225,6 +1203,9 @@ function renderCart() {
             </div>
             ${extras ? `<div class="choices" dir="auto">${esc(extras)}</div>` : ''}
             ${l.note ? `<div class="cart-line-note" dir="auto">${ar ? 'ملاحظة' : 'Note'}: “${esc(l.note)}”</div>` : ''}
+            ${notHere ? `<div class="cart-line-warning">${ar
+              ? `غير متوفر في فرع ${esc(branchName(selectedBranchId))}. احذفه أو اختر فرعاً آخر.`
+              : `Not available at the ${esc(branchName(selectedBranchId))} branch. Remove it or choose another branch.`}</div>` : ''}
             <div class="cart-line-actions">
               ${stepper(l.key, l.quantity, name)}
               <button type="button" class="cart-remove-btn" data-remove-line="${esc(l.key)}" aria-label="${ar ? 'حذف' : 'Remove'} ${esc(name)}">${ar ? 'حذف' : 'Remove'}</button>
@@ -1236,7 +1217,7 @@ function renderCart() {
 
   const upsellEl = document.getElementById('cart-upsell');
   if (upsellEl && ordersOpen) {
-    const inCartIds = new Set(cart.filter((l) => !l.custom_box).map((l) => l.id));
+    const inCartIds = new Set(cart.map((l) => l.id));
     const candidates = items.filter((it) => !inCartIds.has(it.id) && !it.options.some((g) => g.required));
     const picks = candidates.slice(0, 2);
     if (picks.length && count > 0) {
@@ -1437,19 +1418,8 @@ function showMenuHomeView({ scrollTarget = null, scrollTop = true, navKey = 'men
         </a>`;
     }).join('');
 
-    const boxCardHtml = `
-      <a class="folder-card folder-card-bespoke" href="#gift-box" id="folder-box-builder">
-        <div class="folder-card-head">
-          <h3 class="folder-title">${esc(tr('Luxury Gift Boxes'))}</h3>
-        </div>
-        <div class="folder-visual">
-          <div class="folder-icon folder-icon-bespoke">
-            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13"/><path d="M3 12h18"/><path d="M12 8C10.5 5 8 5 8 6.5s2 1.5 4 1.5c2 0 4 0 4-1.5S13.5 5 12 8z"/></svg>
-          </div>
-        </div>
-      </a>`;
 
-    foldersGrid.innerHTML = cardsHtml + boxCardHtml;
+    foldersGrid.innerHTML = cardsHtml;
     applyCardStagger(foldersGrid, '.folder-card');
   }
 
@@ -1493,7 +1463,6 @@ function renderCategoryPills(activeCat) {
     ...categories.map((cat) => `
       <a href="#category/${encodeURIComponent(cat)}" class="cat-pill${cat === activeCat ? ' active' : ''}">${esc(tr(cat))}</a>
     `),
-    `<a href="#gift-box" class="cat-pill cat-pill-box">${isAr() ? '✦ علب الهدايا' : '✦ Gift Boxes'}</a>`,
   ].join('');
 
   const activePill = catPillsNav.querySelector('.cat-pill.active');
@@ -1716,7 +1685,7 @@ function showProductView(productId) {
     }
 
     const note = productPageCard.querySelector('#prod-note-input')?.value?.trim() || '';
-    addToCart(currentProduct.id, currentProductPicks, currentProductQty, e.currentTarget, null, note);
+    addToCart(currentProduct.id, currentProductPicks, currentProductQty, e.currentTarget, note);
 
     const viewCartBtn = productPageCard.querySelector('#prod-view-cart-btn');
     if (viewCartBtn) {
@@ -1732,9 +1701,26 @@ function showProductView(productId) {
     }, 1500);
   });
 
+  markProductBranch(item);
   updateBreadcrumbs({ view: 'product', category: item.category, product: item });
   switchStageView('view-product');
   applyLanguage();
+}
+
+function markProductBranch(item) {
+  const addBtn = productPageCard.querySelector('#prod-add-btn');
+  if (!addBtn || soldAtBranch(item)) return;
+  const ar = isAr();
+  const sellers = shopBranches.filter((b) => item.branch_ids.includes(b.id));
+  const note = document.createElement('div');
+  note.className = 'product-branch-note';
+  note.innerHTML = `
+    <p>${ar
+      ? `هذا الصنف غير متوفر في فرع ${esc(branchName(selectedBranchId))}. متوفر في: ${esc(sellers.map((b) => tr(b.name)).join('، '))}.`
+      : `Not available at the ${esc(branchName(selectedBranchId))} branch. Sold at: ${esc(sellers.map((b) => b.name).join(', '))}.`}</p>
+    ${sellers.map((b) => `<button type="button" class="btn btn-outline btn-sm" data-branch-pick="${b.id}">${ar ? `اطلب من فرع ${esc(tr(b.name))}` : `Order from ${esc(b.name)}`}</button>`).join('')}`;
+  addBtn.disabled = true;
+  addBtn.parentElement.insertAdjacentElement('beforebegin', note);
 }
 
 // ---------- Screen 4: Dedicated Cart & Checkout Page ----------
@@ -1756,7 +1742,6 @@ function setSearchModeUI(searching) {
   if (viewSearch) viewSearch.hidden = !searching;
   if (featuredSliderEl) featuredSliderEl.hidden = searching || sliderSlides.length === 0;
   if (categoriesSection) categoriesSection.hidden = searching;
-  if (boxBanner) boxBanner.hidden = true;
   if (menuReelsSection) menuReelsSection.hidden = searching;
   if (searching) {
     stopSliderAutoplay();
@@ -1914,11 +1899,6 @@ function handleHashRouting() {
     renderCart();
   }
 
-  if (hash === '#gift-box') {
-    showMenuHomeView({ navKey: 'gift-box' });
-    openBoxBuilderModal();
-    return;
-  }
 
   if (hash === '#visit' || hash === '#visit-section') {
     showMenuHomeView({ scrollTarget: visitSection, navKey: 'visit' });
@@ -1930,10 +1910,6 @@ function handleHashRouting() {
     return;
   }
 
-  if (hash === '#box-banner') {
-    showMenuHomeView({ scrollTarget: boxBanner });
-    return;
-  }
 
   // Default inside view: Screen 1 (#menu / #folders / #omvi)
   showMenuHomeView();
@@ -1993,14 +1969,6 @@ document.addEventListener('click', (e) => {
     return;
   }
 
-  const offerBoxBtn = e.target.closest('[data-open-offer-box]');
-  if (offerBoxBtn) {
-    e.preventDefault();
-    const size = Number(offerBoxBtn.dataset.openOfferBox);
-    openBoxBuilderModal([9, 16, 25].includes(size) ? size : null);
-    return;
-  }
-
   const sliderHrefBtn = e.target.closest('[data-slider-href]');
   if (sliderHrefBtn) {
     e.preventDefault();
@@ -2036,157 +2004,71 @@ document.addEventListener('keydown', (e) => {
   window.location.hash = `#product/${id}`;
 });
 
-// ---------- Interactive Gift Box Builder Modal ----------
-
-const boxDialog = document.getElementById('box-dialog');
-const boxTray = document.getElementById('box-tray');
-const boxFlavors = document.getElementById('box-flavors');
-const boxProgress = document.getElementById('box-progress');
-const boxPriceLabel = document.getElementById('box-price-label');
-const boxError = document.getElementById('box-error');
-let activeBoxSize = 9;
-let boxSlots = [];
-
-function renderBoxFlavors() {
-  if (!boxFlavors) return;
-  boxFlavors.innerHTML = TRUFFLES.map((t) => `
-    <button type="button" class="truffle-pick" data-truffle="${esc(t.id)}">
-      <span class="truffle-dot" style="background:${esc(t.color)};box-shadow:inset 0 0 0 2px ${esc(t.accent)}"></span>
-      <span class="truffle-name">${esc(tr(t.name))}</span>
-      <span class="truffle-add">+</span>
-    </button>
-  `).join('');
-}
-
-function renderBoxTray() {
-  if (!boxTray) return;
-  const tier = BOX_TIERS[activeBoxSize];
-  const ar = isAr();
-  boxTray.dataset.cols = String(tier.cols);
-  boxTray.innerHTML = Array.from({ length: activeBoxSize }, (_, i) => {
-    const t = boxSlots[i];
-    if (!t) {
-      return `<button type="button" class="box-slot empty" data-slot="${i}" aria-label="Empty slot ${i + 1}"><span>+</span></button>`;
-    }
-    const tName = tr(t.name);
-    return `
-      <button type="button" class="box-slot filled" data-slot="${i}" title="${esc(tName)}" aria-label="${esc(tName)}">
-        <span class="bonbon" style="background:${esc(t.color)};border-color:${esc(t.accent)}"></span>
-      </button>`;
-  }).join('');
-  if (boxProgress) {
-    boxProgress.textContent = ar
-      ? `تم اختيار ${boxSlots.length} / ${activeBoxSize} قطعة`
-      : `${boxSlots.length} / ${activeBoxSize} pieces selected`;
-  }
-  if (boxPriceLabel) boxPriceLabel.textContent = money(tier.price_cents);
-}
-
-function setBoxSize(size) {
-  if (!BOX_TIERS[size]) return;
-  activeBoxSize = size;
-  boxDialog?.querySelectorAll('[data-box-size]').forEach((b) => {
-    b.classList.toggle('active', Number(b.dataset.boxSize) === activeBoxSize);
-  });
-  if (boxSlots.length > activeBoxSize) boxSlots = boxSlots.slice(0, activeBoxSize);
-  renderBoxTray();
-}
-
-function openBoxBuilderModal(requestedSize = null) {
-  if (!boxDialog) return;
-  if (requestedSize && BOX_TIERS[requestedSize]) setBoxSize(requestedSize);
-  if (boxError) boxError.hidden = true;
-  if (boxSlots.length === 0) {
-    boxSlots = Array.from({ length: activeBoxSize }, (_, i) => TRUFFLES[i % TRUFFLES.length]);
-  }
-  renderBoxTray();
-  if (!boxDialog.open) boxDialog.showModal();
-}
-
-renderBoxFlavors();
-renderBoxTray();
-
-document.getElementById('open-box-builder')?.addEventListener('click', () => openBoxBuilderModal());
-
-boxDialog?.querySelectorAll('[data-box-size]').forEach((btn) => {
-  btn.addEventListener('click', () => setBoxSize(Number(btn.dataset.boxSize)));
-});
-
-boxFlavors?.addEventListener('click', (e) => {
-  const btn = e.target.closest('[data-truffle]');
-  if (!btn) return;
-  const truffle = TRUFFLES.find((t) => t.id === btn.dataset.truffle);
-  if (!truffle) return;
-  if (boxSlots.length < activeBoxSize) {
-    boxSlots.push(truffle);
-  } else {
-    boxSlots[activeBoxSize - 1] = truffle;
-  }
-  if (boxError) boxError.hidden = true;
-  renderBoxTray();
-});
-
-boxTray?.addEventListener('click', (e) => {
-  const slot = e.target.closest('[data-slot]');
-  if (!slot) return;
-  const idx = Number(slot.dataset.slot);
-  if (idx >= 0 && idx < boxSlots.length) {
-    boxSlots.splice(idx, 1);
-    renderBoxTray();
-  }
-});
-
-document.getElementById('box-autofill')?.addEventListener('click', () => {
-  while (boxSlots.length < activeBoxSize) {
-    boxSlots.push(TRUFFLES[boxSlots.length % TRUFFLES.length]);
-  }
-  if (boxError) boxError.hidden = true;
-  renderBoxTray();
-});
-
-document.getElementById('box-clear')?.addEventListener('click', () => {
-  boxSlots = [];
-  renderBoxTray();
-});
-
-boxDialog?.querySelector('[data-box-close]')?.addEventListener('click', () => boxDialog.close());
-boxDialog?.addEventListener('click', (e) => { if (e.target === boxDialog) boxDialog.close(); });
-boxDialog?.addEventListener('close', () => {
-  if (window.location.hash === '#gift-box') {
-    history.replaceState(null, '', '#menu');
-  }
-});
-
-document.getElementById('box-form')?.addEventListener('submit', (e) => {
-  e.preventDefault();
-  while (boxSlots.length < activeBoxSize) {
-    boxSlots.push(TRUFFLES[boxSlots.length % TRUFFLES.length]);
-  }
-  const customBox = {
-    size: activeBoxSize,
-    pieces: boxSlots.map((t) => t.name),
-    ribbon: document.getElementById('box-ribbon').value,
-    note: document.getElementById('box-note').value.trim(),
-  };
-  boxDialog.close();
-  addToCart(0, [], 1, document.getElementById('open-box-builder') || headerCartBtn, customBox);
-});
-
 // ---------- Checkout Form & Confirmation ----------
 
 fulfillment = setupFulfillment(form, settings, renderCart);
 const branchOf = await setupBranches(form);
+
+const branchBar = document.getElementById('branch-bar');
+const branchBarLabel = document.getElementById('branch-bar-label');
+const branchBarOptions = document.getElementById('branch-bar-options');
+
+function renderBranchBar() {
+  if (!branchBar) return;
+  branchBar.hidden = shopBranches.length < 2;
+  if (branchBar.hidden) return;
+  const ar = isAr();
+  branchBar.classList.toggle('needs-choice', !selectedBranchId);
+  branchBarLabel.textContent = selectedBranchId ? (ar ? 'الطلب من فرع' : 'Ordering from') : (ar ? 'اختر فرعك' : 'Choose your branch');
+  branchBarOptions.innerHTML = shopBranches.map((b) => `
+    <button type="button" class="branch-pill${b.id === selectedBranchId ? ' active' : ''}" data-branch-pick="${b.id}" aria-pressed="${b.id === selectedBranchId}">${esc(tr(b.name))}</button>`).join('');
+}
+
+// The checkout's branch choice follows the bar, and the other way round.
+function syncCheckoutBranch() {
+  const radio = selectedBranchId && form.querySelector(`input[name="branch"][value="${selectedBranchId}"]`);
+  if (radio) radio.checked = true;
+}
+
+function setBranch(id) {
+  const next = shopBranches.some((b) => b.id === id) ? id : null;
+  if (!next || next === selectedBranchId) return;
+  selectedBranchId = next;
+  try { localStorage.setItem(BRANCH_KEY, String(next)); } catch { /* not saved: still works this visit */ }
+  items = allItems.filter((i) => soldAtBranch(i));
+  sliderSlides = buildSliderSlides();
+  initFeaturedSlider();
+  renderBranchBar();
+  syncCheckoutBranch();
+  renderCart();
+  renderMenuReels();
+  handleHashRouting();
+}
+
+document.addEventListener('click', (e) => {
+  const pick = e.target.closest('[data-branch-pick]');
+  if (pick) setBranch(Number(pick.dataset.branchPick));
+});
+form.addEventListener('change', (e) => {
+  if (e.target.name === 'branch') setBranch(Number(e.target.value));
+});
+
+renderBranchBar();
+syncCheckoutBranch();
 restoreCustomerPrefs(form);
 promo = setupPromoField(form, { getSubtotal: cartSubtotalCents, onChange: renderCart });
 
 dataLoaded = true;
 renderCart();
-const renderMenuReels = () => mountReelsStrip(menuReelsGrid, {
-  menuItems: items,
-  onOpenProduct: (id) => {
-    window.location.hash = `#product/${id}`;
-  },
-});
+// A declaration (not a const) so a branch switch during checkout setup, above, can already call it.
+function renderMenuReels() {
+  return mountReelsStrip(menuReelsGrid, {
+    menuItems: items,
+    onOpenProduct: (id) => {
+      window.location.hash = `#product/${id}`;
+    },
+  });
+}
 renderMenuReels();
 if (userLeftOnboardingEarly && (!window.location.hash || window.location.hash === '#welcome')) {
   window.location.hash = '#menu';
@@ -2199,8 +2081,7 @@ window.addEventListener('savory:langchange', () => {
     setSliderIndex(sliderIdx);
   }
   renderMenuReels();
-  renderBoxFlavors();
-  renderBoxTray();
+  renderBranchBar();
   renderCart();
   const h = window.location.hash.trim();
   if (h && h !== '#welcome') {
@@ -2221,16 +2102,24 @@ form.addEventListener('submit', async (event) => {
   errorBox.hidden = true;
   if (!form.reportValidity()) return;
 
+  const chosen = branchOf()?.id;
+  const notHere = cart.filter((l) => !soldAtBranch(itemsById.get(l.id), chosen)).map((l) => lineDisplay(l).name);
+  if (notHere.length) {
+    errorBox.textContent = isAr()
+      ? `بعض الأصناف غير متوفرة في فرع ${branchName(chosen)}: ${notHere.join('، ')}. احذفها أو اختر فرعاً آخر.`
+      : `Not available at the ${branchName(chosen)} branch: ${notHere.join(', ')}. Remove them or choose another branch.`;
+    errorBox.hidden = false;
+    return;
+  }
+
   const data = Object.fromEntries(new FormData(form));
   data.fulfillment = fulfillment();
-  data.branch = branchOf()?.id;
+  data.branch = chosen;
   data.promo_code = promo?.getCode() || '';
   data.items = cart.map((l) => (
-    l.custom_box
-      ? { quantity: l.quantity, custom_box: l.custom_box }
-      : l.note
-        ? { id: l.id, quantity: l.quantity, choices: l.picks, note: l.note }
-        : { id: l.id, quantity: l.quantity, choices: l.picks }
+    l.note
+      ? { id: l.id, quantity: l.quantity, choices: l.picks, note: l.note }
+      : { id: l.id, quantity: l.quantity, choices: l.picks }
   ));
 
   const submittedItems = JSON.parse(JSON.stringify(data.items));

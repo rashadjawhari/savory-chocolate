@@ -17,7 +17,7 @@
       <form id="auth-form">
         <div class="field">
           <label for="auth-username">Username or Email</label>
-          <input type="text" id="auth-username" name="username" autocomplete="username" maxlength="80" placeholder="savory_qsnx" required>
+          <input type="text" id="auth-username" name="username" autocomplete="username" maxlength="80" placeholder="Username" required>
         </div>
         <div class="field">
           <label for="auth-password">Password</label>
@@ -360,6 +360,11 @@
         <div class="field"><label for="i-sort">Sort order</label><input type="number" id="i-sort" name="sort_order" min="0" max="9999" value="0"><span class="hint">Lower numbers show first.</span></div>
         <div class="field" style="justify-content: center;"><label class="checkbox"><input type="checkbox" name="available" id="i-available" checked> Show on the menu</label></div>
       </div>
+      <fieldset class="field branch-ticks" id="i-branches-field" hidden>
+        <legend>Available at</legend>
+        <div class="branch-ticks-row" id="i-branches"></div>
+        <span class="hint">Untick a branch if it doesn't sell this item. Customers ordering from that branch won't see it.</span>
+      </fieldset>
       <div class="form-error alert alert-error" role="alert" hidden></div>
       <div class="dialog-actions">
         <button type="button" class="btn btn-ghost" data-close>Cancel</button>
@@ -384,7 +389,6 @@
           <select id="of-target-type" name="target_type">
             <option value="product">Specific product page</option>
             <option value="category">Category products list</option>
-            <option value="box">Gift Box Builder</option>
             <option value="none">Banner only (scrolls to categories)</option>
           </select>
         </div>
