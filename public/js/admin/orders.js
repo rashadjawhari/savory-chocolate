@@ -1,5 +1,7 @@
 import { $, esc, money, isoDate, friendlyTime, parseUtcDate, adminApi, toast, errorBlock, emptyCard } from './core.js';
 import { playKitchenChime, toggleSound, isSoundEnabled, setSoundEnabled } from '/js/audio.js';
+import { parsePromoCodes } from '/js/promo.js';
+import { buildPriceIndex, checkOrderPrice } from './price-check.js';
 
 const FILTERS = [
   ['active', 'Active'], ['new', 'New'], ['confirmed', 'Confirmed'], ['baking', 'In kitchen'], ['ready', 'Ready'],
@@ -26,6 +28,30 @@ let orderSearch = '';
 let branchesLoaded = false;
 let currentOrders = [];
 let knownOrderIds = null;
+let priceIndex = null;
+let priceIndexAt = 0;
+
+// Current menu, cake options, delivery fee and promo codes, used to re-check every order's prices.
+// Refreshed at most every two minutes; if it can't load, order cards simply skip the check.
+async function loadPriceIndex() {
+  if (priceIndex && Date.now() - priceIndexAt < 120000) return;
+  try {
+    const [menuItems, cake, settings] = await Promise.all([
+      adminApi('/menu-items'), adminApi('/cake-options'), adminApi('/settings'),
+    ]);
+    const promos = parsePromoCodes(settings.promo_codes);
+    priceIndex = buildPriceIndex({
+      menuItems,
+      cakeGroups: cake.groups || [],
+      cakeOptions: cake.options || [],
+      deliveryFeeCents: Number(settings.delivery_fee) || 0,
+      promoPercent: (code) => promos.get(String(code).toUpperCase()) || 0,
+    });
+    priceIndexAt = Date.now();
+  } catch {
+    priceIndex = null;
+  }
+}
 
 setSoundEnabled(isSoundEnabled());
 
@@ -46,7 +72,7 @@ export async function load() {
   loadBranchFilter();
   let data;
   try {
-    data = await adminApi(`/orders?status=${filter}`);
+    [data] = await Promise.all([adminApi(`/orders?status=${filter}`), loadPriceIndex()]);
   } catch (err) {
     if (err.status !== 401) $('#orders-list').innerHTML = errorBlock(err);
     return;
@@ -214,6 +240,27 @@ function orderCard(o) {
       </li>`;
   }).join('');
 
+  const check = priceIndex ? checkOrderPrice(o, priceIndex, money) : null;
+  let priceBadge = '';
+  let priceBlock = '';
+  if (check?.status === 'ok') {
+    priceBadge = '<span class="pill price-ok" title="Items, promo code and delivery fee match your current prices">Prices check out</span>';
+  } else if (check?.status === 'unknown') {
+    priceBadge = `<span class="pill price-unknown" title="${esc(check.notes.join(' '))}">Can't fully verify price</span>`;
+  } else if (check?.status === 'mismatch') {
+    const gap = check.expectedTotal - (Number(o.total_cents) || 0);
+    const label = check.direction === 'under' ? `Price check: ${money(gap)} short`
+      : check.direction === 'over' ? `Price check: ${money(-gap)} over` : 'Price check: details differ';
+    priceBadge = `<span class="pill price-bad${check.direction === 'over' ? ' over' : ''}">${label}</span>`;
+    priceBlock = `
+          <div class="price-alert${check.direction === 'over' ? ' over' : ''}" role="note">
+            <strong>${check.direction === 'under' ? 'This order is priced lower than your menu.' : 'This order’s prices don’t match your menu.'}</strong>
+            <ul>${check.issues.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>
+            ${check.notes.length ? `<p class="muted small">${esc(check.notes.join(' '))}</p>` : ''}
+            <p class="muted small">Prices or promo codes you changed after the order was placed can also cause this. Confirm the total with the customer before baking.</p>
+          </div>`;
+  }
+
   const next = NEXT_STEP[o.status];
   const phoneHref = o.customer_phone.replace(/[^\d+]/g, '');
   const waHref = buildCustomerWhatsAppHref(o);
@@ -228,6 +275,7 @@ function orderCard(o) {
           ${delivery ? '<span class="pill delivery"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Delivery</span>' : '<span class="pill">Pickup</span>'}
           ${dietary ? '<span class="pill warn"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:3px"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Dietary needs</span>' : ''}
           <span class="pill st-${o.status}">${STATUS_LABELS[o.status] || o.status}</span>
+          ${priceBadge}
         </div>
         <div class="when">${flag} ${delivery ? 'Deliver' : 'Pickup'} ${esc(day)} · ${esc(friendlyTime(o.pickup_time))}</div>
       </div>
@@ -240,13 +288,13 @@ function orderCard(o) {
           <p class="muted small" style="margin-top: 8px;">Placed ${esc(timeAgo(o.created_at))}</p>
         </div>
         <div>
-          <ul class="order-items">${items}</ul>
+          <ul class="order-items">${items}</ul>${priceBlock}
           ${o.notes ? `<p class="order-notes"><strong>Notes:</strong> ${esc(o.notes)}</p>` : ''}
           ${o.reference_image ? `<a class="ref-photo" href="/uploads/${esc(o.reference_image)}" target="_blank" rel="noopener"><img src="/uploads/${esc(o.reference_image)}" alt="Customer's inspiration photo" loading="lazy"><span>Inspiration photo · open full size</span></a>` : ''}
         </div>
       </div>
       <div class="order-foot">
-        <span class="total">Total ${money(o.total_cents)}
+        <span class="total">Total ${money(o.total_cents)}${check?.status === 'mismatch' && check.expectedTotal !== o.total_cents ? ` <span class="expected-total">expected ${money(check.expectedTotal)}</span>` : ''}
           <span class="muted small">${o.delivery_fee_cents ? `incl. ${money(o.delivery_fee_cents)} delivery · ` : ''}pay on ${delivery ? 'delivery' : 'pickup'}</span></span>
         <div class="controls">
           <button type="button" class="btn btn-outline btn-sm" data-print-order="${o.id}" title="Print kitchen preparation sheet"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Prep sheet</button>

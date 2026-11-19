@@ -219,6 +219,19 @@ body.admin .admin-header .btn-ghost:hover:not(:disabled) {
 .pill.st-completed, .pill.st-cancelled { background: #ece7e3; color: #6b5d55; }
 .pill.st-cancelled { text-decoration: line-through; }
 
+/* Price check on each order (see js/admin/price-check.js) */
+.pill.price-ok { background: var(--ok-bg); color: var(--ok); }
+.pill.price-unknown { background: #ece7e3; color: #6b5d55; cursor: help; }
+.pill.price-bad { background: #fde3e1; color: #a12a1e; }
+.pill.price-bad.over { background: #fff1d6; color: #8a5a00; }
+.price-alert { margin: 12px 0 0; padding: 11px 14px; border-radius: 8px; background: #fdecea; border-left: 3px solid #c2402f; font-size: 0.9rem; }
+.price-alert.over { background: #fff6e3; border-left-color: #c58a12; }
+.price-alert strong { display: block; margin-bottom: 4px; }
+.price-alert ul { margin: 0 0 6px; padding-left: 18px; }
+.price-alert li { margin: 2px 0; }
+.price-alert p { margin: 4px 0 0; }
+.order-foot .expected-total { font-weight: 600; font-size: 0.85rem; color: #a12a1e; margin-left: 6px; }
+
 .order-body { display: grid; grid-template-columns: 230px 1fr; gap: 16px 28px; padding: 18px 20px; }
 @media (max-width: 720px) { .order-body { grid-template-columns: 1fr; } }
 
