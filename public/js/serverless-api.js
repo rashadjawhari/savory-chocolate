@@ -28,12 +28,6 @@ const SESSION_KEY = 'savory_admin_session_v1';
 const ADMIN_USER_KEY = 'savory_admin_user_v1';
 let cloudHydrated = false;
 
-const BOX_TIERS = {
-  9: { name: 'SAVORY 9-Piece Assorted Gift Box', price_cents: 1800 },
-  16: { name: 'SAVORY 16-Piece Luxury Gift Box', price_cents: 3000 },
-  25: { name: 'SAVORY 25-Piece Grand Selection Box', price_cents: 4500 },
-};
-
 let seedPromise = null;
 
 function loadSeed() {
@@ -206,6 +200,7 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
         offer_badge: i.offer_badge || '',
         compare_price_cents: Number(i.compare_price_cents) || 0,
         options: typeof i.options === 'string' ? JSON.parse(i.options || '[]') : (i.options || []),
+        branch_ids: soldAtIds(i, state),
       }));
   }
   if (method === 'GET' && path === '/api/offers') {
@@ -358,28 +353,21 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
 
   if (method === 'POST' && path === '/api/orders/menu') {
     const menuById = new Map((state.menu_items || []).map((m) => [Number(m.id), m]));
+    const orderBranch = (state.branches || []).find((b) => String(b.id) === String(data.branch));
     const orderItems = [];
     let subtotal = 0;
 
     for (const line of data.items || []) {
       const qty = Math.max(1, Number(line.quantity) || 1);
-      if (line.custom_box && typeof line.custom_box === 'object') {
-        const tier = BOX_TIERS[Number(line.custom_box.size)] || BOX_TIERS[9];
-        const pieces = Array.isArray(line.custom_box.pieces) ? line.custom_box.pieces : [];
-        const counts = new Map();
-        for (const p of pieces) counts.set(p, (counts.get(p) || 0) + 1);
-        const assortment = [...counts.entries()].map(([n, c]) => `${c}× ${n}`).join(', ')
-          || str(line.custom_box.flavors);
-        const details = { Assortment: assortment };
-        if (line.custom_box.ribbon) details.Ribbon = str(line.custom_box.ribbon);
-        if (line.custom_box.note || line.custom_box.card) {
-          details['Gift card'] = `“${str(line.custom_box.note || line.custom_box.card)}”`;
-        }
-        orderItems.push({ name: tier.name, unit_price_cents: tier.price_cents, quantity: qty, details });
-        subtotal += tier.price_cents * qty;
+      if (line.custom_box) {
+        fail(400, 'Gift boxes are no longer available. Please remove it from your cart.');
       } else {
         const item = menuById.get(Number(line.id));
         if (!item) continue;
+        const soldAt = soldAtIds(item, state);
+        if (orderBranch && soldAt.length && !soldAt.includes(Number(orderBranch.id))) {
+          fail(400, `"${item.name}" isn't available at the ${orderBranch.name} branch. Please remove it or choose another branch.`);
+        }
         const groups = parseOptions(item.options);
         const picks = Array.isArray(line.choices) ? line.choices : [];
         let extra = 0;
@@ -622,7 +610,7 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
     if (id === null) {
       if (method === 'GET') return sortRows(rows, collection.order).map(collection.out || ((r) => r));
       if (method === 'POST' && collection.fields) {
-        const row = { id: nextId(rows), ...collection.fields(data) };
+        const row = { id: nextId(rows), ...collection.fields(data, null, state) };
         rows.push(row);
         saveDb(state);
         await cloudAdminSaveCatalog(state).catch(() => {});
@@ -639,7 +627,7 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
       }
       const update = method === 'PATCH' ? collection.patch : collection.fields;
       if ((method === 'PUT' || method === 'PATCH') && update) {
-        Object.assign(rows[index], update(data, rows[index]));
+        Object.assign(rows[index], update(data, rows[index], state));
         saveDb(state);
         await cloudAdminSaveCatalog(state).catch(() => {});
         return collection.out ? collection.out(rows[index]) : rows[index];
@@ -653,6 +641,23 @@ export async function serverlessApi(rawPath, { method = 'GET', body, form } = {}
 // ---------- Admin helpers ----------
 
 const ORDER_STATUSES = ['new', 'confirmed', 'baking', 'ready', 'completed', 'cancelled'];
+
+// Which branches sell a menu item (mirrors src/menu-branches.js). An empty list means every branch.
+const openBranchIds = (state) => (state.branches || []).filter((b) => b.available !== 0).map((b) => Number(b.id));
+function soldAtIds(item, state) {
+  const open = openBranchIds(state);
+  const ids = [...new Set((Array.isArray(item.branch_ids) ? item.branch_ids : []).map(Number))].filter((id) => open.includes(id));
+  return ids.length === open.length ? [] : ids;
+}
+function pickBranchIds(value, existing, state) {
+  if (value === undefined) return Array.isArray(existing) ? existing : [];
+  const known = (state.branches || []).map((b) => Number(b.id));
+  const picked = [...new Set((Array.isArray(value) ? value : String(value).split(',')).map((v) => Number(String(v).trim())).filter(Boolean))];
+  if (picked.some((id) => !known.includes(id))) fail(400, 'That branch no longer exists. Please refresh the page.');
+  if (!picked.length) fail(400, 'Tick at least one branch that sells this item.');
+  const open = openBranchIds(state);
+  return open.every((id) => picked.includes(id)) ? [] : picked.sort((a, b) => a - b);
+}
 
 function fail(status, message) {
   const err = new Error(message);
@@ -690,7 +695,7 @@ const COLLECTIONS = {
   'menu-items': {
     key: 'menu_items',
     label: 'Menu item',
-    fields: (d, existing) => {
+    fields: (d, existing, state) => {
       const f = {
         name: str(d.name),
         description: str(d.description),
@@ -703,6 +708,7 @@ const COLLECTIONS = {
         sort_order: toInt(d.sort_order),
         options: parseOptions(d.options),
         image: bool(d.remove_image) ? null : (str(d.image_url) || existing?.image || null),
+        branch_ids: pickBranchIds(d.branch_ids, existing?.branch_ids, state),
       };
       if (!f.name) fail(400, 'Name is required.');
       if (f.available && f.price_cents === 0) fail(400, `Set a price for "${f.name}" before showing it on the menu.`);

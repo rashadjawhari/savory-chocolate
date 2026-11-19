@@ -103,6 +103,7 @@ const MIGRATIONS = [
   migrateToVersion9,
   migrateToVersion10,
   migrateToVersion11,
+  migrateToVersion12,
 ];
 const LATEST = MIGRATIONS.length;
 
@@ -419,6 +420,11 @@ function migrateToVersion11() {
   db.prepare("UPDATE offers SET image = REPLACE(image, '.jpg', '.webp') WHERE image LIKE '/img/%.jpg'").run();
   db.prepare("UPDATE onboarding_slides SET media_url = REPLACE(media_url, '.jpg', '.webp') WHERE media_url LIKE '/img/%.jpg'").run();
   db.prepare("UPDATE gallery_images SET image = REPLACE(image, '.jpg', '.webp') WHERE image LIKE '/img/%.jpg'").run();
+}
+
+// Version 12: which branches sell each menu item. A JSON list of branch ids; an empty list means every branch.
+function migrateToVersion12() {
+  db.exec("ALTER TABLE menu_items ADD COLUMN branch_ids TEXT NOT NULL DEFAULT '[]'");
 }
 
 // Version 7: featured item flags on menu_items, admin-managed offers slider, and onboarding background media slides.

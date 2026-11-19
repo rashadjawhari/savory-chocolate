@@ -2,10 +2,21 @@ import { $, $$, esc, money, mediaSrc, adminApi, toast, formError, busy, cents, b
 import { illustrationFor } from '/js/illustrations.js';
 
 let items = [];
+let branches = [];
+
+// Branch names an item is limited to, e.g. "Aley only". Empty when every branch sells it.
+function branchLabel(item) {
+  if (branches.length < 2 || !item.branch_ids?.length) return '';
+  const names = branches.filter((b) => item.branch_ids.includes(b.id)).map((b) => b.name);
+  return names.length ? `${names.join(' & ')} only` : '';
+}
 
 export async function load() {
   try {
-    items = await adminApi('/menu-items');
+    [items, branches] = await Promise.all([
+      adminApi('/menu-items'),
+      adminApi('/branches').then((list) => list.filter((b) => b.available)).catch(() => []),
+    ]);
   } catch (err) {
     if (err.status !== 401) $('#items-list').innerHTML = errorBlock(err);
     return;
@@ -34,6 +45,7 @@ function render() {
             <div class="name">${esc(item.name)}
               ${item.available ? '' : '<span class="pill">Hidden</span>'}
               ${item.featured ? `<span class="pill featured">★ Slider${item.offer_badge ? ` · ${esc(item.offer_badge)}` : ''}</span>` : ''}
+              ${branchLabel(item) ? `<span class="pill branch-only">${esc(branchLabel(item))}</span>` : ''}
               ${item.options.length ? `<span class="pill cake">${item.options.length} option group${item.options.length === 1 ? '' : 's'}</span>` : ''}
             </div>
             <div class="desc">${esc(item.description)}</div>
@@ -90,6 +102,10 @@ function open(item = null) {
   $('#i-sort').value = item?.sort_order ?? 0;
   $('#i-available').checked = item ? Boolean(item.available) : true;
   $('#i-remove-wrap').hidden = !item?.image;
+  const sellsAt = item?.branch_ids?.length ? item.branch_ids : branches.map((b) => b.id);
+  $('#i-branches-field').hidden = branches.length < 2;
+  $('#i-branches').innerHTML = branches.map((b) => `
+    <label class="checkbox"><input type="checkbox" data-branch-tick value="${b.id}" ${sellsAt.includes(b.id) ? 'checked' : ''}> ${esc(b.name)}</label>`).join('');
   setPreview(item?.image ? mediaSrc(item.image) : null);
   editor.innerHTML = '';
   (item?.options || []).forEach(addGroup);
@@ -177,6 +193,7 @@ form.addEventListener('submit', async (e) => {
   // An empty file input still sends a blank part, which the server would reject as "not an image".
   if (!fd.get('image')?.size) fd.delete('image');
   fd.set('options', JSON.stringify(readOptions()));
+  if (branches.length > 1) fd.set('branch_ids', $$('[data-branch-tick]:checked', form).map((c) => c.value).join(','));
 
   try {
     await busy($('button[type="submit"]', form), () => adminApi(
