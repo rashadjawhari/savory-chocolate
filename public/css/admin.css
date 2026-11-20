@@ -1,5 +1,8 @@
 /* Admin dashboard: a light, calm workspace that shares the site's type and gold accents. */
 
+/* The shop pages pad the body for their fixed header; the admin header is sticky, so no gap is needed. */
+body.admin:not(.is-onboarding) { padding-top: 0; }
+
 body.admin {
   --bg: #F9F6EE;
   --surface: #ffffff;
@@ -211,6 +214,12 @@ body.admin .admin-header .btn-ghost:hover:not(:disabled) {
 .pill.today { background: var(--berry); color: #fff; }
 .pill.overdue { background: var(--error-bg); color: var(--error); }
 .pill.cake { background: #f6e5cc; color: #8a5d1c; }
+.pill.branch-only { background: #e6efe3; color: #2f5a2a; }
+
+/* "Available at" branch ticks in the menu item form */
+.branch-ticks { border: 0; padding: 0; margin: 0; min-width: 0; }
+.branch-ticks legend { padding: 0; margin-bottom: 8px; font-weight: 600; font-size: 0.88rem; }
+.branch-ticks-row { display: flex; flex-wrap: wrap; gap: 10px 22px; }
 .pill.delivery { background: #e3eef8; color: #2c5a85; }
 .pill.warn { background: #fff1d6; color: #8a5a00; }
 .pill.st-new { background: #f8dfe3; color: #8f2f43; }

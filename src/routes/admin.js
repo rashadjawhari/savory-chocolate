@@ -6,6 +6,7 @@ import {
   loginBlocked, recordLoginFailure, clearLoginFailures,
 } from '../auth.js';
 import { CAKE_GROUPS } from '../cake-groups.js';
+import { itemBranchIds, parseBranchIds } from '../menu-branches.js';
 import { normalizeOptions, parseOptions } from '../menu-options.js';
 import { normalizePromoList } from '../../public/js/promo.js';
 import { HttpError, bad, text, int, money, bool, hexColor, url, email, whatsappNumber, mediaPathOrUrl } from '../validate.js';
@@ -113,7 +114,7 @@ const sortOrder = (value) => (value === undefined || value === '' ? 0 : int(valu
 
 // ---------- Menu items ----------
 
-function menuItemFields(body) {
+function menuItemFields(body, existing = null) {
   const compareRaw = body.compare_price;
   const f = {
     name: text(body.name, 'Name', { required: true, max: 100 }),
@@ -127,13 +128,14 @@ function menuItemFields(body) {
     available: bool(body.available) ? 1 : 0,
     sort_order: sortOrder(body.sort_order),
     options: JSON.stringify(normalizeOptions(body.options ?? '[]')),
+    branch_ids: parseBranchIds(body.branch_ids, existing?.branch_ids),
   };
   // Draft items start at 0.00; don't let one go live without a real price.
   if (f.available && f.price_cents === 0) throw bad(`Set a price for "${f.name}" before showing it on the menu.`);
   return f;
 }
 
-const withParsedOptions = (item) => item && { ...item, options: parseOptions(item.options) };
+const withParsedOptions = (item) => item && { ...item, options: parseOptions(item.options), branch_ids: itemBranchIds(item.branch_ids) };
 
 router.get('/menu-items', (req, res) => {
   // Same order as the public menu, so categories appear in the order customers see them.
@@ -144,17 +146,17 @@ router.post('/menu-items', ...withImage((req, res) => {
   const f = menuItemFields(req.body ?? {});
   const image = req.file?.filename ?? (f.image_url || null);
   const { lastInsertRowid } = db.prepare(`
-    INSERT INTO menu_items (name, description, category, price_cents, compare_price_cents, featured, offer_badge, available, sort_order, options, image)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(f.name, f.description, f.category, f.price_cents, f.compare_price_cents, f.featured, f.offer_badge, f.available, f.sort_order, f.options, image);
+    INSERT INTO menu_items (name, description, category, price_cents, compare_price_cents, featured, offer_badge, available, sort_order, options, image, branch_ids)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(f.name, f.description, f.category, f.price_cents, f.compare_price_cents, f.featured, f.offer_badge, f.available, f.sort_order, f.options, image, f.branch_ids);
   res.status(201).json(withParsedOptions(db.prepare('SELECT * FROM menu_items WHERE id = ?').get(lastInsertRowid)));
 }));
 
 router.put('/menu-items/:id', ...withImage((req, res) => {
   const id = int(req.params.id, 'Item');
-  const existing = db.prepare('SELECT image FROM menu_items WHERE id = ?').get(id);
+  const existing = db.prepare('SELECT image, branch_ids FROM menu_items WHERE id = ?').get(id);
   if (!existing) throw new HttpError(404, 'Menu item not found.');
-  const f = menuItemFields(req.body ?? {});
+  const f = menuItemFields(req.body ?? {}, existing);
 
   let image = existing.image;
   if (req.file) {
@@ -170,10 +172,10 @@ router.put('/menu-items/:id', ...withImage((req, res) => {
 
   db.prepare(`
     UPDATE menu_items SET name = ?, description = ?, category = ?, price_cents = ?, compare_price_cents = ?,
-                          featured = ?, offer_badge = ?, available = ?, sort_order = ?, options = ?, image = ?
+                          featured = ?, offer_badge = ?, available = ?, sort_order = ?, options = ?, image = ?, branch_ids = ?
     WHERE id = ?
   `).run(f.name, f.description, f.category, f.price_cents, f.compare_price_cents,
-    f.featured, f.offer_badge, f.available, f.sort_order, f.options, image, id);
+    f.featured, f.offer_badge, f.available, f.sort_order, f.options, image, f.branch_ids, id);
   res.json(withParsedOptions(db.prepare('SELECT * FROM menu_items WHERE id = ?').get(id)));
 }));
 

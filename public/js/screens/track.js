@@ -186,10 +186,9 @@ function applyMenuSiteChrome() {
   if (navLinks) {
     navLinks.innerHTML = `
       <a href="/#menu" data-i18n="nav_menu"><span class="nav-num">01</span><span class="nav-text">Menu</span><span class="nav-desc">Featured offers &amp; categories</span><span class="nav-arrow" aria-hidden="true">→</span></a>
-      <a href="/#gift-box" data-i18n="nav_boxes"><span class="nav-num">02</span><span class="nav-text">Gift Boxes</span><span class="nav-desc">9, 16 or 25-piece luxury boxes</span><span class="nav-arrow" aria-hidden="true">→</span></a>
-      <a href="/#cart" data-i18n="nav_cart"><span class="nav-num">03</span><span class="nav-text">Cart</span><span class="nav-desc">Review items &amp; checkout</span><span class="nav-arrow" aria-hidden="true">→</span></a>
-      <a href="/track?site=menu" aria-current="page" data-i18n="nav_track"><span class="nav-num">04</span><span class="nav-text">Track Order</span><span class="nav-desc">Live kitchen preparation status</span><span class="nav-arrow" aria-hidden="true">→</span></a>
-      <a href="/#visit" data-i18n="foot_visit"><span class="nav-num">05</span><span class="nav-text">Branches</span><span class="nav-desc">Aramoun &amp; Aley locations</span><span class="nav-arrow" aria-hidden="true">→</span></a>
+      <a href="/#cart" data-i18n="nav_cart"><span class="nav-num">02</span><span class="nav-text">Cart</span><span class="nav-desc">Review items &amp; checkout</span><span class="nav-arrow" aria-hidden="true">→</span></a>
+      <a href="/track?site=menu" aria-current="page" data-i18n="nav_track"><span class="nav-num">03</span><span class="nav-text">Track Order</span><span class="nav-desc">Live kitchen preparation status</span><span class="nav-arrow" aria-hidden="true">→</span></a>
+      <a href="/#visit" data-i18n="foot_visit"><span class="nav-num">04</span><span class="nav-text">Branches</span><span class="nav-desc">Aramoun &amp; Aley locations</span><span class="nav-arrow" aria-hidden="true">→</span></a>
     `;
   }
   const cta = document.querySelector('.header-cta') || document.getElementById('header-cart-btn');

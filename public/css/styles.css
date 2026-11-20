@@ -5850,3 +5850,57 @@ html[dir="rtl"] .product-tasting-box {
 
 
 
+
+/* ---------- Branch the customer orders from (menu site) ---------- */
+.branch-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin: 4px 0 22px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.branch-bar[hidden] { display: none; }
+.branch-bar-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.branch-bar-options { display: flex; flex-wrap: wrap; gap: 6px; }
+.branch-pill {
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.branch-pill:hover { border-color: var(--text); }
+.branch-pill.active { background: var(--text); border-color: var(--text); color: var(--on-gold); }
+.branch-bar.needs-choice { border-color: var(--text); box-shadow: 0 0 0 3px rgba(76, 32, 7, 0.08); }
+.branch-bar.needs-choice .branch-bar-label { color: var(--text); }
+
+.product-branch-note {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(179, 50, 34, 0.07);
+  color: var(--text);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.product-branch-note p { margin: 0; flex: 1 1 220px; font-size: 0.92rem; }
+
+.cart-line-item.is-unavailable .cart-line-thumb,
+.cart-line-item.is-unavailable .cart-line-head { opacity: 0.55; }
+.cart-line-warning { margin-top: 6px; font-size: 0.84rem; font-weight: 600; color: var(--error); }

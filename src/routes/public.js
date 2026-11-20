@@ -6,17 +6,12 @@ import { parseOptions, priceChoices } from '../menu-options.js';
 import { withImage } from '../uploads.js';
 import { orderMessage, whatsappLink } from '../whatsapp.js';
 import { evaluatePromo } from '../../public/js/promo.js';
+import { activeBranchIds, itemBranchIds } from '../menu-branches.js';
 import {
   HttpError, bad, text, int, customer, pickupDate, pickupTime, fulfillment, email,
 } from '../validate.js';
 
 export const router = Router();
-
-const BOX_TIERS = {
-  9: { name: 'SAVORY 9-Piece Assorted Gift Box', price_cents: 1800 },
-  16: { name: 'SAVORY 16-Piece Luxury Gift Box', price_cents: 3000 },
-  25: { name: 'SAVORY 25-Piece Grand Selection Box', price_cents: 4500 },
-};
 
 router.get('/settings', (req, res) => {
   const s = { ...getSettings() };
@@ -36,11 +31,12 @@ router.post('/promo/validate', (req, res) => {
 
 router.get('/menu', (req, res) => {
   const items = db.prepare(`
-    SELECT id, name, description, category, price_cents, compare_price_cents, featured, offer_badge, image, options
+    SELECT id, name, description, category, price_cents, compare_price_cents, featured, offer_badge, image, options, branch_ids
     FROM menu_items WHERE available = 1
     ORDER BY sort_order, name
   `).all();
-  res.json(items.map((i) => ({ ...i, options: parseOptions(i.options) })));
+  const branchIds = activeBranchIds();
+  res.json(items.map((i) => ({ ...i, options: parseOptions(i.options), branch_ids: itemBranchIds(i.branch_ids, branchIds) })));
 });
 
 router.get('/offers', (req, res) => {
@@ -179,34 +175,25 @@ router.post('/orders/menu', (req, res) => {
   if (!Array.isArray(body.items) || body.items.length === 0) throw bad('Your order is empty.');
   if (body.items.length > 50) throw bad('Too many different items in one order.');
 
-  const find = db.prepare('SELECT id, name, price_cents, options FROM menu_items WHERE id = ? AND available = 1');
+  // Pick the branch first: every item must be sold at it.
+  const branch = pickBranch(body);
+  const branchIds = activeBranchIds();
+  const find = db.prepare('SELECT id, name, price_cents, options, branch_ids FROM menu_items WHERE id = ? AND available = 1');
   const lines = body.items.map((line) => {
     const quantity = int(line?.quantity, 'Quantity', { min: 1, max: 99 });
-    if (line?.custom_box && typeof line.custom_box === 'object') {
-      const box = line.custom_box;
-      const tier = BOX_TIERS[Number(box.size)];
-      if (!tier) throw bad('Invalid gift box size.');
-      const pieces = Array.isArray(box.pieces) ? box.pieces.slice(0, 25).map((p) => text(p, 'Chocolate piece', { max: 60 })).filter(Boolean) : [];
-      if (!pieces.length) throw bad('Please choose the chocolates for your gift box.');
-      const counts = new Map();
-      for (const p of pieces) counts.set(p, (counts.get(p) || 0) + 1);
-      const assortment = [...counts.entries()].map(([name, n]) => `${n}× ${name}`).join(', ');
-      const ribbon = text(box.ribbon, 'Ribbon', { max: 40 });
-      const giftNote = text(box.note, 'Gift card note', { max: 120 });
-      const details = { Assortment: assortment };
-      if (ribbon) details.Ribbon = ribbon;
-      if (giftNote) details['Gift card'] = `“${giftNote}”`;
-      return { name: tier.name, unit_price_cents: tier.price_cents, quantity, details };
-    }
+    if (line?.custom_box) throw bad('Gift boxes are no longer available. Please remove it from your cart.');
     const item = find.get(int(line?.id, 'Item'));
     if (!item) throw bad('One of the items in your order is no longer available. Please refresh the menu.');
+    const soldAt = itemBranchIds(item.branch_ids, branchIds);
+    if (branch && soldAt.length && !soldAt.includes(branch.id)) {
+      throw bad(`"${item.name}" isn't available at the ${branch.name} branch. Please remove it or choose another branch.`);
+    }
     const { extra, summary } = priceChoices(item.name, parseOptions(item.options), line.choices);
     const itemNote = text(line?.note, 'Item note', { max: 200 });
     if (itemNote) summary.Note = itemNote;
     return { name: item.name, unit_price_cents: item.price_cents + extra, quantity, details: summary };
   });
 
-  const branch = pickBranch(body);
   limitOrders(req);
   const { order, promo } = saveOrder('menu', { who, date, time, notes, lines, settings, body, branch });
   respondWithOrder(req, res, { type: 'menu', order, who, lines, notes, branch, settings, promo });
