@@ -58,6 +58,12 @@ const onboardingCaption = document.getElementById('onboarding-caption');
 const onboardingDots = document.getElementById('onboarding-dots');
 const onboardCartBtn = document.getElementById('onboard-cart-btn');
 const onboardCartCount = document.getElementById('onboard-cart-count');
+const onboardBranchGate = document.getElementById('onboard-branch-gate');
+const onboardBranchPills = document.getElementById('onboard-branch-pills');
+const onboardCtaRow = document.getElementById('onboard-cta-row');
+try {
+  if (!localStorage.getItem('sc_branch_v1') && onboardCtaRow) onboardCtaRow.hidden = true;
+} catch { /* ignore storage errors */ }
 
 const storefrontShell = document.getElementById('storefront-shell');
 const visitSection = document.getElementById('visit-section');
@@ -2024,6 +2030,17 @@ function renderBranchBar() {
     <button type="button" class="branch-pill${b.id === selectedBranchId ? ' active' : ''}" data-branch-pick="${b.id}" aria-pressed="${b.id === selectedBranchId}">${esc(tr(b.name))}</button>`).join('');
 }
 
+function renderOnboardingBranchGate() {
+  if (!onboardBranchGate || !onboardCtaRow) return;
+  const needsSelection = shopBranches.length > 1 && !selectedBranchId;
+  onboardBranchGate.hidden = !needsSelection;
+  onboardCtaRow.hidden = needsSelection;
+  if (needsSelection && onboardBranchPills) {
+    onboardBranchPills.innerHTML = shopBranches.map((b) => `
+      <button type="button" class="btn onboarding-branch-pill" data-branch-pick="${b.id}">${esc(tr(b.name))}</button>`).join('');
+  }
+}
+
 // The checkout's branch choice follows the bar, and the other way round.
 function syncCheckoutBranch() {
   const radio = selectedBranchId && form.querySelector(`input[name="branch"][value="${selectedBranchId}"]`);
@@ -2038,6 +2055,7 @@ function setBranch(id) {
   items = allItems.filter((i) => soldAtBranch(i));
   sliderSlides = buildSliderSlides();
   initFeaturedSlider();
+  renderOnboardingBranchGate();
   renderBranchBar();
   syncCheckoutBranch();
   renderCart();
@@ -2053,6 +2071,7 @@ form.addEventListener('change', (e) => {
   if (e.target.name === 'branch') setBranch(Number(e.target.value));
 });
 
+renderOnboardingBranchGate();
 renderBranchBar();
 syncCheckoutBranch();
 restoreCustomerPrefs(form);
@@ -2081,6 +2100,7 @@ window.addEventListener('savory:langchange', () => {
     setSliderIndex(sliderIdx);
   }
   renderMenuReels();
+  renderOnboardingBranchGate();
   renderBranchBar();
   renderCart();
   const h = window.location.hash.trim();

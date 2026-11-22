@@ -40,7 +40,11 @@
         <div class="onboarding-logo-lockup" dir="ltr" aria-label="{{shop_name}} Chocolate">
           {{> brand-logo}}
         </div>
-        <div class="onboarding-cta-row">
+        <div class="onboarding-branch-gate" id="onboard-branch-gate" hidden>
+          <span class="onboarding-branch-label" id="onboard-branch-label" data-i18n="onboard_select_branch">Select branch</span>
+          <div class="onboarding-branch-pills" id="onboard-branch-pills" role="group" aria-labelledby="onboard-branch-label"></div>
+        </div>
+        <div class="onboarding-cta-row" id="onboard-cta-row">
           <a class="btn onboarding-order-btn" href="#menu" id="order-now-btn">
             <span data-i18n="cta_order_now">Browse Menu</span>
             <span class="arrow" aria-hidden="true">→</span>
