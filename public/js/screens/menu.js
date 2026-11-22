@@ -61,9 +61,8 @@ const onboardCartCount = document.getElementById('onboard-cart-count');
 const onboardBranchGate = document.getElementById('onboard-branch-gate');
 const onboardBranchPills = document.getElementById('onboard-branch-pills');
 const onboardCtaRow = document.getElementById('onboard-cta-row');
-try {
-  if (!localStorage.getItem('sc_branch_v1') && onboardCtaRow) onboardCtaRow.hidden = true;
-} catch { /* ignore storage errors */ }
+let onboardingBranchChosen = false;
+if (onboardCtaRow) onboardCtaRow.hidden = true;
 
 const storefrontShell = document.getElementById('storefront-shell');
 const visitSection = document.getElementById('visit-section');
@@ -2032,7 +2031,7 @@ function renderBranchBar() {
 
 function renderOnboardingBranchGate() {
   if (!onboardBranchGate || !onboardCtaRow) return;
-  const needsSelection = shopBranches.length > 1 && !selectedBranchId;
+  const needsSelection = shopBranches.length > 1 && !onboardingBranchChosen;
   onboardBranchGate.hidden = !needsSelection;
   onboardCtaRow.hidden = needsSelection;
   if (needsSelection && onboardBranchPills) {
@@ -2049,7 +2048,10 @@ function syncCheckoutBranch() {
 
 function setBranch(id) {
   const next = shopBranches.some((b) => b.id === id) ? id : null;
-  if (!next || next === selectedBranchId) return;
+  if (!next) return;
+  onboardingBranchChosen = true;
+  renderOnboardingBranchGate();
+  if (next === selectedBranchId) return;
   selectedBranchId = next;
   try { localStorage.setItem(BRANCH_KEY, String(next)); } catch { /* not saved: still works this visit */ }
   items = allItems.filter((i) => soldAtBranch(i));
