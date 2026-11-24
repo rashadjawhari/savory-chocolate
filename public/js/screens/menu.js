@@ -1414,11 +1414,11 @@ function showMenuHomeView({ scrollTarget = null, scrollTop = true, navKey = 'men
         : `<div class="folder-icon">${meta.icon}</div>`;
       return `
         <a class="folder-card" href="#category/${encodeURIComponent(catName)}" data-nav-cat="${esc(catName)}">
-          <div class="folder-card-head">
-            <h3 class="folder-title">${esc(catLabel)}</h3>
-          </div>
           <div class="folder-visual">
             ${visualHtml}
+            <div class="folder-card-head">
+              <h3 class="folder-title" dir="auto">${esc(catLabel)}</h3>
+            </div>
           </div>
         </a>`;
     }).join('');
