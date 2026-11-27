@@ -19,15 +19,20 @@ export function orderMessage({ type, order, who, lines, notes, branch, photoUrl,
   };
   const [y, m, d] = order.pickup_date.split('-').map(Number);
   const day = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
-  const [hh, mm] = order.pickup_time.split(':').map(Number);
-  const time = `${((hh + 11) % 12) + 1}:${String(mm).padStart(2, '0')} ${hh < 12 ? 'AM' : 'PM'}`;
+  let time = '';
+  if (order.pickup_time && String(order.pickup_time).includes(':')) {
+    const [hh, mm] = order.pickup_time.split(':').map(Number);
+    if (!Number.isNaN(hh) && !Number.isNaN(mm)) {
+      time = `${((hh + 11) % 12) + 1}:${String(mm).padStart(2, '0')} ${hh < 12 ? 'AM' : 'PM'}`;
+    }
+  }
   const delivery = order.fulfillment === 'delivery';
 
   const out = [`*New ${type === 'cake' ? 'cake' : 'menu'} order* · ${order.code}`];
   if (branch) out.push(`Branch: ${branch.name}`);
   out.push('', '*Customer*', `Name: ${who.name}`, `Phone: ${who.phone}`);
   if (who.email) out.push(`Email: ${who.email}`);
-  out.push('', `*${delivery ? 'Delivery' : 'Pickup'}:* ${day} at ${time}`);
+  out.push('', `*${delivery ? 'Delivery' : 'Pickup'}:* ${day}${time ? ` at ${time}` : ''}`);
   if (delivery) out.push(`Address: ${order.delivery_address}`);
   out.push('');
 

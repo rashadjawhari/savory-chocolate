@@ -89,7 +89,8 @@ function renderOrder(order) {
   const mode = order.fulfillment === 'delivery'
     ? (ar ? 'توصيل' : 'Delivery')
     : `${ar ? 'استلام من الفرع' : 'Pickup'}${branchLabel ? ` (${branchLabel})` : ''}`;
-  document.getElementById('t-schedule').textContent = `${mode} · ${friendlyDate(order.pickup_date)} ${ar ? 'الساعة' : 'at'} ${friendlyTime(order.pickup_time)}`;
+  const timeStr = friendlyTime(order.pickup_time);
+  document.getElementById('t-schedule').textContent = `${mode} · ${friendlyDate(order.pickup_date)}${timeStr ? ` ${ar ? 'الساعة' : 'at'} ${timeStr}` : ''}`;
 
   const stepsEl = document.getElementById('t-steps');
   const bannerEl = document.getElementById('t-banner');

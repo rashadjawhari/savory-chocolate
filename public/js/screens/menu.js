@@ -1,6 +1,6 @@
 import {
   api, esc, mediaSrc, money, storage, isoDate, loadSettings, setupFulfillment, deliveryFee, reveal,
-  setupBranches, orderConfirmation, openWhatsApp, applyLanguage, tr, isAr,
+  setupBranches, orderConfirmation, prepareWhatsAppWindow, openWhatsApp, applyLanguage, tr, isAr,
   saveCustomerPrefs, restoreCustomerPrefs, setupPromoField, getRecentOrders,
 } from '/js/common.js';
 import { buildItemSearchIndex, normalizeSearchText, trPairNote } from '/js/i18n-ar.js';
@@ -2162,14 +2162,16 @@ form.addEventListener('submit', async (event) => {
 
   submitBtn.disabled = true;
   submitBtn.innerHTML = `<span class="spinner" aria-hidden="true"></span> ${isAr() ? 'جاري إرسال طلبك…' : 'Placing your order…'}`;
+  const waWin = prepareWhatsAppWindow();
   try {
     const order = await api('/api/orders/menu', { method: 'POST', body: data });
     cart = [];
     saveCart();
     promo?.clear();
     showConfirmation(order, data.customer_name, submittedItems);
-    openWhatsApp(order.whatsapp_url);
+    openWhatsApp(order.whatsapp_url, waWin);
   } catch (err) {
+    if (waWin && !waWin.closed) waWin.close();
     errorBox.textContent = err.message;
     errorBox.hidden = false;
   } finally {

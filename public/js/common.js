@@ -90,7 +90,9 @@ export function friendlyDate(iso) {
 }
 
 export function friendlyTime(hhmm) {
-  const [h, m] = hhmm.split(':').map(Number);
+  if (!hhmm || !String(hhmm).includes(':')) return '';
+  const [h, m] = String(hhmm).split(':').map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return '';
   return new Date(2000, 0, 1, h, m).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
@@ -834,6 +836,8 @@ export function orderConfirmation(order, { name, title, shopName, links = '', re
     ? (ar ? `<br><strong>الخصم (${esc(order.promo_code)}):</strong> <span dir="ltr">−${money(order.discount_cents)}</span>` : `<br><strong>Promo (${esc(order.promo_code)}):</strong> −${money(order.discount_cents)}`)
     : '';
 
+  const timeText = friendlyTime(order.pickup_time);
+
   if (ar) {
     return `
       <div class="card confirm">
@@ -848,7 +852,7 @@ export function orderConfirmation(order, { name, title, shopName, links = '', re
         <p class="muted">رقم طلبك هو</p>
         <div class="order-code" dir="ltr">${esc(order.code)}</div>
         <p>${branchName ? `<strong>الفرع:</strong> ${esc(branchName)}<br>` : ''}
-          <strong>${delivery ? 'التوصيل' : 'الاستلام'}:</strong> ${esc(friendlyDate(order.pickup_date))} · ${esc(friendlyTime(order.pickup_time))}
+          <strong>${delivery ? 'التوصيل' : 'الاستلام'}:</strong> ${esc(friendlyDate(order.pickup_date))}${timeText ? ` · ${esc(timeText)}` : ''}
           ${delivery ? `<br><span class="muted">${esc(order.delivery_address)}</span>` : ''}${promoLine}<br>
           <strong>الإجمالي المطلوب عند ${delivery ? 'التوصيل' : 'الاستلام'}:</strong> <span dir="ltr">${money(order.total_cents)}</span></p>
         <div class="hero-actions" style="justify-content: center; margin-top: 24px;">${links}</div>
@@ -868,21 +872,40 @@ export function orderConfirmation(order, { name, title, shopName, links = '', re
       <p class="muted">Your order number is</p>
       <div class="order-code">${esc(order.code)}</div>
       <p>${order.branch ? `<strong>Branch:</strong> ${esc(order.branch)}<br>` : ''}
-        <strong>${delivery ? 'Delivery' : 'Pickup'}:</strong> ${esc(friendlyDate(order.pickup_date))} at ${esc(friendlyTime(order.pickup_time))}
+        <strong>${delivery ? 'Delivery' : 'Pickup'}:</strong> ${esc(friendlyDate(order.pickup_date))}${timeText ? ` at ${esc(timeText)}` : ''}
         ${delivery ? `<br><span class="muted">${esc(order.delivery_address)}</span>` : ''}${promoLine}<br>
         <strong>Total due on ${delivery ? 'delivery' : 'pickup'}:</strong> ${money(order.total_cents)}</p>
       <div class="hero-actions" style="justify-content: center; margin-top: 24px;">${links}</div>
     </div>`;
 }
 
-// Opens the WhatsApp message straight away. Browsers may block this, which is why the
-// confirmation also has a big "Send order on WhatsApp" button.
-export function openWhatsApp(url) {
-  if (!url) return;
+// Reserve a popup synchronously inside the submit gesture so browsers don't block WhatsApp after async awaits.
+export function prepareWhatsAppWindow() {
+  try {
+    return window.open('', '_blank');
+  } catch {
+    return null;
+  }
+}
+
+// Opens WhatsApp automatically to the chosen branch's number; falls back to same-tab navigation if popups are blocked.
+export function openWhatsApp(url, pendingWin = null) {
+  if (!url) {
+    if (pendingWin && !pendingWin.closed) pendingWin.close();
+    return;
+  }
+  if (pendingWin && !pendingWin.closed) {
+    try { pendingWin.opener = null; } catch {}
+    pendingWin.location.href = url;
+    try { pendingWin.focus(); } catch {}
+    return;
+  }
   const tab = window.open(url, '_blank');
   if (tab) {
-    try { tab.opener = null; } catch { /* cross-origin already */ }
+    try { tab.opener = null; } catch {}
+    return;
   }
+  window.location.href = url;
 }
 
 // Progressive Web App (PWA) Service Worker Registration

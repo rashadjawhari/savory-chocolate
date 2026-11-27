@@ -130,7 +130,7 @@ function buildWhatsAppUrl(state, order, itemsSummary, promo = null) {
   const lines = [
     `New ${order.type === 'cake' ? 'Custom Cake' : 'Menu'} Order *${order.code}*`,
     `Customer: ${order.customer_name} (${order.customer_phone})`,
-    `${order.fulfillment === 'delivery' ? `Delivery: ${order.delivery_address}` : `Pickup${order.branch ? ` (${order.branch})` : ''}`} on ${order.pickup_date} at ${order.pickup_time}`,
+    `${order.fulfillment === 'delivery' ? `Delivery: ${order.delivery_address}` : `Pickup${order.branch ? ` (${order.branch})` : ''}`} on ${order.pickup_date}${order.pickup_time ? ` at ${order.pickup_time}` : ''}`,
     '',
     ...itemsSummary,
     '',

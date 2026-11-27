@@ -199,7 +199,7 @@ function printKitchenSheet(o) {
     <div class="code">${esc(o.code)}</div>
   </div>
   <div class="meta">
-    <div><strong>${delivery ? 'Delivery schedule' : 'Pickup schedule'}</strong>${esc(day)} at ${esc(friendlyTime(o.pickup_time))}</div>
+    <div><strong>${delivery ? 'Delivery schedule' : 'Pickup schedule'}</strong>${esc(day)}${friendlyTime(o.pickup_time) ? ` at ${esc(friendlyTime(o.pickup_time))}` : ''}</div>
     <div><strong>Customer</strong>${esc(o.customer_name)} · ${esc(o.customer_phone)}</div>
     ${delivery ? `<div style="grid-column: 1 / -1"><strong>Delivery address</strong>${esc(o.delivery_address)}</div>` : ''}
   </div>
@@ -277,7 +277,7 @@ function orderCard(o) {
           <span class="pill st-${o.status}">${STATUS_LABELS[o.status] || o.status}</span>
           ${priceBadge}
         </div>
-        <div class="when">${flag} ${delivery ? 'Deliver' : 'Pickup'} ${esc(day)} · ${esc(friendlyTime(o.pickup_time))}</div>
+        <div class="when">${flag} ${delivery ? 'Deliver' : 'Pickup'} ${esc(day)}${friendlyTime(o.pickup_time) ? ` · ${esc(friendlyTime(o.pickup_time))}` : ''}</div>
       </div>
       <div class="order-body">
         <div class="customer">

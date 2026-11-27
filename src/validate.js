@@ -51,9 +51,10 @@ export function pickupDate(value, { minDaysAhead = 0 } = {}) {
   return s;
 }
 
-// Same-day pickups need at least 30 minutes' notice.
+// Pickup time is optional; when provided, validate format and same-day 30-minute lead.
 export function pickupTime(value, date) {
-  const s = text(value, 'Time', { required: true, max: 5 });
+  const s = text(value, 'Time', { max: 5 });
+  if (!s) return '';
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(s)) throw bad('Time is not valid.');
   if (date === localDate(0)) {
     const soon = new Date(Date.now() + 30 * 60 * 1000);

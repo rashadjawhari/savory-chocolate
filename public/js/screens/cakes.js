@@ -1,6 +1,6 @@
 import {
   api, esc, money, isoDate, friendlyDate, loadSettings, setupFulfillment, deliveryFee,
-  setupBranches, orderConfirmation, openWhatsApp, tr, isAr,
+  setupBranches, orderConfirmation, prepareWhatsAppWindow, openWhatsApp, tr, isAr,
   saveCustomerPrefs, restoreCustomerPrefs, setupPromoField,
 } from '/js/common.js';
 import { trTastingNote } from '/js/i18n-ar.js';
@@ -806,12 +806,14 @@ form.addEventListener('submit', async (event) => {
 
   submitBtn.disabled = true;
   submitBtn.innerHTML = `<span class="spinner" aria-hidden="true"></span> ${photoFile ? (isAr() ? 'جاري رفع الصورة…' : 'Uploading your photo…') : (isAr() ? 'جاري إرسال طلبك…' : 'Placing your order…')}`;
+  const waWin = prepareWhatsAppWindow();
   try {
     const order = await api('/api/orders/cake', { method: 'POST', form: payload });
     promo?.clear();
     showConfirmation(order, data.customer_name, customUrl);
-    openWhatsApp(order.whatsapp_url);
+    openWhatsApp(order.whatsapp_url, waWin);
   } catch (err) {
+    if (waWin && !waWin.closed) waWin.close();
     errorBox.textContent = err.message;
     errorBox.hidden = false;
     submitBtn.disabled = false;
