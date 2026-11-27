@@ -62,7 +62,20 @@ const onboardBranchGate = document.getElementById('onboard-branch-gate');
 const onboardBranchPills = document.getElementById('onboard-branch-pills');
 const onboardCtaRow = document.getElementById('onboard-cta-row');
 let onboardingBranchChosen = false;
-if (onboardCtaRow) onboardCtaRow.hidden = true;
+let earlyBranchPickId = null;
+
+// Handle branch taps immediately even before catalog/Firestore finishes loading.
+onboardBranchPills?.addEventListener('click', (e) => {
+  const pick = e.target.closest('[data-branch-pick]');
+  if (!pick || dataLoaded) return;
+  const id = Number(pick.dataset.branchPick);
+  if (!id) return;
+  earlyBranchPickId = id;
+  onboardingBranchChosen = true;
+  if (onboardBranchGate) onboardBranchGate.hidden = true;
+  if (onboardCtaRow) onboardCtaRow.hidden = false;
+  try { localStorage.setItem('sc_branch_v1', String(id)); } catch {}
+});
 
 const storefrontShell = document.getElementById('storefront-shell');
 const visitSection = document.getElementById('visit-section');
@@ -212,7 +225,7 @@ const shopBranches = Array.isArray(loadedBranches) ? loadedBranches : [];
 const BRANCH_KEY = 'sc_branch_v1';
 let selectedBranchId = null;
 try {
-  const saved = Number(localStorage.getItem(BRANCH_KEY));
+  const saved = earlyBranchPickId || Number(localStorage.getItem(BRANCH_KEY));
   if (shopBranches.some((b) => b.id === saved)) selectedBranchId = saved;
 } catch { /* private mode: start with no branch */ }
 if (shopBranches.length === 1) selectedBranchId = shopBranches[0].id;
@@ -344,6 +357,10 @@ function ensureVideoPlaying(vid, { onAutoplayBlocked = null } = {}) {
   if (!shouldLoop) vid.removeAttribute('loop');
   vid.autoplay = true;
   vid.playsInline = true;
+  if (vid.dataset.src && vid.getAttribute('src') !== vid.dataset.src) {
+    vid.preload = 'auto';
+    vid.src = vid.dataset.src;
+  }
   const attempt = () => {
     const p = vid.play();
     if (p && typeof p.catch === 'function') {
@@ -353,6 +370,7 @@ function ensureVideoPlaying(vid, { onAutoplayBlocked = null } = {}) {
     }
   };
   if (vid.readyState >= 2) {
+    vid.classList.add('is-ready');
     attempt();
   } else {
     vid.addEventListener('canplay', attempt, { once: true });
@@ -366,21 +384,28 @@ function buildOnboardingVideo(srcUrl, eager = false) {
   video.muted = true;
   video.defaultMuted = true;
   video.loop = shouldLoop;
-  video.autoplay = true;
+  video.autoplay = eager;
   video.playsInline = true;
   video.setAttribute('playsinline', '');
   video.setAttribute('muted', '');
-  video.setAttribute('autoplay', '');
+  if (eager) video.setAttribute('autoplay', '');
   if (shouldLoop) video.setAttribute('loop', '');
-  video.preload = eager ? 'auto' : 'metadata';
+  video.preload = eager ? 'auto' : 'none';
   video.poster = posterForVideo(srcUrl);
-  video.src = srcUrl;
+  video.dataset.src = srcUrl;
+  if (eager) video.src = srcUrl;
   return video;
 }
 
 function bindOnboardingSlideEvents(vid, slideIndex, wrap, srcUrl) {
   if (!vid || vid.dataset.onboardBound) return;
   vid.dataset.onboardBound = '1';
+  if (!vid.dataset.src) vid.dataset.src = srcUrl;
+
+  const markReady = () => { vid.classList.add('is-ready'); };
+  if (vid.readyState >= 2) markReady();
+  vid.addEventListener('loadeddata', markReady);
+  vid.addEventListener('playing', markReady);
 
   vid.addEventListener('ended', () => {
     if (
@@ -402,41 +427,36 @@ function bindOnboardingSlideEvents(vid, slideIndex, wrap, srcUrl) {
   });
 
   vid.addEventListener('error', () => {
-    const fallback = document.createElement('img');
-    fallback.src = posterForVideo(srcUrl);
-    fallback.alt = '';
-    wrap.innerHTML = '';
-    wrap.append(fallback);
+    vid.classList.remove('is-ready');
+    vid.removeAttribute('src');
     if (onboardIdx === slideIndex && document.body.classList.contains('is-onboarding')) {
       scheduleOnboardingAdvance();
     }
-  }, { once: true });
+  });
 }
 
 function createOnboardingSlideNode(slide, index, { isClone = false } = {}) {
   const srcUrl = mediaSrc(slide.media_url);
+  const posterUrl = isVideoSlide(slide) ? posterForVideo(srcUrl) : srcUrl;
   const wrap = document.createElement('div');
   wrap.className = `onboarding-slide${!isClone && index === 0 ? ' is-active' : ''}`;
   if (isClone) {
     wrap.dataset.onboardClone = 'first';
     wrap.setAttribute('aria-hidden', 'true');
   }
-  if (isVideoSlide(slide)) {
-    const video = buildOnboardingVideo(srcUrl, !isClone && index <= 1);
-    if (isClone) {
-      video.autoplay = false;
-      video.removeAttribute('autoplay');
-      video.preload = 'metadata';
-    } else {
-      bindOnboardingSlideEvents(video, index, wrap, srcUrl);
-    }
+
+  // Always keep the WebP poster rendered underneath so video loads/swaps never flash brown.
+  const posterImg = document.createElement('img');
+  posterImg.className = 'onboarding-poster';
+  posterImg.src = posterUrl;
+  posterImg.alt = '';
+  posterImg.decoding = 'async';
+  wrap.append(posterImg);
+
+  if (isVideoSlide(slide) && !isClone) {
+    const video = buildOnboardingVideo(srcUrl, index === 0);
+    bindOnboardingSlideEvents(video, index, wrap, srcUrl);
     wrap.append(video);
-  } else {
-    const img = document.createElement('img');
-    img.src = srcUrl;
-    img.alt = '';
-    img.decoding = 'async';
-    wrap.append(img);
   }
   return wrap;
 }
@@ -474,7 +494,7 @@ function setupOnboardingMedia() {
     return wrap;
   });
 
-  // Append a clone of slide 0 at the end so advancing past the last slide always scrolls left seamlessly.
+  // Append a lightweight poster clone of slide 0 so advancing past the last slide always scrolls left seamlessly.
   if (activeOnboardingSlides.length > 1 && firstSlide) {
     onboardCloneEl = createOnboardingSlideNode(firstSlide, 0, { isClone: true });
     onboardingBg.append(onboardCloneEl);
@@ -499,6 +519,20 @@ function updateOnboardingIndicators() {
   }
 }
 
+function unloadInactiveOnboardingVideos(activeIdx) {
+  onboardSlideEls.forEach((el, i) => {
+    if (i === activeIdx) return;
+    const vid = el.querySelector('video');
+    if (!vid) return;
+    vid.pause();
+    vid.classList.remove('is-ready');
+    if (vid.hasAttribute('src') && vid.dataset.src) {
+      vid.removeAttribute('src');
+      vid.load();
+    }
+  });
+}
+
 function setOnboardingSlide(nextIdx, { preservePlaying = false } = {}) {
   const count = onboardSlideEls.length;
   if (!count) return;
@@ -506,18 +540,9 @@ function setOnboardingSlide(nextIdx, { preservePlaying = false } = {}) {
   onboardTimer = null;
   clearOnboardingWrap();
 
-  // Seamless forward wrap: transition left onto the cloned first slide, then reset quietly to index 0.
+  // Seamless forward wrap: transition left onto the cloned first slide poster, then snap quietly to index 0.
   if (count > 1 && nextIdx === count && onboardCloneEl && onboardingBg) {
     onboardIdx = 0;
-    const cloneVid = onboardCloneEl.querySelector('video');
-    if (cloneVid) {
-      cloneVid.preload = 'auto';
-      if (cloneVid.readyState >= 1) {
-        try { cloneVid.currentTime = 0; } catch {}
-      }
-      ensureVideoPlaying(cloneVid);
-    }
-
     onboardingBg.style.transition = '';
     onboardingBg.style.transform = `translate3d(-${count * 100}%, 0, 0)`;
     updateOnboardingIndicators();
@@ -536,20 +561,17 @@ function setOnboardingSlide(nextIdx, { preservePlaying = false } = {}) {
       const firstVid = firstWrap?.querySelector('video');
       onboardSlideEls.forEach((el, i) => {
         el.classList.toggle('is-active', i === 0);
-        if (i !== 0) el.querySelector('video')?.pause();
       });
+      unloadInactiveOnboardingVideos(0);
       if (firstVid && document.body.classList.contains('is-onboarding') && !document.hidden) {
         if (firstVid.readyState >= 1) {
-          try {
-            firstVid.currentTime = cloneVid && Number.isFinite(cloneVid.currentTime) ? cloneVid.currentTime : 0.65;
-          } catch {}
+          try { firstVid.currentTime = 0; } catch {}
         }
         ensureVideoPlaying(firstVid);
       }
       onboardingBg.style.transform = 'translate3d(0%, 0, 0)';
       void onboardingBg.offsetWidth;
       requestAnimationFrame(() => {
-        cloneVid?.pause();
         if (onboardingBg) onboardingBg.style.transition = '';
       });
       scheduleOnboardingAdvance();
@@ -564,23 +586,15 @@ function setOnboardingSlide(nextIdx, { preservePlaying = false } = {}) {
       settled = true;
       onboardingBg?.removeEventListener('transitionend', onTransitionEnd);
       clearTimeout(fallbackTimer);
-      cloneVid?.pause();
     };
     return;
   }
 
   onboardIdx = ((nextIdx % count) + count) % count;
-  const upcomingIdx = (onboardIdx + 1) % count;
-  onboardCloneEl?.querySelector('video')?.pause();
 
   if (onboardingBg) {
     onboardingBg.style.transition = '';
     onboardingBg.style.transform = `translate3d(-${onboardIdx * 100}%, 0, 0)`;
-  }
-
-  if (onboardIdx === count - 1 && onboardCloneEl) {
-    const cloneVid = onboardCloneEl.querySelector('video');
-    if (cloneVid && cloneVid.preload !== 'auto') cloneVid.preload = 'auto';
   }
 
   let playbackBlocked = false;
@@ -589,9 +603,7 @@ function setOnboardingSlide(nextIdx, { preservePlaying = false } = {}) {
     el.classList.toggle('is-active', active);
     const vid = el.querySelector('video');
     if (!vid) return;
-    if (i === upcomingIdx && vid.preload !== 'auto') vid.preload = 'auto';
     if (active && document.body.classList.contains('is-onboarding') && !document.hidden) {
-      vid.preload = 'auto';
       if (!(preservePlaying && !vid.paused) && vid.readyState >= 1) {
         vid.currentTime = 0;
       }
@@ -605,6 +617,7 @@ function setOnboardingSlide(nextIdx, { preservePlaying = false } = {}) {
       vid.pause();
     }
   });
+  setTimeout(() => unloadInactiveOnboardingVideos(onboardIdx), 620);
 
   updateOnboardingIndicators();
   scheduleOnboardingAdvance(playbackBlocked);

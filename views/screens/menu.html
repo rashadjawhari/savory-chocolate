@@ -16,6 +16,7 @@
       <div class="onboarding-viewport" aria-hidden="true">
         <div class="onboarding-bg" id="onboarding-bg">
           <div class="onboarding-slide is-active" data-initial-video>
+            <img class="onboarding-poster" src="/img/social/reel-dubai-crepe.webp" alt="" fetchpriority="high" decoding="sync">
             <video autoplay muted playsinline preload="auto" poster="/img/social/reel-dubai-crepe.webp" src="/img/social/reel-dubai-crepe.mp4"></video>
           </div>
         </div>
@@ -40,11 +41,11 @@
         <div class="onboarding-logo-lockup" dir="ltr" aria-label="{{shop_name}} Chocolate">
           {{> brand-logo}}
         </div>
-        <div class="onboarding-branch-gate" id="onboard-branch-gate" hidden>
+        <div class="onboarding-branch-gate" id="onboard-branch-gate" {{#no_multi_branches}}hidden{{/no_multi_branches}}>
           <span class="onboarding-branch-label" id="onboard-branch-label" data-i18n="onboard_select_branch">Select branch</span>
-          <div class="onboarding-branch-pills" id="onboard-branch-pills" role="group" aria-labelledby="onboard-branch-label"></div>
+          <div class="onboarding-branch-pills" id="onboard-branch-pills" role="group" aria-labelledby="onboard-branch-label">{{{onboard_branch_pills}}}</div>
         </div>
-        <div class="onboarding-cta-row" id="onboard-cta-row">
+        <div class="onboarding-cta-row" id="onboard-cta-row" {{#has_multi_branches}}hidden{{/has_multi_branches}}>
           <a class="btn onboarding-order-btn" href="#menu" id="order-now-btn">
             <span data-i18n="cta_order_now">Browse Menu</span>
             <span class="arrow" aria-hidden="true">→</span>

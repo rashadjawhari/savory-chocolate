@@ -4644,10 +4644,26 @@ body.is-cart-page .bottom-bar {
 
 .onboarding-slide img,
 .onboarding-slide video {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.onboarding-slide img.onboarding-poster {
+  z-index: 0;
+}
+
+.onboarding-slide video {
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.onboarding-slide video.is-ready {
+  opacity: 1;
 }
 
 .onboarding-scrim {

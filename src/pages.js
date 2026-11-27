@@ -119,6 +119,7 @@ export function renderPage(name, options = {}) {
   const siteMode = options.siteMode || 'cakes';
   const s = getSettings();
   const places = locations(s);
+  const activeBranches = places.filter((b) => b.id && b.name);
   const values = {
     ...s,
     year: String(new Date().getFullYear()),
@@ -129,6 +130,8 @@ export function renderPage(name, options = {}) {
     whatsapp_href: s.whatsapp ? waHref(s.whatsapp, s.shop_name) : '',
     has_social: s.instagram || s.facebook || s.whatsapp ? '1' : '',
     has_places: places.length ? '1' : '',
+    has_multi_branches: activeBranches.length > 1 ? '1' : '',
+    no_multi_branches: activeBranches.length > 1 ? '' : '1',
     lead_notice: leadNotice(s.cake_lead_days),
     omvi_name: OMVI.name,
     omvi_tagline: OMVI.tagline,
@@ -144,6 +147,7 @@ export function renderPage(name, options = {}) {
     visit_cards: visitCards(places),
     footer_visit: footerVisit(places),
     whatsapp_float: whatsappFloat(places, s),
+    onboard_branch_pills: activeBranches.map((b) => `<button type="button" class="btn onboarding-branch-pill" data-branch-pick="${b.id}">${esc(b.name)}</button>`).join(''),
     omvi_services: OMVI.services.map((x) => `<span class="chip">${esc(x)}</span>`).join(''),
     omvi_contacts: omviContacts(),
     contact_buttons: places.filter((b) => b.whatsapp).map((b) => `<a class="btn btn-gold btn-block wa-btn" href="${esc(waHref(b.whatsapp, s.shop_name))}" target="_blank" rel="noopener">${WA_ICON()} WhatsApp ${esc(b.name || s.shop_name)}</a>`).join(''),
