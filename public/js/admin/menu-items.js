@@ -3,6 +3,8 @@ import { illustrationFor } from '/js/illustrations.js';
 
 let items = [];
 let branches = [];
+let branchFilter = 'all';
+let searchQuery = '';
 
 // Branch names an item is limited to, e.g. "Aley only". Empty when every branch sells it.
 function branchLabel(item) {
@@ -10,6 +12,42 @@ function branchLabel(item) {
   const names = branches.filter((b) => item.branch_ids.includes(b.id)).map((b) => b.name);
   return names.length ? `${names.join(' & ')} only` : '';
 }
+
+function matchesBranchFilter(item) {
+  if (branchFilter === 'all') return true;
+  if (!item.branch_ids?.length) return true;
+  return item.branch_ids.includes(Number(branchFilter));
+}
+
+function renderBranchFilters() {
+  const el = $('#menu-branch-filters');
+  if (!el) return;
+  if (branches.length < 2) {
+    el.innerHTML = '';
+    return;
+  }
+  const counts = { all: items.length };
+  for (const b of branches) {
+    counts[b.id] = items.filter((i) => !i.branch_ids?.length || i.branch_ids.includes(b.id)).length;
+  }
+  el.innerHTML = [
+    `<button type="button" data-branch-filter="all" aria-pressed="${branchFilter === 'all'}">All <span class="count">${counts.all}</span></button>`,
+    ...branches.map((b) => `
+      <button type="button" data-branch-filter="${b.id}" aria-pressed="${String(branchFilter) === String(b.id)}">${esc(b.name)} <span class="count">${counts[b.id] || 0}</span></button>`),
+  ].join('');
+}
+
+$('#menu-branch-filters')?.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-branch-filter]');
+  if (!btn) return;
+  branchFilter = btn.dataset.branchFilter;
+  render();
+});
+
+$('#menu-admin-search')?.addEventListener('input', (e) => {
+  searchQuery = e.target.value.trim().toLowerCase();
+  render();
+});
 
 export async function load() {
   try {
@@ -25,13 +63,23 @@ export async function load() {
 }
 
 function render() {
+  renderBranchFilters();
   if (!items.length) {
     $('#items-list').innerHTML = emptyCard('🍰', 'Your menu is empty. Add your first item and it will appear on the Menu page.',
       '<button type="button" class="btn btn-gold btn-sm" data-add-item>+ Add item</button>');
     return;
   }
+  const visible = items.filter((item) => {
+    if (!matchesBranchFilter(item)) return false;
+    if (!searchQuery) return true;
+    return `${item.name} ${item.category} ${item.description}`.toLowerCase().includes(searchQuery);
+  });
+  if (!visible.length) {
+    $('#items-list').innerHTML = emptyCard('🔎', 'No menu items match the selected branch or search filter.');
+    return;
+  }
   const groups = new Map();
-  for (const item of items) {
+  for (const item of visible) {
     if (!groups.has(item.category)) groups.set(item.category, []);
     groups.get(item.category).push(item);
   }

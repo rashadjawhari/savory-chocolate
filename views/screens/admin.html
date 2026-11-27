@@ -93,6 +93,10 @@
           </div>
           <button type="button" class="btn btn-gold btn-sm" id="add-item-btn">+ Add item</button>
         </div>
+        <div class="admin-subbar">
+          <div class="filters" id="menu-branch-filters" style="margin:0;"></div>
+          <input type="search" id="menu-admin-search" placeholder="Filter menu items…" aria-label="Filter menu items">
+        </div>
         <div id="items-list"></div>
       </section>
 
@@ -113,7 +117,7 @@
         <div id="featured-summary"></div>
 
         <h2 class="subpanel-heading" style="margin-top: 30px;">Start Screen Background (Videos &amp; Photos)</h2>
-        <p class="muted small" style="margin: 0 0 12px;">These cycle softly behind the SAVORY logo &amp; slogan on the opening screen before visitors tap “Order Now”.</p>
+        <p class="muted small" style="margin: 0 0 12px;">These cycle behind the SAVORY logo on the opening screen before visitors tap “Browse Menu”.</p>
 
         <form class="card form-card upload-card" id="slide-form">
           <div class="field" style="margin: 0; min-width: 210px; flex: 1;">
@@ -274,9 +278,13 @@
             </div>
 
             <div class="field">
-              <label for="s-promo_codes">Promo codes</label>
-              <input type="text" id="s-promo_codes" name="promo_codes" maxlength="400" placeholder="SAVORY10:10, EID15:15">
-              <span class="hint">Comma-separated <code>CODE:PERCENT</code> pairs (1–75%). Leave blank to turn off promo codes.</span>
+              <div class="promo-head">
+                <label>Promo codes</label>
+                <button type="button" class="btn btn-outline btn-sm" id="add-promo-btn">+ Add code</button>
+              </div>
+              <input type="hidden" id="s-promo_codes" name="promo_codes">
+              <div class="promo-rows" id="promo-rows"></div>
+              <span class="hint">Discounts between 1% and 75%. Save settings to apply changes live.</span>
             </div>
 
             <h2>Delivery</h2>
