@@ -257,13 +257,46 @@ body.admin .admin-header .btn-ghost:hover:not(:disabled) {
   margin-bottom: 16px;
 }
 .admin-subbar input[type='search'] {
-  min-width: 220px;
-  padding: 7px 12px;
-  font-size: 0.86rem;
+  width: 240px;
+  max-width: 100%;
+  height: 36px;
+  padding: 0 14px;
+  font-size: 0.85rem;
   border-radius: 999px;
 }
+
+.orders-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+.orders-tools input[type='search'] {
+  width: 230px;
+  height: 36px;
+  padding: 0 14px;
+  font-size: 0.85rem;
+  border-radius: 999px;
+}
+.orders-tools select {
+  width: auto;
+  height: 36px;
+  padding: 0 28px 0 12px;
+  font-size: 0.85rem;
+  border-radius: 999px;
+}
+.orders-tools .btn {
+  height: 36px;
+  padding: 0 14px;
+  flex: none;
+}
+@media (max-width: 720px) {
+  .orders-tools { width: 100%; flex-wrap: wrap; }
+  .orders-tools input[type='search'] { flex: 1 1 100%; width: 100%; }
+  .orders-tools select { flex: 1 1 140px; min-width: 0; }
+}
 @media (max-width: 640px) {
-  .admin-subbar input[type='search'] { width: 100%; min-width: 0; }
+  .admin-subbar input[type='search'] { width: 100%; }
 }
 
 .filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
